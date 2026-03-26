@@ -1,0 +1,17 @@
+{
+  "name": "markview-frontend",
+  "version": "1.0.0",
+  "description": "Frontend assets for MarkView",
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./app.ts --outdir ./dist --splitting --minify",
+    "watch": "bun build ./app.ts --outdir ./dist --watch"
+  },
+  "dependencies": {
+    "mermaid": "^10.9.0",
+    "highlight.js": "^11.9.0"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}
