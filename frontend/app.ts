@@ -71,6 +71,11 @@ const init = async () => {
     await mermaid.run();
 };
 
+// Interface for SVG elements that support getBBox
+interface SVGGraphicsElement extends SVGElement {
+  getBBox(): DOMRect;
+}
+
 // Global Window Interface
 declare global {
     interface Window {
@@ -143,7 +148,7 @@ const highlightTOC = () => {
 window.openMermaidModal = (index: number) => {
     const container = document.getElementById('mermaid-' + index);
     if (!container) return;
-    const originalSvg = container.querySelector('svg');
+    const originalSvg = container.querySelector('.mermaid svg');
     if (!originalSvg) return;
 
     const modal = document.getElementById('mermaid-modal');
@@ -155,9 +160,47 @@ window.openMermaidModal = (index: number) => {
     const clonedSvg = originalSvg.cloneNode(true) as SVGElement;
 
     // Adjust styles for fullscreen viewing
-    clonedSvg.style.width = '100%';
-    clonedSvg.style.height = '100%';
-    clonedSvg.style.maxWidth = 'none';
+    // Reset dimensions to allow natural scaling, but limit to viewport if smaller
+    clonedSvg.removeAttribute('width');
+    clonedSvg.removeAttribute('height');
+    clonedSvg.style.width = 'auto';
+    clonedSvg.style.height = 'auto';
+    clonedSvg.style.maxWidth = 'none'; // Allow it to overflow
+    clonedSvg.style.minWidth = '100%'; // Ensure it fills at least width if smaller
+    
+    // Check if SVG is taller than viewport
+    // We need to use type assertion carefully as Element doesn't have getBBox
+    const graphicsElement = originalSvg as unknown as SVGGraphicsElement;
+    
+    // Default to centering
+    modalContent.style.alignItems = 'center';
+    modalContent.style.justifyContent = 'center';
+    modalContent.style.overflow = 'auto'; // Always allow scroll
+
+    try {
+        // Check if getBBox exists and is a function before calling
+        if (typeof graphicsElement.getBBox === 'function') {
+            const bbox = graphicsElement.getBBox();
+            
+            // Heuristic: If SVG is very tall, align top to allow scrolling
+            // If we center a very tall SVG, the top part gets cut off and is unreachable
+            if (bbox.height > window.innerHeight - 80) {
+                 modalContent.style.alignItems = 'flex-start';
+                 // Remove height constraint to allow full expansion
+                 clonedSvg.style.height = 'auto'; 
+            } else {
+                 // If it fits, we can let it be max 100% height to fit screen
+                 clonedSvg.style.maxHeight = '95vh';
+            }
+
+            // If SVG is very wide, align left
+            if (bbox.width > window.innerWidth - 80) {
+                 modalContent.style.justifyContent = 'flex-start';
+            }
+        }
+    } catch (e) {
+        console.warn('Could not get BBox', e);
+    }
 
     modalContent.innerHTML = '';
     modalContent.appendChild(clonedSvg);
