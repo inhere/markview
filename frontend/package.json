@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "bun build ./app.ts --outdir ./dist --splitting --minify",
-    "watch": "bun build ./app.ts --outdir ./dist --watch"
+    "watch": "bun build ./app.ts --outdir ./dist --watch",
+    "dev": "bun build ./app.ts --outdir ./dist --watch"
   },
   "dependencies": {
     "mermaid": "^10.9.0",

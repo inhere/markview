@@ -262,7 +262,7 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
             border: 1px solid var(--border-light);
             border-radius: 2px;
-            margin-bottom: 100px; /* Bottom spacing */
+            margin-bottom: 20px; /* Bottom spacing */
         }
 
         /* --- Typography --- */
@@ -418,13 +418,23 @@
             padding: 16px;
             background: white;
         }
-        .mermaid-container:hover {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .mermaid-fullscreen-btn {
+        .mermaid-actions {
             position: absolute;
             top: 8px;
             right: 8px;
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .mermaid-container:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .mermaid-container:hover .mermaid-actions {
+            opacity: 1;
+        }
+        .mermaid-fullscreen-btn,
+        .mermaid-source-btn {
             background: white;
             border: 1px solid var(--border-light);
             border-radius: 4px;
@@ -433,14 +443,39 @@
             font-size: 12px;
             color: var(--text-muted);
             transition: all 0.2s;
-            opacity: 0;
         }
-        .mermaid-container:hover .mermaid-fullscreen-btn {
-            opacity: 1;
-        }
-        .mermaid-fullscreen-btn:hover {
+        .mermaid-fullscreen-btn:hover,
+        .mermaid-source-btn:hover {
             color: var(--accent-primary);
             border-color: var(--accent-primary);
+        }
+        .mermaid-source-inline {
+            display: none;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            background: #f8fafc;
+            overflow: hidden;
+        }
+        .mermaid-source-inline.active {
+            display: block;
+        }
+        .mermaid-source-inline-header {
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-light);
+            background: rgba(255,255,255,0.85);
+        }
+        .mermaid-source-inline pre {
+            margin: 0;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            background: transparent !important;
         }
         /* Modal */
         .mermaid-modal {
@@ -574,6 +609,51 @@
             max-height: none !important;
             transition: width 0.15s ease-out; /* Smooth zoom */
         }
+        .mermaid-source-panel {
+            position: fixed;
+            right: 40px;
+            top: 40px;
+            width: min(480px, calc(100vw - 80px));
+            max-height: calc(100vh - 120px);
+            overflow: auto;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+            padding: 16px;
+            z-index: 1003;
+            display: none;
+        }
+        .mermaid-source-panel.active {
+            display: block;
+        }
+        .mermaid-source-panel pre {
+            margin: 12px 0 0;
+            max-height: calc(100vh - 220px);
+        }
+        .file-meta {
+            width: 100%;
+            max-width: var(--layout-max-width);
+            margin-top: 20px;
+            margin-bottom: 35px;
+            color: var(--text-muted);
+            font-size: 12px;
+            line-height: 1.6;
+            text-align: left;
+        }
+        .file-meta-line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        .file-meta-sep {
+            color: var(--border-focus);
+        }
+        .file-meta strong {
+            color: var(--text-body);
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -613,15 +693,30 @@
 
     <!-- Main Content -->
     <main class="content-wrapper">
-        <article class="paper" id="content">
-            {{ .Content }}
-        </article>
+        <div style="width: 100%; max-width: var(--layout-max-width); display: flex; flex-direction: column; align-items: center;">
+            <article class="paper" id="content">
+                {{ .Content }}
+            </article>
+
+            <div class="file-meta">
+                <div class="file-meta-line">
+                    <span><strong>{{ .FileName }}</strong></span>
+                    <span class="file-meta-sep">•</span>
+                    <span>{{ .FileSize }}</span>
+                    <span class="file-meta-sep">•</span>
+                    <span>创建于 {{ .CreatedAt }}</span>
+                    <span class="file-meta-sep">•</span>
+                    <span>更新于 {{ .ModifiedAt }}</span>
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- Mermaid Modal -->
     <div id="mermaid-modal" class="mermaid-modal">
         <div class="mermaid-modal-close" onclick="closeMermaidModal()">&times;</div>
         <div id="mermaid-modal-content" class="mermaid-modal-content"></div>
+        <aside id="mermaid-source-panel" class="mermaid-source-panel"></aside>
     </div>
 
     <!-- Main Application Script -->

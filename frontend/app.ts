@@ -50,6 +50,10 @@ const init = async () => {
         const container = document.createElement('div');
         container.className = 'mermaid-container';
         container.id = 'mermaid-' + i;
+        container.dataset.source = content || '';
+
+        const actions = document.createElement('div');
+        actions.className = 'mermaid-actions';
 
         // Create fullscreen button
         const btn = document.createElement('button');
@@ -58,12 +62,31 @@ const init = async () => {
         btn.title = "View Fullscreen";
         btn.onclick = () => window.openMermaidModal(i);
 
+        const sourceBtn = document.createElement('button');
+        sourceBtn.className = 'mermaid-source-btn';
+        sourceBtn.textContent = '源码';
+        sourceBtn.title = 'View Mermaid Source';
+
+        const sourcePanel = document.createElement('div');
+        sourcePanel.className = 'mermaid-source-inline';
+        sourcePanel.innerHTML = `
+            <div class="mermaid-source-inline-header">Mermaid Source</div>
+            <pre><code>${escapeHtml(content || '')}</code></pre>
+        `;
+
+        sourceBtn.onclick = () => {
+            sourcePanel.classList.toggle('active');
+        };
+
         // Create mermaid div
         const mermaidDiv = document.createElement('div');
         mermaidDiv.className = 'mermaid';
         mermaidDiv.textContent = content;
 
-        container.appendChild(btn);
+        actions.appendChild(sourceBtn);
+        actions.appendChild(btn);
+        container.appendChild(actions);
+        container.appendChild(sourcePanel);
         container.appendChild(mermaidDiv);
 
         // Replace the <pre> with the new container
@@ -84,6 +107,7 @@ declare global {
     interface Window {
         openMermaidModal: (index: number) => void;
         closeMermaidModal: () => void;
+        toggleMermaidSource: () => void;
     }
 }
 
@@ -335,6 +359,15 @@ window.closeMermaidModal = () => {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') window.closeMermaidModal();
 });
+
+function escapeHtml(value: string) {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
 
 // 5. SSE for Auto Reload
 const evtSource = new EventSource("/sse");
