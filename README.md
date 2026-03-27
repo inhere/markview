@@ -36,6 +36,8 @@ Download `markview.exe` and run it:
 
 The server will start at `http://localhost:3000` (default).
 
+> Markdown example files see [example/](example/).
+
 ### Configuration
 
 You can configure the port via environment variable:
