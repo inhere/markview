@@ -1,9 +1,12 @@
+// Mark as ES module so `declare global` works correctly
+export {};
+
 // Initialize Mermaid and Highlight.js dynamically
 const init = async () => {
     // Dynamic imports for code splitting
     const { default: mermaid } = await import('mermaid');
     const { default: hljs } = await import('highlight.js/lib/core');
-    
+
     // Import languages dynamically
     const languages = [
         import('highlight.js/lib/languages/javascript'),
@@ -21,7 +24,7 @@ const init = async () => {
     ];
 
     const loadedLanguages = await Promise.all(languages);
-    
+
     // Register languages
     const langNames = ['javascript', 'typescript', 'xml', 'css', 'json', 'bash', 'go', 'markdown', 'yaml', 'sql', 'python', 'rust'];
     loadedLanguages.forEach((module, i) => {
@@ -213,12 +216,12 @@ window.openMermaidModal = (index: number) => {
     // Start with auto/natural size
     clonedSvg.style.width = 'auto';
     clonedSvg.style.height = 'auto';
-    clonedSvg.style.maxWidth = 'none'; 
+    clonedSvg.style.maxWidth = 'none';
     clonedSvg.style.minWidth = '0'; // Allow shrinking
-    
+
     // Check dimensions
     const graphicsElement = originalSvg as unknown as SVGGraphicsElement;
-    
+
     // Default alignment
     modalContent.style.alignItems = 'center';
     modalContent.style.justifyContent = 'center';
@@ -226,11 +229,11 @@ window.openMermaidModal = (index: number) => {
     try {
         if (typeof graphicsElement.getBBox === 'function') {
             const bbox = graphicsElement.getBBox();
-            
+
             // If tall, align top
             if (bbox.height > window.innerHeight - 80) {
                  modalContent.style.alignItems = 'flex-start';
-                 clonedSvg.style.height = 'auto'; 
+                 clonedSvg.style.height = 'auto';
             } else {
                  // Fit screen height initially if it's not too tall
                  clonedSvg.style.maxHeight = '90vh';
@@ -247,23 +250,40 @@ window.openMermaidModal = (index: number) => {
 
     modalContent.innerHTML = '';
     modalContent.appendChild(clonedSvg);
-    
+
     // Create/Update Controls
     let controls = document.getElementById('mermaid-modal-controls');
-    
+
     // Always remove and recreate to bind new SVG listeners
     if (controls) controls.remove();
-    
+
     controls = document.createElement('div');
     controls.id = 'mermaid-modal-controls';
     controls.className = 'mermaid-modal-controls';
     controls.innerHTML = `
-        <button class="mermaid-control-btn" id="zoom-out" title="Zoom Out">-</button>
+        <button class="mermaid-control-btn mermaid-control-step" id="zoom-out" title="Zoom Out">−</button>
         <span class="mermaid-zoom-level" id="mermaid-zoom-level">100%</span>
-        <button class="mermaid-control-btn" id="zoom-in" title="Zoom In">+</button>
+        <button class="mermaid-control-btn mermaid-control-step" id="zoom-in" title="Zoom In">+</button>
+        <span class="mermaid-ctrl-divider"></span>
+        <button class="mermaid-control-btn" data-zoom="0.5" title="50%">50%</button>
+        <button class="mermaid-control-btn" data-zoom="0.75" title="75%">75%</button>
+        <button class="mermaid-control-btn active" data-zoom="1" title="100%">100%</button>
     `;
     modal.appendChild(controls);
-    
+
+    // Preset zoom buttons
+    controls.querySelectorAll('[data-zoom]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const z = parseFloat((btn as HTMLElement).dataset.zoom || '1');
+            currentZoom = z;
+            updateZoomLevel(clonedSvg, currentZoom);
+            // Update active state
+            controls!.querySelectorAll('[data-zoom]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
+
     // Add listeners
     const zoomInBtn = document.getElementById('zoom-in');
     const zoomOutBtn = document.getElementById('zoom-out');
@@ -274,59 +294,40 @@ window.openMermaidModal = (index: number) => {
             if (currentZoom < 2.0) {
                 currentZoom = Math.round((currentZoom + 0.05) * 100) / 100;
                 updateZoomLevel(clonedSvg, currentZoom);
+                syncPresetBtns(controls!);
             }
         });
     }
-    
+
     if (zoomOutBtn) {
         zoomOutBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (currentZoom > 0.5) {
                 currentZoom = Math.round((currentZoom - 0.05) * 100) / 100;
                 updateZoomLevel(clonedSvg, currentZoom);
+                syncPresetBtns(controls!);
             }
         });
     }
 
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+
+    // Fade-in controls on modal hover via JS (CSS hover on fixed child is unreliable)
+    const showControls = () => controls!.style.opacity = '1';
+    const hideControls = () => controls!.style.opacity = '0';
+    modal.addEventListener('mousemove', showControls);
+    modal.addEventListener('mouseleave', hideControls);
 };
 
-// Helper for zoom updates
-function updateZoomLevel(svg: SVGElement, zoom: number) {
-    const label = document.getElementById('mermaid-zoom-level');
-    if (label) label.textContent = Math.round(zoom * 100) + '%';
-    
-    if (zoom === 1.0) {
-        // Reset to initial state logic
-        svg.style.width = 'auto';
-        svg.style.height = 'auto';
-        svg.style.minWidth = '0';
-        svg.style.maxWidth = 'none';
-        
-        // Re-apply height constraint if it fits screen
-        const graphicsElement = svg as unknown as SVGGraphicsElement;
-         try {
-            if (typeof graphicsElement.getBBox === 'function') {
-                const bbox = graphicsElement.getBBox();
-                if (bbox.height < window.innerHeight - 80) {
-                     svg.style.maxHeight = '90vh';
-                } else {
-                     svg.style.maxHeight = 'none';
-                }
-            }
-        } catch (e) {}
-    } else {
-        // Apply percentage width relative to viewport
-        svg.style.width = Math.round(zoom * 100) + '%';
-        svg.style.maxHeight = 'none';
-        svg.style.height = 'auto';
-    }
+// Helper: sync preset btn active state after step zoom
+function syncPresetBtns(controls: HTMLElement) {
+    controls.querySelectorAll('[data-zoom]').forEach(btn => {
+        const z = parseFloat((btn as HTMLElement).dataset.zoom || '1');
+        btn.classList.toggle('active', Math.abs(z - currentZoom) < 0.001);
+    });
 }
 
-function updateZoom(svg: SVGElement) {
-    // Legacy stub, replaced by updateZoomLevel
-}
 
 window.closeMermaidModal = () => {
     const modal = document.getElementById('mermaid-modal');
@@ -364,7 +365,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupToolbar();
     generateTOC();
     window.addEventListener('scroll', highlightTOC);
-    
+
     // Start async init
     await init();
 });
@@ -373,14 +374,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 function updateZoomLevel(svg: SVGElement, zoom: number) {
     const label = document.getElementById('mermaid-zoom-level');
     if (label) label.textContent = Math.round(zoom * 100) + '%';
-    
+
     if (zoom === 1.0) {
         // Reset to initial state logic
         svg.style.width = 'auto';
         svg.style.height = 'auto';
         svg.style.minWidth = '0';
         svg.style.maxWidth = 'none';
-        
+
         // Re-apply height constraint if it fits screen
         const graphicsElement = svg as unknown as SVGGraphicsElement;
          try {
