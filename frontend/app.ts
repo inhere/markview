@@ -312,12 +312,6 @@ window.openMermaidModal = (index: number) => {
 
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-
-    // Fade-in controls on modal hover via JS (CSS hover on fixed child is unreliable)
-    const showControls = () => controls!.style.opacity = '1';
-    const hideControls = () => controls!.style.opacity = '0';
-    modal.addEventListener('mousemove', showControls);
-    modal.addEventListener('mouseleave', hideControls);
 };
 
 // Helper: sync preset btn active state after step zoom
