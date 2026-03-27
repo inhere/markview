@@ -46,8 +46,13 @@ const (
 )
 
 type PageData struct {
-	Title   string
-	Content template.HTML
+	Title      string
+	Content    template.HTML
+	FileName   string
+	FilePath   string
+	FileSize   string
+	CreatedAt  string
+	ModifiedAt string
 }
 
 func main() {
@@ -160,6 +165,12 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderMarkdown(w http.ResponseWriter, filePath string) {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		http.Error(w, "Failed to stat file", 500)
+		return
+	}
+
 	mdData, err := os.ReadFile(filePath)
 	if err != nil {
 		http.Error(w, "Failed to read file", 500)
@@ -195,9 +206,19 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 	t := template.Must(template.New("index").Parse(string(tmplData)))
 
 	fileName := filepath.Base(filePath)
+	createdAt := "Unavailable"
+	if created := fileCreatedTime(info); !created.IsZero() {
+		createdAt = formatTimestamp(created)
+	}
+
 	data := PageData{
-		Title:   fileName,
-		Content: template.HTML(buf.String()),
+		Title:      fileName,
+		Content:    template.HTML(buf.String()),
+		FileName:   fileName,
+		FilePath:   filePath,
+		FileSize:   formatFileSize(info.Size()),
+		CreatedAt:  createdAt,
+		ModifiedAt: formatTimestamp(info.ModTime()),
 	}
 
 	w.Header().Set("Content-Type", "text/html")
@@ -297,6 +318,25 @@ func watchDirectory(dir string) {
 			log.Println("Watcher error:", err)
 		}
 	}
+}
+
+func formatFileSize(size int64) string {
+	const unit = 1024
+	if size < unit {
+		return fmt.Sprintf("%d B", size)
+	}
+
+	div, exp := int64(unit), 0
+	for n := size / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+
+	return fmt.Sprintf("%.1f %ciB", float64(size)/float64(div), "KMGTPE"[exp])
+}
+
+func formatTimestamp(t time.Time) string {
+	return t.Local().Format("2006-01-02 15:04:05")
 }
 
 func broadcast(msg string) {

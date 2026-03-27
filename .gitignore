@@ -3,3 +3,4 @@ frontend/app.js
 frontend/dist/
 dist/
 *.exe
+.omc/
