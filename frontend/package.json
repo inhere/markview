@@ -4,9 +4,8 @@
   "description": "Frontend assets for MarkView",
   "type": "module",
   "scripts": {
-    "build": "bun build ./app.ts --outdir ./dist --splitting --minify",
-    "watch": "bun build ./app.ts --outdir ./dist --watch",
-    "dev": "bun build ./app.ts --outdir ./dist --watch"
+    "build": "rm -rf ./dist && bun build ./app.ts --outdir ./dist --splitting --minify",
+    "dev": "rm -rf ./dist && bun build ./app.ts --outdir ./dist --splitting --watch"
   },
   "dependencies": {
     "mermaid": "^10.9.0",

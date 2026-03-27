@@ -1,44 +1,44 @@
 // Mark as ES module so `declare global` works correctly
 export {};
 
-// Initialize Mermaid and Highlight.js dynamically
+import hljs from 'highlight.js/lib/core';
+import javascript from 'highlight.js/lib/languages/javascript';
+import typescript from 'highlight.js/lib/languages/typescript';
+import xml from 'highlight.js/lib/languages/xml';
+import css from 'highlight.js/lib/languages/css';
+import json from 'highlight.js/lib/languages/json';
+import bash from 'highlight.js/lib/languages/bash';
+import go from 'highlight.js/lib/languages/go';
+import markdown from 'highlight.js/lib/languages/markdown';
+import yaml from 'highlight.js/lib/languages/yaml';
+import sql from 'highlight.js/lib/languages/sql';
+import python from 'highlight.js/lib/languages/python';
+import rust from 'highlight.js/lib/languages/rust';
+
+// Initialize Highlight.js immediately, Mermaid lazily
 const init = async () => {
-    // Dynamic imports for code splitting
-    const { default: mermaid } = await import('mermaid');
-    const { default: hljs } = await import('highlight.js/lib/core');
+    hljs.registerLanguage('javascript', javascript);
+    hljs.registerLanguage('typescript', typescript);
+    hljs.registerLanguage('xml', xml);
+    hljs.registerLanguage('css', css);
+    hljs.registerLanguage('json', json);
+    hljs.registerLanguage('bash', bash);
+    hljs.registerLanguage('go', go);
+    hljs.registerLanguage('markdown', markdown);
+    hljs.registerLanguage('yaml', yaml);
+    hljs.registerLanguage('sql', sql);
+    hljs.registerLanguage('python', python);
+    hljs.registerLanguage('rust', rust);
 
-    // Import languages dynamically
-    const languages = [
-        import('highlight.js/lib/languages/javascript'),
-        import('highlight.js/lib/languages/typescript'),
-        import('highlight.js/lib/languages/xml'),
-        import('highlight.js/lib/languages/css'),
-        import('highlight.js/lib/languages/json'),
-        import('highlight.js/lib/languages/bash'),
-        import('highlight.js/lib/languages/go'),
-        import('highlight.js/lib/languages/markdown'),
-        import('highlight.js/lib/languages/yaml'),
-        import('highlight.js/lib/languages/sql'),
-        import('highlight.js/lib/languages/python'),
-        import('highlight.js/lib/languages/rust')
-    ];
-
-    const loadedLanguages = await Promise.all(languages);
-
-    // Register languages
-    const langNames = ['javascript', 'typescript', 'xml', 'css', 'json', 'bash', 'go', 'markdown', 'yaml', 'sql', 'python', 'rust'];
-    loadedLanguages.forEach((module, i) => {
-        hljs.registerLanguage(langNames[i], module.default);
-    });
-
-    // Initialize Mermaid
-    mermaid.initialize({ startOnLoad: false });
-
-    // Initialize Highlight.js
     hljs.highlightAll();
 
-    // Find mermaid code blocks and transform them
     const mermaidBlocks = document.querySelectorAll('pre code.language-mermaid');
+    if (!mermaidBlocks.length) {
+        return;
+    }
+
+    const { default: mermaid } = await import('mermaid');
+    mermaid.initialize({ startOnLoad: false });
 
     for (let i = 0; i < mermaidBlocks.length; i++) {
         const block = mermaidBlocks[i];
@@ -55,11 +55,10 @@ const init = async () => {
         const actions = document.createElement('div');
         actions.className = 'mermaid-actions';
 
-        // Create fullscreen button
         const btn = document.createElement('button');
         btn.className = 'mermaid-fullscreen-btn';
         btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
-        btn.title = "View Fullscreen";
+        btn.title = 'View Fullscreen';
         btn.onclick = () => window.openMermaidModal(i);
 
         const sourceBtn = document.createElement('button');
@@ -408,7 +407,7 @@ function escapeHtml(value: string) {
 }
 
 // 5. SSE for Auto Reload
-const evtSource = new EventSource("/sse");
+const evtSource = new EventSource('/sse');
 const liveDot = document.getElementById('live-dot');
 const statusText = document.getElementById('status-text');
 
@@ -466,3 +465,4 @@ function updateZoomLevel(svg: SVGElement, zoom: number) {
         svg.style.height = 'auto';
     }
 }
+
