@@ -4,3 +4,4 @@ frontend/dist/
 dist/
 *.exe
 .omc/
+.claude/

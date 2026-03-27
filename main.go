@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/gookit/goutil/envutil"
+	"github.com/gookit/goutil/x/clog"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -41,8 +43,13 @@ var (
 )
 
 const (
-	DefaultPort = "6100"
+	DefaultPort  = "6100"
 	DefaultEntry = "README.md"
+)
+
+const (
+	EnvPort      = "MKVIEW_PORT"
+	EnvEntry     = "MKVIEW_ENTRY"
 )
 
 type PageData struct {
@@ -59,16 +66,7 @@ func main() {
 	// 1. Configuration
 	args := os.Args[1:]
 	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
-		binName := filepath.Base(os.Args[0])
-		fmt.Printf("MarkView - Markdown Live Preview Server\n")
-		fmt.Printf("  (Version: %s, Git Hash: %s, Build Time: %s)\n\n", Version, GitHash, BuildTime)
-		fmt.Printf("Usage:\n")
-		fmt.Printf("  %s [directory] [default-entry]\n\n", binName)
-		fmt.Printf("Arguments:\n")
-		fmt.Printf("  directory      Directory to watch (default: current dir)\n")
-		fmt.Printf("  default-entry  Default markdown file to open (default: README.md)\n\n")
-		fmt.Printf("Environment:\n")
-		fmt.Printf("  SERVER_PORT    HTTP port to listen on (default: %s)\n", DefaultPort)
+		showHelp()
 		return
 	}
 
@@ -95,7 +93,27 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
+func showHelp() {
+	binName := filepath.Base(os.Args[0])
+	fmt.Printf("MarkView - Markdown Live Preview Server\n")
+	fmt.Printf("  (Version: %s, Git Hash: %s, Build Time: %s)\n\n", Version, GitHash, BuildTime)
+	fmt.Printf("Usage:\n")
+	fmt.Printf("  %s [directory] [default-entry]\n\n", binName)
+	fmt.Printf("Arguments:\n")
+	fmt.Printf("  directory      Directory to watch (default: current dir)\n")
+	fmt.Printf("  default-entry  Default markdown file to open (default: README.md)\n\n")
+	fmt.Printf("Environment:\n")
+	fmt.Printf("  MKVIEW_PORT    HTTP port to listen on (default: %s)\n", DefaultPort)
+	fmt.Printf("  MKVIEW_ENTRY   Default markdown file to open (default: %s)\n", DefaultEntry)
+}
+
 func prepareArgs(args []string) {
+	err := envutil.DotenvLoad(func(cfg *envutil.Dotenv) {
+		cfg.IgnoreNotExist = true
+	})
+	if err != nil {
+		clog.Warnf("Failed to load dotenv: %v", err)
+	}
 
 	cwd, _ := os.Getwd()
 	targetDir = cwd
@@ -106,16 +124,13 @@ func prepareArgs(args []string) {
 		}
 	}
 
-	defaultEntry = DefaultEntry
-	if len(args) > 1 {
+	if len(args) > 1 && args[1] != "" {
 		defaultEntry = args[1]
+	} else {
+		defaultEntry = envutil.Getenv(EnvEntry, DefaultEntry)
 	}
 
-	port = os.Getenv("SERVER_PORT")
-	if port == "" {
-		port = DefaultPort
-	}
-
+	port = envutil.Getenv(EnvPort, DefaultPort)
 }
 
 // handleRequest .md 文件会渲染为 HTML 页面，其他文件会直接返回
@@ -303,7 +318,7 @@ func watchDirectory(dir string) {
 			}
 			if event.Has(fsnotify.Write) {
 				if strings.HasSuffix(event.Name, ".md") {
-					log.Println("Modified file:", event.Name)
+					log.Println("WATCH: Modified file:", event.Name)
 					broadcast("reload")
 				}
 			}
@@ -317,7 +332,7 @@ func watchDirectory(dir string) {
 			if !ok {
 				return
 			}
-			log.Println("Watcher error:", err)
+			log.Println("WATCH: Watcher error:", err)
 		}
 	}
 }
