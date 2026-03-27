@@ -1,0 +1,99 @@
+## MarkView — Makefile
+
+APP     := markview
+VERSION ?= 0.1.0
+BINARY  := $(APP).exe
+
+# Build metadata
+GIT_HASH  := $(shell git rev-parse --short=8 HEAD 2>/dev/null || echo "unknown")
+BUILD_TIME := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+LDFLAGS := -s -w \
+	-X main.Version=$(VERSION) \
+	-X main.GitHash=$(GIT_HASH) \
+	-X 'main.BuildTime=$(BUILD_TIME)'
+
+.PHONY: all build frontend backend clean help
+
+## all: build frontend then backend (default)
+all: build
+
+## build: build frontend and Go binary (current platform)
+build: frontend backend
+
+## frontend: bundle TypeScript with Bun
+frontend:
+	@echo "📦 Building frontend..."
+	@cd frontend && \
+		([ -d node_modules ] || bun install) && \
+		bun run build
+	@echo "✅ Frontend done"
+
+## backend: compile Go binary for current platform
+backend:
+	@echo "🐹 Building Go binary ($(VERSION) @ $(GIT_HASH))..."
+	@go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
+	@echo "✅ Binary: $(BINARY) ($$(du -sh $(BINARY) | cut -f1))"
+
+## install: install Go binary to $GOPATH/bin
+install: frontend
+	@go install -ldflags "$(LDFLAGS)" .
+	@echo "✅ Installed to GOPATH/bin"
+
+## run: build and run with current directory
+run: build
+	./$(BINARY)
+
+# ─── Cross Compilation ────────────────────────────────────────────────────────
+
+DIST_DIR := dist
+
+## build-all: cross-compile for all platforms
+build-all: frontend build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows
+
+## build-linux: compile for Linux amd64
+build-linux:
+	@echo "🐧 linux/amd64..."
+	@mkdir -p $(DIST_DIR)
+	@GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(APP)-linux-amd64 .
+	@echo "   → $(DIST_DIR)/$(APP)-linux-amd64"
+
+## build-linux-arm64: compile for Linux arm64
+build-linux-arm64:
+	@echo "🐧 linux/arm64..."
+	@mkdir -p $(DIST_DIR)
+	@GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(APP)-linux-arm64 .
+	@echo "   → $(DIST_DIR)/$(APP)-linux-arm64"
+
+## build-darwin: compile for macOS amd64
+build-darwin:
+	@echo "🍎 darwin/amd64..."
+	@mkdir -p $(DIST_DIR)
+	@GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(APP)-darwin-amd64 .
+	@echo "   → $(DIST_DIR)/$(APP)-darwin-amd64"
+
+## build-darwin-arm64: compile for macOS Apple Silicon
+build-darwin-arm64:
+	@echo "🍎 darwin/arm64..."
+	@mkdir -p $(DIST_DIR)
+	@GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(APP)-darwin-arm64 .
+	@echo "   → $(DIST_DIR)/$(APP)-darwin-arm64"
+
+## build-windows: compile for Windows amd64
+build-windows:
+	@echo "🪟 windows/amd64..."
+	@mkdir -p $(DIST_DIR)
+	@GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(APP)-windows-amd64.exe .
+	@echo "   → $(DIST_DIR)/$(APP)-windows-amd64.exe"
+
+## clean: remove build artifacts
+clean:
+	@rm -f $(BINARY)
+	@rm -rf frontend/dist $(DIST_DIR)
+	@echo "🧹 Cleaned"
+
+## help: show this help
+help:
+	@echo "MarkView Build System"
+	@echo ""
+	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## /  /'

@@ -24,6 +24,13 @@ import (
 //go:embed frontend/template.html frontend/dist
 var content embed.FS
 
+// Build-time variables injected via -ldflags
+var (
+	Version   = "dev"
+	GitHash   = "unknown"
+	BuildTime = "unknown"
+)
+
 var (
 	targetDir    string
 	defaultEntry string
@@ -42,7 +49,16 @@ func main() {
 	// 1. Configuration
 	args := os.Args[1:]
 	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
-		fmt.Printf("Usage: %s [directory] [default-entry]\n", os.Args[0])
+		binName := filepath.Base(os.Args[0])
+		fmt.Printf("MarkView - Markdown Live Preview Server\n")
+		fmt.Printf("  (Version: %s, Git Hash: %s, Build Time: %s)\n\n", Version, GitHash, BuildTime)
+		fmt.Printf("Usage:\n")
+		fmt.Printf("  %s [directory] [default-entry]\n\n", binName)
+		fmt.Printf("Arguments:\n")
+		fmt.Printf("  directory      Directory to watch (default: current dir)\n")
+		fmt.Printf("  default-entry  Default markdown file to open (default: README.md)\n\n")
+		fmt.Printf("Environment:\n")
+		fmt.Printf("  SERVER_PORT    HTTP port to listen on (default: 3000)\n")
 		return
 	}
 
@@ -78,7 +94,7 @@ func main() {
 		log.Fatal(err)
 	}
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(distFS))))
-	
+
 	http.HandleFunc("/sse", handleSSE)
 	http.HandleFunc("/", handleRequest)
 
@@ -165,7 +181,7 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 
 	// Use html/template properly
 	t := template.Must(template.New("index").Parse(string(tmplData)))
-	
+
 	fileName := filepath.Base(filePath)
 	data := PageData{
 		Title:   fileName,
@@ -183,7 +199,7 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	clientChan := make(chan string)
-	
+
 	clientsMu.Lock()
 	clients[clientChan] = true
 	clientsMu.Unlock()
@@ -239,7 +255,7 @@ func watchDirectory(dir string) {
 		}
 		return nil
 	})
-	
+
 	if err != nil {
 		log.Println("Error walking directory:", err)
 	}

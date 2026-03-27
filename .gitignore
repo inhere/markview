@@ -1,5 +1,5 @@
 node_modules/
 frontend/app.js
 frontend/dist/
-
+dist/
 *.exe
