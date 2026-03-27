@@ -216,6 +216,8 @@ function setupToolbar() {
 
 // 4. Mermaid Modal Functions
 let currentZoom = 1.0;
+const minZoom = 0.3;
+const maxZoom = 2.0;
 
 window.openMermaidModal = (index: number) => {
     const container = document.getElementById('mermaid-' + index);
@@ -291,6 +293,7 @@ window.openMermaidModal = (index: number) => {
         <span class="mermaid-zoom-level" id="mermaid-zoom-level">100%</span>
         <button class="mermaid-control-btn mermaid-control-step" id="zoom-in" title="Zoom In">+</button>
         <span class="mermaid-ctrl-divider"></span>
+        <button class="mermaid-control-btn" data-zoom="0.3" title="30%">30%</button>
         <button class="mermaid-control-btn" data-zoom="0.5" title="50%">50%</button>
         <button class="mermaid-control-btn" data-zoom="0.75" title="75%">75%</button>
         <button class="mermaid-control-btn active" data-zoom="1" title="100%">100%</button>
@@ -314,11 +317,44 @@ window.openMermaidModal = (index: number) => {
     const zoomInBtn = document.getElementById('zoom-in');
     const zoomOutBtn = document.getElementById('zoom-out');
 
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let startScrollLeft = 0;
+    let startScrollTop = 0;
+
+    modalContent.onmousedown = (event: MouseEvent) => {
+        if (event.button !== 0) return;
+        isDragging = true;
+        dragStartX = event.clientX;
+        dragStartY = event.clientY;
+        startScrollLeft = modalContent.scrollLeft;
+        startScrollTop = modalContent.scrollTop;
+        modalContent.classList.add('is-dragging');
+        event.preventDefault();
+    };
+
+    modalContent.onmousemove = (event: MouseEvent) => {
+        if (!isDragging) return;
+        modalContent.scrollLeft = startScrollLeft - (event.clientX - dragStartX);
+        modalContent.scrollTop = startScrollTop - (event.clientY - dragStartY);
+    };
+
+    modalContent.onmouseup = () => {
+        isDragging = false;
+        modalContent.classList.remove('is-dragging');
+    };
+
+    modalContent.onmouseleave = () => {
+        isDragging = false;
+        modalContent.classList.remove('is-dragging');
+    };
+
     if (zoomInBtn) {
         zoomInBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (currentZoom < 2.0) {
-                currentZoom = Math.round((currentZoom + 0.05) * 100) / 100;
+            if (currentZoom < maxZoom) {
+                currentZoom = Math.min(maxZoom, Math.round((currentZoom + 0.05) * 100) / 100);
                 updateZoomLevel(clonedSvg, currentZoom);
                 syncPresetBtns(controls!);
             }
@@ -328,8 +364,8 @@ window.openMermaidModal = (index: number) => {
     if (zoomOutBtn) {
         zoomOutBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (currentZoom > 0.5) {
-                currentZoom = Math.round((currentZoom - 0.05) * 100) / 100;
+            if (currentZoom > minZoom) {
+                currentZoom = Math.max(minZoom, Math.round((currentZoom - 0.05) * 100) / 100);
                 updateZoomLevel(clonedSvg, currentZoom);
                 syncPresetBtns(controls!);
             }

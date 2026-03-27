@@ -609,7 +609,12 @@
             overflow: auto;
             padding: 24px 24px 96px;
             scroll-padding-top: 24px;
+            cursor: grab;
+            user-select: none;
             /* Allow content to scroll */
+        }
+        .mermaid-modal-content.is-dragging {
+            cursor: grabbing;
         }
         .mermaid-modal-content svg {
             display: block;
