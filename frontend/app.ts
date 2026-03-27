@@ -246,9 +246,11 @@ window.openMermaidModal = (index: number) => {
     // Check dimensions
     const graphicsElement = originalSvg as unknown as SVGGraphicsElement;
 
-    // Default alignment
-    modalContent.style.alignItems = 'center';
+    // Default alignment align-items 控制垂直对齐
+    modalContent.style.alignItems = 'flex-start';
     modalContent.style.justifyContent = 'center';
+    modalContent.scrollTop = 0;
+    modalContent.scrollLeft = 0;
 
     try {
         if (typeof graphicsElement.getBBox === 'function') {
