@@ -108,3 +108,5 @@ If a change affects template or frontend bundle behavior, rebuilding the app is 
 - Prefer updating `Makefile` targets when changing the build flow; it is the canonical developer entrypoint.
 - Be careful when editing request-path handling in `main.go`; the `filepath.Rel` check is the main path traversal guard.
 - Frontend and backend changes are coupled through the embedded asset pipeline, so verify both Bun build output and Go rebuilds when touching UI behavior.
+- Keep diffs minimal. Do not proactively delete or rewrite existing comments, whitespace, or surrounding structure unless the user asked for cleanup or the comment is no longer accurate after the code change.
+- When editing `frontend/app.ts`, `frontend/template.html`, or other user-facing files, prefer targeted line edits over large block replacements so review stays focused and `git blame` noise stays low.

@@ -118,15 +118,17 @@ func prepareArgs(args []string) {
 
 }
 
+// handleRequest .md 文件会渲染为 HTML 页面，其他文件会直接返回
 func handleRequest(w http.ResponseWriter, r *http.Request) {
 	urlPath := r.URL.Path
-	var filePath string
+	var filePath, cleanPath string
 
 	if urlPath == "/" {
+		cleanPath = defaultEntry
 		filePath = filepath.Join(targetDir, defaultEntry)
 	} else {
 		// Remove leading slash
-		cleanPath := strings.TrimPrefix(urlPath, "/")
+		cleanPath = strings.TrimPrefix(urlPath, "/")
 		filePath = filepath.Join(targetDir, cleanPath)
 	}
 
@@ -139,7 +141,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	info, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
-		http.Error(w, "File Not Found: "+filePath, 404)
+		http.Error(w, "File Not Found: "+cleanPath, 404)
 		return
 	}
 

@@ -8,6 +8,10 @@
 
 > 这是引用块，用来检查 blockquote 的样式。
 
+## 图片
+
+![这是一个图片](images/handle-flow.png)
+
 ## 列表
 
 ### 无序列表
