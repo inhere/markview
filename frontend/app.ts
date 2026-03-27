@@ -144,7 +144,52 @@ const highlightTOC = () => {
     }
 };
 
-// 3. Mermaid Modal Functions
+// 3. Toolbar and Styling
+function setupToolbar() {
+    const toolbar = document.getElementById('toolbar');
+    if (!toolbar) return;
+
+    // Width Controls
+    const widthBtns = toolbar.querySelectorAll('[data-width]');
+    widthBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const width = (btn as HTMLElement).dataset.width;
+            if (width) {
+                document.documentElement.style.setProperty('--layout-max-width', width);
+                // Update active state
+                widthBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+        });
+    });
+
+    // Font Controls
+    const fontInc = document.getElementById('font-inc');
+    const fontDec = document.getElementById('font-dec');
+    let currentFontSize = 16;
+
+    const updateFont = () => {
+        document.documentElement.style.fontSize = `${currentFontSize}px`;
+    };
+
+    fontInc?.addEventListener('click', () => {
+        if (currentFontSize < 24) {
+            currentFontSize++;
+            updateFont();
+        }
+    });
+
+    fontDec?.addEventListener('click', () => {
+        if (currentFontSize > 12) {
+            currentFontSize--;
+            updateFont();
+        }
+    });
+}
+
+// 4. Mermaid Modal Functions
+let currentZoom = 1.0;
+
 window.openMermaidModal = (index: number) => {
     const container = document.getElementById('mermaid-' + index);
     if (!container) return;
@@ -156,44 +201,42 @@ window.openMermaidModal = (index: number) => {
 
     if (!modal || !modalContent) return;
 
+    // Reset Zoom
+    currentZoom = 1.0;
+
     // Clone the SVG for the modal
     const clonedSvg = originalSvg.cloneNode(true) as SVGElement;
 
     // Adjust styles for fullscreen viewing
-    // Reset dimensions to allow natural scaling, but limit to viewport if smaller
     clonedSvg.removeAttribute('width');
     clonedSvg.removeAttribute('height');
+    // Start with auto/natural size
     clonedSvg.style.width = 'auto';
     clonedSvg.style.height = 'auto';
-    clonedSvg.style.maxWidth = 'none'; // Allow it to overflow
-    clonedSvg.style.minWidth = '100%'; // Ensure it fills at least width if smaller
+    clonedSvg.style.maxWidth = 'none'; 
+    clonedSvg.style.minWidth = '0'; // Allow shrinking
     
-    // Check if SVG is taller than viewport
-    // We need to use type assertion carefully as Element doesn't have getBBox
+    // Check dimensions
     const graphicsElement = originalSvg as unknown as SVGGraphicsElement;
     
-    // Default to centering
+    // Default alignment
     modalContent.style.alignItems = 'center';
     modalContent.style.justifyContent = 'center';
-    modalContent.style.overflow = 'auto'; // Always allow scroll
 
     try {
-        // Check if getBBox exists and is a function before calling
         if (typeof graphicsElement.getBBox === 'function') {
             const bbox = graphicsElement.getBBox();
             
-            // Heuristic: If SVG is very tall, align top to allow scrolling
-            // If we center a very tall SVG, the top part gets cut off and is unreachable
+            // If tall, align top
             if (bbox.height > window.innerHeight - 80) {
                  modalContent.style.alignItems = 'flex-start';
-                 // Remove height constraint to allow full expansion
                  clonedSvg.style.height = 'auto'; 
             } else {
-                 // If it fits, we can let it be max 100% height to fit screen
-                 clonedSvg.style.maxHeight = '95vh';
+                 // Fit screen height initially if it's not too tall
+                 clonedSvg.style.maxHeight = '90vh';
             }
 
-            // If SVG is very wide, align left
+            // If wide, align left
             if (bbox.width > window.innerWidth - 80) {
                  modalContent.style.justifyContent = 'flex-start';
             }
@@ -204,9 +247,86 @@ window.openMermaidModal = (index: number) => {
 
     modalContent.innerHTML = '';
     modalContent.appendChild(clonedSvg);
+    
+    // Create/Update Controls
+    let controls = document.getElementById('mermaid-modal-controls');
+    
+    // Always remove and recreate to bind new SVG listeners
+    if (controls) controls.remove();
+    
+    controls = document.createElement('div');
+    controls.id = 'mermaid-modal-controls';
+    controls.className = 'mermaid-modal-controls';
+    controls.innerHTML = `
+        <button class="mermaid-control-btn" id="zoom-out" title="Zoom Out">-</button>
+        <span class="mermaid-zoom-level" id="mermaid-zoom-level">100%</span>
+        <button class="mermaid-control-btn" id="zoom-in" title="Zoom In">+</button>
+    `;
+    modal.appendChild(controls);
+    
+    // Add listeners
+    const zoomInBtn = document.getElementById('zoom-in');
+    const zoomOutBtn = document.getElementById('zoom-out');
+
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentZoom < 2.0) {
+                currentZoom = Math.round((currentZoom + 0.05) * 100) / 100;
+                updateZoomLevel(clonedSvg, currentZoom);
+            }
+        });
+    }
+    
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentZoom > 0.5) {
+                currentZoom = Math.round((currentZoom - 0.05) * 100) / 100;
+                updateZoomLevel(clonedSvg, currentZoom);
+            }
+        });
+    }
+
     modal.classList.add('active');
-    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
 };
+
+// Helper for zoom updates
+function updateZoomLevel(svg: SVGElement, zoom: number) {
+    const label = document.getElementById('mermaid-zoom-level');
+    if (label) label.textContent = Math.round(zoom * 100) + '%';
+    
+    if (zoom === 1.0) {
+        // Reset to initial state logic
+        svg.style.width = 'auto';
+        svg.style.height = 'auto';
+        svg.style.minWidth = '0';
+        svg.style.maxWidth = 'none';
+        
+        // Re-apply height constraint if it fits screen
+        const graphicsElement = svg as unknown as SVGGraphicsElement;
+         try {
+            if (typeof graphicsElement.getBBox === 'function') {
+                const bbox = graphicsElement.getBBox();
+                if (bbox.height < window.innerHeight - 80) {
+                     svg.style.maxHeight = '90vh';
+                } else {
+                     svg.style.maxHeight = 'none';
+                }
+            }
+        } catch (e) {}
+    } else {
+        // Apply percentage width relative to viewport
+        svg.style.width = Math.round(zoom * 100) + '%';
+        svg.style.maxHeight = 'none';
+        svg.style.height = 'auto';
+    }
+}
+
+function updateZoom(svg: SVGElement) {
+    // Legacy stub, replaced by updateZoomLevel
+}
 
 window.closeMermaidModal = () => {
     const modal = document.getElementById('mermaid-modal');
@@ -221,7 +341,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') window.closeMermaidModal();
 });
 
-// 4. SSE for Auto Reload
+// 5. SSE for Auto Reload
 const evtSource = new EventSource("/sse");
 const liveDot = document.getElementById('live-dot');
 const statusText = document.getElementById('status-text');
@@ -239,12 +359,44 @@ evtSource.onerror = () => {
     if (statusText) statusText.innerText = 'Disconnected';
 };
 
-
 // Initialization
 document.addEventListener('DOMContentLoaded', async () => {
+    setupToolbar();
     generateTOC();
     window.addEventListener('scroll', highlightTOC);
     
     // Start async init
     await init();
 });
+
+// Helper for zoom updates
+function updateZoomLevel(svg: SVGElement, zoom: number) {
+    const label = document.getElementById('mermaid-zoom-level');
+    if (label) label.textContent = Math.round(zoom * 100) + '%';
+    
+    if (zoom === 1.0) {
+        // Reset to initial state logic
+        svg.style.width = 'auto';
+        svg.style.height = 'auto';
+        svg.style.minWidth = '0';
+        svg.style.maxWidth = 'none';
+        
+        // Re-apply height constraint if it fits screen
+        const graphicsElement = svg as unknown as SVGGraphicsElement;
+         try {
+            if (typeof graphicsElement.getBBox === 'function') {
+                const bbox = graphicsElement.getBBox();
+                if (bbox.height < window.innerHeight - 80) {
+                     svg.style.maxHeight = '90vh';
+                } else {
+                     svg.style.maxHeight = 'none';
+                }
+            }
+        } catch (e) {}
+    } else {
+        // Apply percentage width relative to viewport
+        svg.style.width = Math.round(zoom * 100) + '%';
+        svg.style.maxHeight = 'none';
+        svg.style.height = 'auto';
+    }
+}
