@@ -40,6 +40,11 @@ var (
 	watcher      *fsnotify.Watcher
 )
 
+const (
+	DefaultPort = "6100"
+	DefaultEntry = "README.md"
+)
+
 type PageData struct {
 	Title   string
 	Content template.HTML
@@ -58,32 +63,16 @@ func main() {
 		fmt.Printf("  directory      Directory to watch (default: current dir)\n")
 		fmt.Printf("  default-entry  Default markdown file to open (default: README.md)\n\n")
 		fmt.Printf("Environment:\n")
-		fmt.Printf("  SERVER_PORT    HTTP port to listen on (default: 3000)\n")
+		fmt.Printf("  SERVER_PORT    HTTP port to listen on (default: %s)\n", DefaultPort)
 		return
 	}
 
-	cwd, _ := os.Getwd()
-	targetDir = cwd
-	if len(args) > 0 {
-		absPath, err := filepath.Abs(args[0])
-		if err == nil {
-			targetDir = absPath
-		}
-	}
-
-	defaultEntry = "README.md"
-	if len(args) > 1 {
-		defaultEntry = args[1]
-	}
-
-	port = os.Getenv("SERVER_PORT")
-	if port == "" {
-		port = "3000"
-	}
+	// - Prepare arguments
+	prepareArgs(args)
 
 	fmt.Printf("Serving directory: %s\n", targetDir)
-	fmt.Printf("Default entry: %s\n", defaultEntry)
-	fmt.Printf("Server running at http://localhost:%s\n", port)
+	fmt.Printf("Default entry file: %s\n", defaultEntry)
+	fmt.Printf("🚀 Server running at http://localhost:%s\n", port)
 
 	// 2. Watcher
 	go watchDirectory(targetDir)
@@ -99,6 +88,29 @@ func main() {
 	http.HandleFunc("/", handleRequest)
 
 	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
+
+func prepareArgs(args []string) {
+
+	cwd, _ := os.Getwd()
+	targetDir = cwd
+	if len(args) > 0 {
+		absPath, err := filepath.Abs(args[0])
+		if err == nil {
+			targetDir = absPath
+		}
+	}
+
+	defaultEntry = DefaultEntry
+	if len(args) > 1 {
+		defaultEntry = args[1]
+	}
+
+	port = os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = DefaultPort
+	}
+
 }
 
 func handleRequest(w http.ResponseWriter, r *http.Request) {
@@ -167,7 +179,7 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 	)
 
 	var buf bytes.Buffer
-	if err := md.Convert(mdData, &buf); err != nil {
+	if err = md.Convert(mdData, &buf); err != nil {
 		http.Error(w, "Failed to render markdown", 500)
 		return
 	}
