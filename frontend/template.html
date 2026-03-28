@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ .Title }} // Review</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -120,7 +121,7 @@
         }
         .toolbar-icon-btn {
             padding: 4px;
-            width: 24px;
+            min-width: 24px;
             height: 24px;
             display: flex;
             align-items: center;
@@ -143,7 +144,7 @@
             border-right: 1px solid var(--border-light);
             display: flex;
             flex-direction: column;
-            padding: 24px 0;
+            padding: 6px 0 18px;
             position: fixed; /* Stick to left */
             top: 0;
             left: 0;
@@ -151,9 +152,9 @@
         }
 
         .sidebar-header {
-            padding: 0 24px 20px;
+            padding: 0 20px;
             border-bottom: 1px solid var(--border-light);
-            margin-bottom: 16px;
+            margin-bottom: 10px;
             flex-shrink: 0;
         }
 
@@ -220,24 +221,58 @@
         .doc-meta {
             font-family: var(--font-heading);
             font-weight: 700;
-            font-size: 14px;
+            font-size: 12px;
             color: var(--text-heading);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.03em;
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 4px;
+            margin-bottom: 0;
+        }
+
+        .brand-lockup {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-divider {
+            width: 1px;
+            height: 16px;
+            background: linear-gradient(180deg, transparent 0%, var(--border-focus) 18%, var(--border-focus) 82%, transparent 100%);
+            flex-shrink: 0;
+            margin: 0 2px 0 1px;
+        }
+
+        .brand-logo {
+            width: 20px;
+            height: 20px;
+            display: block;
+            flex-shrink: 0;
+        }
+
+        .brand-wordmark {
+            font-family: var(--font-heading);
+            font-size: 0.96rem;
+            font-weight: 700;
+            letter-spacing: -0.045em;
+            background: linear-gradient(135deg, #0f62fe 0%, #0f172a 62%, #1e3a8a 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            line-height: 1;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
         }
 
         .doc-status {
             font-family: var(--font-mono);
             font-size: 11px;
+            font-weight: normal;
             color: var(--text-muted);
-            margin-top: 6px;
             display: flex;
             align-items: center;
             gap: 6px;
+            line-height: 1;
         }
 
         .live-dot {
@@ -313,9 +348,10 @@
         }
 
         .file-tree-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: 22px minmax(0, 1fr);
             align-items: center;
-            gap: 4px;
+            column-gap: 6px;
             min-height: 30px;
         }
 
@@ -362,7 +398,8 @@
         .tree-label {
             flex: 1;
             min-width: 0;
-            display: flex;
+            display: grid;
+            grid-template-columns: 16px minmax(0, 1fr);
             align-items: center;
             gap: 8px;
             padding: 6px 8px;
@@ -401,10 +438,20 @@
         }
 
         .tree-icon {
-            width: 14px;
-            height: 14px;
+            width: 16px;
+            height: 16px;
             flex-shrink: 0;
             color: currentColor;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 0;
+        }
+
+        .tree-icon svg {
+            display: block;
+            width: 16px;
+            height: 16px;
         }
 
         .tree-text {
@@ -413,7 +460,7 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             font-size: 13px;
-            line-height: 1.4;
+            line-height: 1.35;
         }
 
         .sidebar-empty {
@@ -863,6 +910,7 @@
         <div class="toolbar-group">
             <span class="toolbar-label">Font</span>
             <button class="toolbar-btn toolbar-icon-btn" id="font-dec" title="Decrease Font">-</button>
+            <button class="toolbar-btn" id="font-reset" title="Reset Font">Reset</button>
             <button class="toolbar-btn toolbar-icon-btn" id="font-inc" title="Increase Font">+</button>
         </div>
     </div>
@@ -871,12 +919,15 @@
     <aside class="sidebar">
         <div class="sidebar-header">
             <div class="doc-meta">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-primary);"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                MARKVIEW
-            </div>
-            <div class="doc-status">
+                <div class="brand-lockup" aria-label="MarkView">
+                    <img src="/static/logo.svg" alt="" class="brand-logo">
+                    <span class="brand-wordmark">MarkView</span>
+                </div>
+                <span class="brand-divider" aria-hidden="true"></span>
+                <div class="doc-status">
                 <div class="live-dot" id="live-dot"></div>
-                <span id="status-text">Connected</span>
+                <span id="status-text">Live</span>
+                </div>
             </div>
         </div>
         <div class="sidebar-panels">

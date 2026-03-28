@@ -21,6 +21,15 @@ import {
     type PageSnapshot,
 } from './page';
 import {
+    DEFAULT_FONT_SIZE,
+    MAX_FONT_SIZE,
+    MIN_FONT_SIZE,
+    persistFontSize,
+    persistLayoutWidth,
+    readStoredPreferences,
+    type LayoutWidth,
+} from './preferences';
+import {
     generateTOC,
     highlightTOC,
     renderFileTree,
@@ -113,39 +122,43 @@ function setupToolbar() {
     }
 
     const widthButtons = toolbar.querySelectorAll('[data-width]');
+    const fontReset = document.getElementById('font-reset');
     widthButtons.forEach(button => {
         button.addEventListener('click', () => {
-            const width = (button as HTMLElement).dataset.width;
+            const width = (button as HTMLElement).dataset.width as LayoutWidth | undefined;
             if (!width) {
                 return;
             }
 
-            document.documentElement.style.setProperty('--layout-max-width', width);
-            widthButtons.forEach(node => node.classList.remove('active'));
-            button.classList.add('active');
+            applyLayoutWidth(widthButtons, width);
         });
     });
 
     const fontIncrease = document.getElementById('font-inc');
     const fontDecrease = document.getElementById('font-dec');
-    let currentFontSize = 16;
+    const storedPreferences = readStoredPreferences();
+    let currentFontSize = storedPreferences.fontSize;
 
-    const updateFont = () => {
-        document.documentElement.style.fontSize = `${currentFontSize}px`;
-    };
+    applyLayoutWidth(widthButtons, storedPreferences.layoutWidth);
+    applyFontSize(currentFontSize);
 
     fontIncrease?.addEventListener('click', () => {
-        if (currentFontSize < 24) {
+        if (currentFontSize < MAX_FONT_SIZE) {
             currentFontSize++;
-            updateFont();
+            applyFontSize(currentFontSize);
         }
     });
 
     fontDecrease?.addEventListener('click', () => {
-        if (currentFontSize > 12) {
+        if (currentFontSize > MIN_FONT_SIZE) {
             currentFontSize--;
-            updateFont();
+            applyFontSize(currentFontSize);
         }
+    });
+
+    fontReset?.addEventListener('click', () => {
+        currentFontSize = DEFAULT_FONT_SIZE;
+        applyFontSize(currentFontSize);
     });
 }
 
@@ -354,17 +367,30 @@ function setupOnce() {
             if (statusText) statusText.innerText = 'Syncing...';
             void refreshCurrentPage().finally(() => {
                 if (liveDot) liveDot.classList.remove('reloading');
-                if (statusText) statusText.innerText = 'Connected';
+                if (statusText) statusText.innerText = 'Live';
             });
         }
     };
 
     evtSource.onerror = () => {
         if (liveDot) liveDot.style.backgroundColor = 'var(--status-warn)';
-        if (statusText) statusText.innerText = 'Disconnected';
+        if (statusText) statusText.innerText = 'Offline';
     };
 
     setupCompleted = true;
+}
+
+function applyLayoutWidth(widthButtons: NodeListOf<Element>, width: LayoutWidth) {
+    document.documentElement.style.setProperty('--layout-max-width', width);
+    persistLayoutWidth(width);
+    widthButtons.forEach(node => {
+        node.classList.toggle('active', (node as HTMLElement).dataset.width === width);
+    });
+}
+
+function applyFontSize(fontSize: number) {
+    document.documentElement.style.fontSize = `${fontSize}px`;
+    persistFontSize(fontSize);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import {
     buildContentBaseURL,
+    buildHeadingAnchorId,
     escapeHtml,
     isAlreadyAbsoluteURL,
     isInlineNavigablePath,
+    toDisplaySlug,
 } from './util';
 
 describe('frontend util', () => {
@@ -33,5 +35,20 @@ describe('frontend util', () => {
         expect(isInlineNavigablePath('/example')).toBe(true);
         expect(isInlineNavigablePath('/example/basics.md')).toBe(true);
         expect(isInlineNavigablePath('/assets/logo.png')).toBe(false);
+    });
+
+    test('buildHeadingAnchorId keeps readable slug for ascii headings', () => {
+        expect(buildHeadingAnchorId('1.2 Product Positioning')).toBe('1-2-product-positioning');
+        expect(toDisplaySlug('API Design')).toBe('api-design');
+    });
+
+    test('buildHeadingAnchorId preserves numeric separators for mixed chinese headings', () => {
+        const anchorId = buildHeadingAnchorId('1.2 产品定位');
+        expect(anchorId).toMatch(/^1-2-[a-z0-9]{6}$/);
+    });
+
+    test('buildHeadingAnchorId uses indexed prefix for chinese-only headings', () => {
+        const anchorId = buildHeadingAnchorId('产品定位', 3);
+        expect(anchorId).toMatch(/^i3-[a-z0-9]{6}$/);
     });
 });

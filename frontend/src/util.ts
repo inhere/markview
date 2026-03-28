@@ -7,6 +7,52 @@ export function escapeHtml(value: string) {
         .replaceAll("'", '&#39;');
 }
 
+export function toDisplaySlug(value: string) {
+    return value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+}
+
+export function buildHeadingAnchorId(value: string, fallbackIndex?: number) {
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return fallbackIndex === undefined ? 'section' : `section-${fallbackIndex}`;
+    }
+
+    if (!containsCJK(trimmed)) {
+        return toDisplaySlug(trimmed) || (fallbackIndex === undefined ? 'section' : `section-${fallbackIndex}`);
+    }
+
+    const asciiPrefix = trimmed
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[\u3400-\u9fff]/g, ' ')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+    const prefix = asciiPrefix || (fallbackIndex === undefined ? 'index' : `i${fallbackIndex}`);
+    return `${prefix}-${shortHash(trimmed)}`;
+}
+
+export function ensureUniqueId(baseId: string, usedIds: Set<string>) {
+    if (!usedIds.has(baseId)) {
+        usedIds.add(baseId);
+        return baseId;
+    }
+
+    let suffix = 2;
+    while (usedIds.has(`${baseId}-${suffix}`)) {
+        suffix++;
+    }
+
+    const uniqueId = `${baseId}-${suffix}`;
+    usedIds.add(uniqueId);
+    return uniqueId;
+}
+
 export function readJSONScript<T>(id: string): T | null {
     const element = document.getElementById(id);
     if (!element?.textContent) {
@@ -101,4 +147,19 @@ export function folderIcon() {
 
 export function fileIcon() {
     return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
+}
+
+function containsCJK(value: string) {
+    return /[\u3400-\u9fff]/.test(value);
+}
+
+function shortHash(value: string) {
+    let hash = 2166136261;
+
+    for (const char of value) {
+        hash ^= char.codePointAt(0) ?? 0;
+        hash = Math.imul(hash, 16777619);
+    }
+
+    return (hash >>> 0).toString(36).slice(0, 6).padStart(6, '0');
 }

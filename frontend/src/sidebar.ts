@@ -1,5 +1,7 @@
 import {
+    buildHeadingAnchorId,
     chevronIcon,
+    ensureUniqueId,
     fileIcon,
     folderIcon,
     readJSONScript,
@@ -23,6 +25,7 @@ interface RenderFileTreeOptions {
 export function generateTOC(contentSelector = '#content', tocListId = 'toc-list') {
     const tocList = document.getElementById(tocListId);
     const headers = document.querySelectorAll(`${contentSelector} h1, ${contentSelector} h2, ${contentSelector} h3`);
+    const usedIds = new Set<string>();
 
     if (!tocList) {
         return;
@@ -39,12 +42,16 @@ export function generateTOC(contentSelector = '#content', tocListId = 'toc-list'
     }
 
     headers.forEach((header, index) => {
-        if (!header.id) {
-            const friendlyId = (header as HTMLElement).innerText
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/(^-|-$)/g, '');
-            header.id = friendlyId || `section-${index}`;
+        const headingText = (header as HTMLElement).innerText.trim();
+        const previousId = header.id;
+        const baseId = buildHeadingAnchorId(headingText, index);
+        header.id = ensureUniqueId(baseId, usedIds);
+        if (previousId && previousId !== header.id) {
+            document.querySelectorAll(`${contentSelector} a[href="#${CSS.escape(previousId)}"]`).forEach(link => {
+                if (link instanceof HTMLAnchorElement) {
+                    link.href = `#${header.id}`;
+                }
+            });
         }
 
         let level = 'h1';
