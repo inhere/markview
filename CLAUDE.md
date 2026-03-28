@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `make help` — show available make targets.
 - `make build` — build the frontend bundle first, then compile `markview.exe`.
-- `make frontend` — install frontend deps if needed and bundle `frontend/app.ts` into `frontend/dist` with Bun.
+- `make frontend` — install frontend deps if needed and bundle `frontend/src/app.ts` into `frontend/dist` with Bun.
 - `make backend` — compile the Go binary only.
 - `make run` — build everything and run the local server.
 - `make install` — build frontend assets and install the Go binary to `GOPATH/bin`.
@@ -69,9 +69,9 @@ This is why both the renderer settings in `main.go` and the DOM logic in the fro
 The frontend is split between:
 
 - `frontend/template.html` — page shell, layout, sidebar, toolbar, modal markup, and most CSS.
-- `frontend/app.ts` — runtime behavior.
+- `frontend/src/app.ts` — runtime behavior.
 
-`frontend/app.ts` is responsible for:
+`frontend/src/app.ts` is responsible for:
 
 - dynamic loading of Mermaid and Highlight.js,
 - registering syntax highlight languages,
@@ -97,7 +97,7 @@ If a change affects template or frontend bundle behavior, rebuilding the app is 
 ## Repo structure
 
 - `main.go` — backend server, markdown rendering, SSE, and file watching.
-- `frontend/app.ts` — client-side behavior.
+- `frontend/src/app.ts` — client-side behavior.
 - `frontend/template.html` — embedded HTML/CSS template.
 - `frontend/dist/` — Bun build output embedded into the Go binary.
 - `assets/` — static project assets.
@@ -109,4 +109,4 @@ If a change affects template or frontend bundle behavior, rebuilding the app is 
 - Be careful when editing request-path handling in `main.go`; the `filepath.Rel` check is the main path traversal guard.
 - Frontend and backend changes are coupled through the embedded asset pipeline, so verify both Bun build output and Go rebuilds when touching UI behavior.
 - Keep diffs minimal. Do not proactively delete or rewrite existing comments, whitespace, or surrounding structure unless the user asked for cleanup or the comment is no longer accurate after the code change.
-- When editing `frontend/app.ts`, `frontend/template.html`, or other user-facing files, prefer targeted line edits over large block replacements so review stays focused and `git blame` noise stays low.
+- When editing `frontend/src/app.ts`, `frontend/template.html`, or other user-facing files, prefer targeted line edits over large block replacements so review stays focused and `git blame` noise stays low.

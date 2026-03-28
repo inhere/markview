@@ -58,7 +58,8 @@ $env:SERVER_PORT = "8080"; .\markview.exe
 ```
 markview/
 ├── frontend/           # TypeScript frontend
-│   ├── app.ts          # Main client logic (Mermaid, TOC, SSE)
+│   ├── src/
+│   │   ├── app.ts      # Main client logic (navigation, orchestration)
 │   ├── template.html   # Go HTML template
 │   └── package.json    # Frontend dependencies
 ├── main.go             # Go backend server
