@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"html/template"
@@ -17,13 +16,9 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/gookit/goutil/envutil"
 	"github.com/gookit/goutil/x/clog"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
 )
 
-//go:embed frontend/template.html frontend/dist
+//go:embed frontend/template.html frontend/highlight.css frontend/dist
 var content embed.FS
 
 // Build-time variables injected via -ldflags
@@ -48,18 +43,20 @@ const (
 )
 
 const (
-	EnvPort      = "MKVIEW_PORT"
-	EnvEntry     = "MKVIEW_ENTRY"
+	EnvPort  = "MKVIEW_PORT"
+	EnvEntry = "MKVIEW_ENTRY"
 )
 
 type PageData struct {
-	Title      string
-	Content    template.HTML
-	FileName   string
-	FilePath   string
-	FileSize   string
-	CreatedAt  string
-	ModifiedAt string
+	Title               string
+	Content             template.HTML
+	FileName            string
+	FilePath            string
+	FileSize            string
+	CreatedAt           string
+	ModifiedAt          string
+	FileTreeJSON        template.JS
+	CurrentFilePathJSON template.JS
 }
 
 func main() {
@@ -80,17 +77,44 @@ func main() {
 	// 2. Watcher
 	go watchDirectory(targetDir)
 
-	// 3. HTTP Server
+	log.Fatal(http.ListenAndServe(":"+port, newServerMux()))
+}
+
+func newServerMux() *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.Handle("/static/", newStaticHandler())
+	mux.HandleFunc("/sse", handleSSE)
+	mux.HandleFunc("/", handleRequest)
+	return mux
+}
+
+func newStaticHandler() http.Handler {
 	distFS, err := fs.Sub(content, "frontend/dist")
 	if err != nil {
-		log.Fatal(err)
+		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		})
 	}
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(distFS))))
 
-	http.HandleFunc("/sse", handleSSE)
-	http.HandleFunc("/", handleRequest)
+	distHandler := http.StripPrefix("/static/", http.FileServer(http.FS(distFS)))
 
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		setStaticCacheHeaders(w)
+
+		if r.URL.Path == "/static/highlight.css" {
+			data, readErr := content.ReadFile("frontend/highlight.css")
+			if readErr != nil {
+				http.Error(w, "highlight stylesheet not found", http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "text/css; charset=utf-8")
+			_, _ = w.Write(data)
+			return
+		}
+
+		distHandler.ServeHTTP(w, r)
+	})
 }
 
 func showHelp() {
@@ -133,155 +157,6 @@ func prepareArgs(args []string) {
 	port = envutil.Getenv(EnvPort, DefaultPort)
 }
 
-// handleRequest .md 文件会渲染为 HTML 页面，其他文件会直接返回
-func handleRequest(w http.ResponseWriter, r *http.Request) {
-	urlPath := r.URL.Path
-	var filePath, cleanPath string
-
-	if urlPath == "/" {
-		cleanPath = defaultEntry
-		filePath = filepath.Join(targetDir, defaultEntry)
-	} else {
-		// Remove leading slash
-		cleanPath = strings.TrimPrefix(urlPath, "/")
-		filePath = filepath.Join(targetDir, cleanPath)
-	}
-
-	// Security check
-	rel, err := filepath.Rel(targetDir, filePath)
-	if err != nil || strings.HasPrefix(rel, "..") {
-		http.Error(w, "Access Denied", 403)
-		return
-	}
-
-	info, err := os.Stat(filePath)
-	if os.IsNotExist(err) {
-		http.Error(w, "File Not Found: "+cleanPath, 404)
-		return
-	}
-
-	if info.IsDir() {
-		// Serve index.md if exists in directory
-		indexPath := filepath.Join(filePath, "index.md")
-		if _, err := os.Stat(indexPath); err == nil {
-			filePath = indexPath
-		} else {
-			// List directory? For now just 404
-			http.Error(w, "Directory listing not supported", 404)
-			return
-		}
-	}
-
-	if strings.HasSuffix(strings.ToLower(filePath), ".md") {
-		renderMarkdown(w, filePath)
-		return
-	}
-
-	// Serve static file
-	http.ServeFile(w, r, filePath)
-}
-
-func renderMarkdown(w http.ResponseWriter, filePath string) {
-	info, err := os.Stat(filePath)
-	if err != nil {
-		http.Error(w, "Failed to stat file", 500)
-		return
-	}
-
-	mdData, err := os.ReadFile(filePath)
-	if err != nil {
-		http.Error(w, "Failed to read file", 500)
-		return
-	}
-
-	// Configure goldmark
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-		),
-		goldmark.WithRendererOptions(
-			html.WithHardWraps(),
-			html.WithUnsafe(), // Allow raw HTML
-		),
-	)
-
-	var buf bytes.Buffer
-	if err = md.Convert(mdData, &buf); err != nil {
-		http.Error(w, "Failed to render markdown", 500)
-		return
-	}
-
-	// Read template
-	tmplData, err := content.ReadFile("frontend/template.html")
-	if err != nil {
-		http.Error(w, "Template not found", 500)
-		return
-	}
-
-	// Use html/template properly
-	t := template.Must(template.New("index").Parse(string(tmplData)))
-
-	fileName := filepath.Base(filePath)
-	createdAt := "Unavailable"
-	if created := fileCreatedTime(info); !created.IsZero() {
-		createdAt = formatTimestamp(created)
-	}
-
-	data := PageData{
-		Title:      fileName,
-		Content:    template.HTML(buf.String()),
-		FileName:   fileName,
-		FilePath:   filePath,
-		FileSize:   formatFileSize(info.Size()),
-		CreatedAt:  createdAt,
-		ModifiedAt: formatTimestamp(info.ModTime()),
-	}
-
-	w.Header().Set("Content-Type", "text/html")
-	t.Execute(w, data)
-}
-
-func handleSSE(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	clientChan := make(chan string)
-
-	clientsMu.Lock()
-	clients[clientChan] = true
-	clientsMu.Unlock()
-
-	defer func() {
-		clientsMu.Lock()
-		delete(clients, clientChan)
-		clientsMu.Unlock()
-		close(clientChan)
-	}()
-
-	notify := r.Context().Done()
-
-	for {
-		select {
-		case <-notify:
-			return
-		case msg := <-clientChan:
-			fmt.Fprintf(w, "data: %s\n\n", msg)
-			if f, ok := w.(http.Flusher); ok {
-				f.Flush()
-			}
-		case <-time.After(15 * time.Second):
-			// Keep alive
-			fmt.Fprintf(w, ": keepalive\n\n")
-			if f, ok := w.(http.Flusher); ok {
-				f.Flush()
-			}
-		}
-	}
-}
-
 func watchDirectory(dir string) {
 	var err error
 	watcher, err = fsnotify.NewWatcher()
@@ -307,7 +182,7 @@ func watchDirectory(dir string) {
 	})
 
 	if err != nil {
-		log.Println("Error walking directory:", err)
+		clog.Error("Error walking directory:", err)
 	}
 
 	for {
@@ -318,7 +193,7 @@ func watchDirectory(dir string) {
 			}
 			if event.Has(fsnotify.Write) {
 				if strings.HasSuffix(event.Name, ".md") {
-					log.Println("WATCH: Modified file:", event.Name)
+					clog.Warnf("WATCH: Modified file: %s", event.Name)
 					broadcast("reload")
 				}
 			}
@@ -332,7 +207,7 @@ func watchDirectory(dir string) {
 			if !ok {
 				return
 			}
-			log.Println("WATCH: Watcher error:", err)
+			clog.Errorf("WATCH: Watcher error: %v", err)
 		}
 	}
 }

@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 
     <!-- Syntax Highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <link rel="stylesheet" href="/static/highlight.css">
 
     <style>
         :root {
@@ -157,6 +157,66 @@
             flex-shrink: 0;
         }
 
+        .sidebar-panels {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 0 10px 10px;
+            gap: 10px;
+        }
+
+        .sidebar-panel {
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            background:
+                linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(255, 255, 255, 1) 34%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+            overflow: hidden;
+        }
+
+        .sidebar-panel-files {
+            flex: 1;
+        }
+
+        .sidebar-panel-toc {
+            flex: 2;
+        }
+
+        .sidebar-section-title {
+            padding: 14px 16px 12px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(8px);
+        }
+
+        .sidebar-section-title::after {
+            content: "";
+            width: 28px;
+            height: 1px;
+            background: linear-gradient(90deg, var(--accent-border), transparent);
+        }
+
+        .sidebar-scroll {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 10px 10px 12px;
+            scrollbar-width: thin;
+        }
+
         .doc-meta {
             font-family: var(--font-heading);
             font-weight: 700;
@@ -195,13 +255,6 @@
         }
 
         @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-
-        .toc-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0 12px;
-            scrollbar-width: thin;
-        }
 
         .toc-list {
             list-style: none;
@@ -243,6 +296,131 @@
         .toc-h1 { font-weight: 600; color: var(--text-heading); margin-top: 16px; margin-bottom: 8px; }
         .toc-h2 { padding-left: 24px; }
         .toc-h3 { padding-left: 36px; font-size: 12px; }
+
+        .file-tree-list,
+        .file-tree-children {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .file-tree-node {
+            margin-bottom: 2px;
+        }
+
+        .file-tree-node.branch-active > .file-tree-children {
+            border-left-color: var(--accent-border);
+        }
+
+        .file-tree-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-height: 30px;
+        }
+
+        .file-tree-children {
+            margin-left: 12px;
+            padding-left: 10px;
+            border-left: 1px solid var(--border-light);
+        }
+
+        .tree-toggle {
+            width: 22px;
+            height: 22px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+        }
+
+        .tree-toggle:hover {
+            background: var(--bg-canvas);
+            color: var(--text-heading);
+        }
+
+        .tree-toggle.expanded svg {
+            transform: rotate(90deg);
+        }
+
+        .tree-toggle svg {
+            transition: transform 0.15s ease;
+        }
+
+        .tree-toggle.placeholder {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .tree-link,
+        .tree-label {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+        }
+
+        .tree-link:hover,
+        .tree-label:hover {
+            background: var(--bg-canvas);
+            color: var(--text-heading);
+        }
+
+        .tree-link.active,
+        .tree-label.active {
+            color: var(--accent-primary);
+            background: var(--accent-subtle);
+            border-color: var(--accent-border);
+            font-weight: 600;
+            box-shadow: inset 3px 0 0 var(--accent-primary);
+        }
+
+        .tree-link.ancestor,
+        .tree-label.ancestor {
+            color: var(--text-heading);
+            background: rgba(15, 98, 254, 0.06);
+            border-color: rgba(191, 219, 254, 0.65);
+        }
+
+        .tree-link.ancestor .tree-icon,
+        .tree-label.ancestor .tree-icon {
+            color: var(--accent-primary);
+        }
+
+        .tree-icon {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            color: currentColor;
+        }
+
+        .tree-text {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .sidebar-empty {
+            color: var(--text-muted);
+            font-size: 13px;
+            padding: 6px 12px;
+        }
 
         /* --- Main Content: Natural Flow --- */
         .content-wrapper {
@@ -701,8 +879,17 @@
                 <span id="status-text">Connected</span>
             </div>
         </div>
-        <div class="toc-container">
-            <ul class="toc-list" id="toc-list"></ul>
+        <div class="sidebar-panels">
+            <section class="sidebar-panel sidebar-panel-files">
+                <div class="sidebar-section-title">Files</div>
+                <div class="sidebar-scroll" id="file-tree"></div>
+            </section>
+            <section class="sidebar-panel sidebar-panel-toc">
+                <div class="sidebar-section-title">On This Page</div>
+                <div class="sidebar-scroll toc-container">
+                    <ul class="toc-list" id="toc-list"></ul>
+                </div>
+            </section>
         </div>
     </aside>
 
@@ -713,7 +900,7 @@
                 {{ .Content }}
             </article>
 
-            <div class="file-meta">
+            <div class="file-meta" id="file-meta">
                 <div class="file-meta-line">
                     <span><strong>{{ .FileName }}</strong></span>
                     <span class="file-meta-sep">•</span>
@@ -735,6 +922,8 @@
     </div>
 
     <!-- Main Application Script -->
+    <script id="file-tree-data" type="application/json">{{ .FileTreeJSON }}</script>
+    <script id="current-file-path-data" type="application/json">{{ .CurrentFilePathJSON }}</script>
     <script type="module" src="/static/app.js"></script>
 </body>
 </html>
