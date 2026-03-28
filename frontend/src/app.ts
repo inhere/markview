@@ -14,6 +14,8 @@ import yaml from 'highlight.js/lib/languages/yaml';
 import sql from 'highlight.js/lib/languages/sql';
 import python from 'highlight.js/lib/languages/python';
 import rust from 'highlight.js/lib/languages/rust';
+import powershell from 'highlight.js/lib/languages/powershell';
+import { setupLiveReloadStatus } from './live-status';
 import { enhanceMermaidContent, setupMermaidModal } from './mermaid';
 import {
     applyPageSnapshot,
@@ -88,6 +90,7 @@ function ensureHighlightLanguages() {
     hljs.registerLanguage('sql', sql);
     hljs.registerLanguage('python', python);
     hljs.registerLanguage('rust', rust);
+    hljs.registerLanguage('powershell', powershell);
 
     highlightReady = true;
 }
@@ -360,22 +363,7 @@ function setupOnce() {
     const evtSource = new EventSource('/sse');
     const liveDot = document.getElementById('live-dot');
     const statusText = document.getElementById('status-text');
-
-    evtSource.onmessage = event => {
-        if (event.data === 'reload') {
-            if (liveDot) liveDot.classList.add('reloading');
-            if (statusText) statusText.innerText = 'Syncing...';
-            void refreshCurrentPage().finally(() => {
-                if (liveDot) liveDot.classList.remove('reloading');
-                if (statusText) statusText.innerText = 'Live';
-            });
-        }
-    };
-
-    evtSource.onerror = () => {
-        if (liveDot) liveDot.style.backgroundColor = 'var(--status-warn)';
-        if (statusText) statusText.innerText = 'Offline';
-    };
+    setupLiveReloadStatus(evtSource, liveDot, statusText, refreshCurrentPage);
 
     setupCompleted = true;
 }

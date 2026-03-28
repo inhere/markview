@@ -203,6 +203,29 @@
             backdrop-filter: blur(8px);
         }
 
+        .sidebar-section-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .sidebar-section-icon {
+            width: 14px;
+            height: 14px;
+            color: var(--accent-primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-section-icon svg {
+            width: 14px;
+            height: 14px;
+            display: block;
+        }
+
         .sidebar-section-title::after {
             content: "";
             width: 28px;
@@ -298,13 +321,12 @@
         }
 
         .toc-item {
-            margin-bottom: 4px;
+            margin-bottom: 0;
         }
 
         .toc-link {
             display: block;
             padding: 6px 12px;
-            border-radius: 6px;
             text-decoration: none;
             font-size: 13px;
             color: var(--text-muted);
@@ -328,7 +350,7 @@
             border-left-color: var(--accent-primary);
         }
 
-        .toc-h1 { font-weight: 600; color: var(--text-heading); margin-top: 16px; margin-bottom: 8px; }
+        .toc-h1 { font-weight: 600; color: var(--text-heading); margin-bottom: 8px; }
         .toc-h2 { padding-left: 24px; }
         .toc-h3 { padding-left: 36px; font-size: 12px; }
 
@@ -403,7 +425,6 @@
             align-items: center;
             gap: 8px;
             padding: 6px 8px;
-            border-radius: 6px;
             color: var(--text-muted);
             text-decoration: none;
             border: 1px solid transparent;
@@ -879,13 +900,14 @@
             color: var(--text-muted);
             font-size: 12px;
             line-height: 1.6;
-            text-align: left;
+            text-align: center;
         }
         .file-meta-line {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
             align-items: center;
+            justify-content: center;
         }
         .file-meta-sep {
             color: var(--border-focus);
@@ -932,11 +954,25 @@
         </div>
         <div class="sidebar-panels">
             <section class="sidebar-panel sidebar-panel-files">
-                <div class="sidebar-section-title">Files</div>
+                <div class="sidebar-section-title">
+                    <span class="sidebar-section-label">
+                        <span class="sidebar-section-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        </span>
+                        <span>Files</span>
+                    </span>
+                </div>
                 <div class="sidebar-scroll" id="file-tree"></div>
             </section>
             <section class="sidebar-panel sidebar-panel-toc">
-                <div class="sidebar-section-title">On This Page</div>
+                <div class="sidebar-section-title">
+                    <span class="sidebar-section-label">
+                        <span class="sidebar-section-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"></circle></svg>
+                        </span>
+                        <span>On This Page</span>
+                    </span>
+                </div>
                 <div class="sidebar-scroll toc-container">
                     <ul class="toc-list" id="toc-list"></ul>
                 </div>

@@ -63,8 +63,10 @@ export function generateTOC(contentSelector = '#content', tocListId = 'toc-list'
 
         const anchor = document.createElement('a');
         anchor.href = `#${header.id}`;
-        anchor.innerText = (header as HTMLElement).innerText;
+        anchor.innerText = headingText;
         anchor.className = `toc-link toc-${level}`;
+        anchor.title = headingText;
+        anchor.setAttribute('aria-label', headingText);
 
         li.appendChild(anchor);
         tocList.appendChild(li);
@@ -170,7 +172,9 @@ function createTreeNode(node: FileTreeNode, currentFilePath: string): HTMLLIElem
 
     const isActive = Boolean(node.matchPath && node.matchPath === currentFilePath);
     const content = node.navigable && node.href ? document.createElement('a') : document.createElement('span');
+    const tooltipText = node.matchPath || node.name;
     content.className = node.navigable && node.href ? 'tree-link' : 'tree-label';
+    content.title = tooltipText;
     if (isActive) {
         content.classList.add('active');
     } else if (isInCurrentBranch && hasChildren) {
@@ -179,6 +183,7 @@ function createTreeNode(node: FileTreeNode, currentFilePath: string): HTMLLIElem
 
     if (content instanceof HTMLAnchorElement && node.href) {
         content.href = node.href;
+        content.setAttribute('aria-label', tooltipText);
     }
 
     const icon = document.createElement('span');
