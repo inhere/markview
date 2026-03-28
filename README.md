@@ -87,7 +87,7 @@ go build --ldflags "-w -s" -o markview.exe
 go install -ldflags "-s -w" .
 ```
 
-> The `//go:embed` directive will automatically include `frontend/app.js` and `frontend/template.html` into the binary.
+> The `//go:embed` directive will automatically include `frontend/dist` and `frontend/template.html` into the binary.
 
 ## License
 

@@ -18,7 +18,7 @@ import (
 	"github.com/gookit/goutil/x/clog"
 )
 
-//go:embed frontend/template.html frontend/highlight.css frontend/dist
+//go:embed frontend/template.html frontend/dist
 var content embed.FS
 
 // Build-time variables injected via -ldflags
@@ -100,19 +100,6 @@ func newStaticHandler() http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		setStaticCacheHeaders(w)
-
-		if r.URL.Path == "/static/highlight.css" {
-			data, readErr := content.ReadFile("frontend/highlight.css")
-			if readErr != nil {
-				http.Error(w, "highlight stylesheet not found", http.StatusInternalServerError)
-				return
-			}
-
-			w.Header().Set("Content-Type", "text/css; charset=utf-8")
-			_, _ = w.Write(data)
-			return
-		}
-
 		distHandler.ServeHTTP(w, r)
 	})
 }
