@@ -67,6 +67,11 @@ func main() {
 		return
 	}
 
+	clog.Configure(func(p *clog.Printer) {
+		p.TimeFormat = "15:04:05"
+		p.Template = "{time} | {emoji} {message}"
+	})
+
 	// - Prepare arguments
 	prepareArgs(args)
 
