@@ -4,5 +4,6 @@ frontend/dist/
 dist/
 *.exe
 .omc/
+.agents/
 .claude/
 .tmp/
