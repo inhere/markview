@@ -11,6 +11,9 @@ const STATIC_RESOURCE_EXTENSIONS = [
     '.mp4', '.webm', '.mp3', '.ogg', '.wav', '.pdf', '.zip', '.tar', '.gz'
 ];
 
+// iframe 加载超时 (毫秒)
+const IFRAME_TIMEOUT_MS = 8000;
+
 function shouldShowPreviewButton(anchor: HTMLAnchorElement): boolean {
     const href = anchor.getAttribute('href');
     if (!href) return false;
@@ -254,5 +257,43 @@ function showErrorState(): void {
 }
 
 function loadExternalContent(url: string): void {
-    console.log('Loading external content:', url);
+    const panel = document.getElementById('preview-panel');
+    if (!panel) return;
+    
+    const bodyEl = panel.querySelector('.preview-body');
+    const loadingEl = panel.querySelector('.preview-loading');
+    
+    if (!bodyEl) return;
+    
+    const iframe = document.createElement('iframe');
+    iframe.src = url;
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    iframe.title = 'Preview';
+    
+    let loaded = false;
+    const timeoutId = setTimeout(() => {
+        if (!loaded) {
+            console.warn('iframe load timeout for:', url);
+            iframe.remove();
+            showErrorState();
+        }
+    }, IFRAME_TIMEOUT_MS);
+    
+    iframe.onload = () => {
+        loaded = true;
+        clearTimeout(timeoutId);
+        if (loadingEl) loadingEl.style.display = 'none';
+    };
+    
+    iframe.onerror = () => {
+        loaded = true;
+        clearTimeout(timeoutId);
+        iframe.remove();
+        showErrorState();
+    };
+    
+    bodyEl.innerHTML = '';
+    bodyEl.appendChild(iframe);
 }
