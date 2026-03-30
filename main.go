@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -150,7 +149,7 @@ func prepareArgs(args []string) {
 	port = envutil.Getenv(EnvPort, DefaultPort)
 }
 
-var skipWatchDirs = []string{
+var skipDirNames = []string{
 	"node_modules",
 	"dist",
 	"tmp",
@@ -173,12 +172,8 @@ func watchDirectory(dir string) {
 		}
 		if d.IsDir() {
 			name := d.Name()
-			// Skip directories start with dot
-			if name[0] == '.' {
-				return filepath.SkipDir
-			}
-			// Skip directories in skipWatchDirs
-			if slices.Contains(skipWatchDirs, name) {
+			// Skip directories start with dot or in skipDirNames
+			if shouldSkipDir(name) {
 				return filepath.SkipDir
 			}
 			return watcher.Add(path)
