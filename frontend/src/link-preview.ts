@@ -117,9 +117,81 @@ function enhanceLinksInContent(root: HTMLElement): void {
 }
 
 function openPreviewPanel(url: string, triggerButton: HTMLElement): void {
-    // TODO: 实现
+    const panel = document.getElementById('preview-panel');
+    if (!panel) return;
+    
+    // 若点击同一链接的按钮，关闭面板
+    if (previewPanelOpen && currentPreviewUrl === url) {
+        closePreviewPanel();
+        return;
+    }
+    
+    // 更新状态
+    currentPreviewUrl = url;
+    currentTriggerButton = triggerButton;
+    previewPanelOpen = true;
+    
+    // 显示面板
+    panel.style.display = 'flex';
+    document.body.classList.add('preview-active');
+    
+    // 绑定关闭按钮
+    const closeBtn = panel.querySelector('.preview-close');
+    if (closeBtn) {
+        closeBtn.onclick = closePreviewPanel;
+    }
+    
+    // 重置面板状态
+    resetPanelState();
+    
+    // 加载内容
+    const anchor = triggerButton.previousElementSibling;
+    if (anchor instanceof HTMLAnchorElement) {
+        if (isInternalLink(anchor)) {
+            loadInternalContent(url);
+        } else {
+            loadExternalContent(url);
+        }
+    }
 }
 
 function closePreviewPanel(): void {
-    // TODO: 实现
+    const panel = document.getElementById('preview-panel');
+    if (!panel) return;
+    
+    // 隐藏面板
+    panel.style.display = 'none';
+    document.body.classList.remove('preview-active');
+    
+    // 清除 iframe（如果有）
+    const iframe = panel.querySelector('iframe');
+    if (iframe) iframe.remove();
+    
+    // 重置状态
+    currentPreviewUrl = null;
+    currentTriggerButton = null;
+    previewPanelOpen = false;
+    
+    resetPanelState();
+}
+
+function resetPanelState(): void {
+    const panel = document.getElementById('preview-panel');
+    if (!panel) return;
+    
+    const loading = panel.querySelector('.preview-loading');
+    const body = panel.querySelector('.preview-body');
+    const error = panel.querySelector('.preview-error');
+    
+    if (loading) loading.style.display = 'flex';
+    if (body) body.innerHTML = '';
+    if (error) error.classList.remove('visible');
+}
+
+async function loadInternalContent(url: string): Promise<void> {
+    console.log('Loading internal content:', url);
+}
+
+function loadExternalContent(url: string): void {
+    console.log('Loading external content:', url);
 }
