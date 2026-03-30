@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/gookit/goutil/cflag"
 	"github.com/gookit/goutil/envutil"
 	"github.com/gookit/goutil/x/clog"
 )
@@ -31,10 +32,14 @@ var (
 var (
 	targetDir    string
 	defaultEntry string
+	portInt      int
 	port         string
-	clients      = make(map[chan string]bool)
-	clientsMu    sync.Mutex
-	watcher      *fsnotify.Watcher
+)
+
+var (
+	clients   = make(map[chan string]bool)
+	clientsMu sync.Mutex
+	watcher   *fsnotify.Watcher
 )
 
 const (
@@ -61,28 +66,47 @@ type PageData struct {
 
 func main() {
 	// 1. Configuration
-	args := os.Args[1:]
-	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
-		showHelp()
-		return
-	}
-
 	clog.Configure(func(p *clog.Printer) {
 		p.TimeFormat = "15:04:05"
 		p.Template = "{time} | {emoji} {message}"
 	})
 
+	cmd := cflag.New()
+	cmd.Desc = fmt.Sprintf(
+		"MarkView - Markdown Live Preview Server\n (Version: %s, Git Hash: %s, Build Time: %s)",
+		Version, GitHash, BuildTime,
+	)
+	cmd.LongHelp = fmt.Sprintf(`
+<cyan>Arguments:</>
+  directory      Directory to watch (default: current dir)
+  default-entry  Default markdown file to open (default: %s)
+
+<cyan>Environment:</>
+  MKVIEW_PORT    HTTP port to listen on (default: %s)
+  MKVIEW_ENTRY   Default markdown file to open (default: %s)`,
+		DefaultEntry, DefaultPort, DefaultEntry,
+	)
+
+	cmd.IntVar(&portInt, "port", 0, "port for the live server;;p")
+	cmd.Func = run
+	cmd.QuickRun()
+}
+
+func run(c *cflag.CFlags) error {
+	args := c.RemainArgs()
+
 	// - Prepare arguments
-	prepareArgs(args)
+	prepare(args)
 
 	fmt.Printf("Serving directory: %s\n", targetDir)
 	fmt.Printf("Default entry file: %s\n", defaultEntry)
 	fmt.Printf("🚀 Server running at http://localhost:%s\n", port)
 
-	// 2. Watcher
+	// - Watcher
 	go watchDirectory(targetDir)
 
 	log.Fatal(http.ListenAndServe(":"+port, newServerMux()))
+	return nil
 }
 
 func newServerMux() *http.ServeMux {
@@ -109,21 +133,7 @@ func newStaticHandler() http.Handler {
 	})
 }
 
-func showHelp() {
-	binName := filepath.Base(os.Args[0])
-	fmt.Printf("MarkView - Markdown Live Preview Server\n")
-	fmt.Printf("  (Version: %s, Git Hash: %s, Build Time: %s)\n\n", Version, GitHash, BuildTime)
-	fmt.Printf("Usage:\n")
-	fmt.Printf("  %s [directory] [default-entry]\n\n", binName)
-	fmt.Printf("Arguments:\n")
-	fmt.Printf("  directory      Directory to watch (default: current dir)\n")
-	fmt.Printf("  default-entry  Default markdown file to open (default: README.md)\n\n")
-	fmt.Printf("Environment:\n")
-	fmt.Printf("  MKVIEW_PORT    HTTP port to listen on (default: %s)\n", DefaultPort)
-	fmt.Printf("  MKVIEW_ENTRY   Default markdown file to open (default: %s)\n", DefaultEntry)
-}
-
-func prepareArgs(args []string) {
+func prepare(args []string) {
 	err := envutil.DotenvLoad(func(cfg *envutil.Dotenv) {
 		cfg.IgnoreNotExist = true
 	})
@@ -146,7 +156,12 @@ func prepareArgs(args []string) {
 		defaultEntry = envutil.Getenv(EnvEntry, DefaultEntry)
 	}
 
-	port = envutil.Getenv(EnvPort, DefaultPort)
+	// port value
+	if portInt > 0 {
+		port = fmt.Sprintf("%d", portInt)
+	} else {
+		port = envutil.Getenv(EnvPort, DefaultPort)
+	}
 }
 
 var skipDirNames = []string{
