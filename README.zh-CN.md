@@ -20,6 +20,7 @@ MarkView 是一个零配置的 Markdown 预览服务器，使用 Go 提供后端
   - 文件树点击不整页刷新
   - 文档正文中的站内 Markdown 链接支持无刷新切换
   - 支持浏览器前进 / 后退
+- **📖 分屏预览**：hover 站内 Markdown 链接显示预览按钮，点击后右侧 40% 面板预览目标文档
 - **🎨 丰富渲染能力**：
   - GFM（GitHub Flavored Markdown）
   - `highlight.js` 代码高亮
@@ -82,6 +83,7 @@ markview/
 │   │   ├── app.ts              # 页面生命周期、导航、渲染编排
 │   │   ├── sidebar.ts          # 文件树与 TOC 逻辑
 │   │   ├── mermaid.ts          # Mermaid 增强与全屏交互
+│   │   ├── link-preview.ts     # 站内链接分屏预览
 │   │   ├── preferences.ts      # 阅读设置持久化
 │   │   └── live-status.ts      # SSE 状态显示
 │   ├── template.html           # 页面模板与主要样式

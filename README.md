@@ -20,6 +20,7 @@ It focuses on local documentation reading: fast startup, live updates, clear sid
   - file tree clicks do not trigger full page reloads
   - in-document internal Markdown links are handled inline
   - browser back/forward navigation is supported
+- **📖 Split preview**: hover over internal Markdown links to reveal a preview button, click to open the target document in a side-by-side panel
 - **🎨 Rich rendering**:
   - GFM (GitHub Flavored Markdown)
   - `highlight.js` syntax highlighting
@@ -82,6 +83,7 @@ markview/
 │   │   ├── app.ts              # Page lifecycle, navigation, orchestration
 │   │   ├── sidebar.ts          # File tree and TOC logic
 │   │   ├── mermaid.ts          # Mermaid enhancement and fullscreen behavior
+│   │   ├── link-preview.ts     # Split preview for internal Markdown links
 │   │   ├── preferences.ts      # Persisted reading preferences
 │   │   └── live-status.ts      # SSE connection status handling
 │   ├── template.html           # Main page template and CSS
