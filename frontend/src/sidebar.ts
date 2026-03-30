@@ -127,6 +127,12 @@ export function highlightTOC(contentSelector = '#content', sidebarSelector = '.t
         return;
     }
 
+    // 同步 URL hash，保持阅读进度
+    const currentHash = `#${currentId}`;
+    if (window.location.hash !== currentHash) {
+        history.replaceState({ markview: true }, '', currentHash);
+    }
+
     document.querySelectorAll('.toc-link').forEach(link => {
         link.classList.remove('active');
         if (link.getAttribute('href') === `#${currentId}`) {

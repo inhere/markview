@@ -327,6 +327,8 @@ function resolveNavigationTarget(anchor: HTMLAnchorElement, event: MouseEvent): 
     const currentUrl = new URL(window.location.href);
 
     if (url.origin !== currentUrl.origin) {
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
         return null;
     }
 
