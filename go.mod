@@ -1,4 +1,4 @@
-module markview
+module github.com/inhere/markview
 
 go 1.25
 

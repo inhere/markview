@@ -1,12 +1,12 @@
 # MarkView
 
+![MarkView](https://img.shields.io/badge/MarkView-v1.0.0-blue)
+
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
 MarkView is a zero-config Markdown preview server powered by Go and Bun.
 
 It focuses on local documentation reading: fast startup, live updates, clear sidebar navigation, and solid support for Mermaid diagrams and code highlighting.
-
-![MarkView](https://img.shields.io/badge/MarkView-v1.0.0-blue)
 
 ## Features
 
@@ -30,21 +30,27 @@ It focuses on local documentation reading: fast startup, live updates, clear sid
   - settings persisted in `localStorage`
 - **📱 Responsive layout**: sidebar-first reading on desktop, single-column layout on mobile
 
+## Install
+
+```bash
+go install github.com/inhere/markview@latest
+```
+
 ## Usage
 
 ### Run the executable
 
-Download and run `markview.exe`:
+Download and run `markview`:
 
 ```powershell
 # Preview the current directory
-.\markview.exe
+markview [-p PORT]
 
 # Preview a specific directory
-.\markview.exe "path/to/docs"
+markview "path/to/docs"
 
 # Preview a specific directory and set the default entry file
-.\markview.exe "path/to/docs" "intro.md"
+markview "path/to/docs" "intro.md"
 ```
 
 By default, the server starts at `http://localhost:6100`.
@@ -56,8 +62,8 @@ Example documents are available in [example/](example/).
 You can override the port and default entry with environment variables:
 
 ```powershell
-$env:MKVIEW_PORT = "8080"; .\markview.exe
-$env:MKVIEW_ENTRY = "guide.md"; .\markview.exe
+$env:MKVIEW_PORT = "8080"; .\markview
+$env:MKVIEW_ENTRY = "guide.md"; .\markview
 ```
 
 ## Development
@@ -106,7 +112,7 @@ This generates `frontend/dist/` and also copies:
 
 ```bash
 cd ..
-go build --ldflags "-w -s" -o markview.exe
+go build --ldflags "-w -s" -o markview
 
 # Or install to GOPATH/bin
 go install -ldflags "-s -w" .

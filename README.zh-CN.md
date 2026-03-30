@@ -1,14 +1,14 @@
 # MarkView
 
+![MarkView](https://img.shields.io/badge/MarkView-v1.0.0-blue)
+
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
 MarkView 是一个零配置的 Markdown 预览服务器，使用 Go 提供后端，Bun 打包前端资源。
 
 它专注于本地文档阅读体验：快速启动、实时刷新、清晰的侧边导航，以及对 Mermaid / 代码高亮等常见文档内容的良好支持。
 
-![MarkView](https://img.shields.io/badge/MarkView-v1.0.0-blue)
-
-## Features
+## 功能特性
 
 - **🚀 Zero Config**：在任意目录直接启动，默认打开 `README.md`
 - **⚡ 单文件服务**：Go 二进制内嵌 `frontend/dist` 和模板，无需额外静态资源部署
@@ -30,44 +30,50 @@ MarkView 是一个零配置的 Markdown 预览服务器，使用 Go 提供后端
   - 设置持久化到 `localStorage`
 - **📱 响应式布局**：桌面端侧边栏阅读，移动端自动收敛为单栏
 
-## Usage
+## 安装
 
-### Running the Executable
+```bash
+go install github.com/inhere/markview@latest
+```
 
-下载并运行 `markview.exe`：
+## 使用
+
+### 运行可执行文件
+
+下载并运行 `markview`：
 
 ```powershell
-# 预览当前目录
-.\markview.exe
+# 预览当前目录(可选指定port)
+markview [-p PORT]
 
 # 预览指定目录
-.\markview.exe "path/to/docs"
+markview "path/to/docs"
 
 # 预览指定目录，并设置默认入口文件
-.\markview.exe "path/to/docs" "intro.md"
+markview "path/to/docs" "intro.md"
 ```
 
 默认会启动在 `http://localhost:6100`。
 
 示例文档见 [example/](example/)。
 
-### Configuration
+### 配置
 
-可通过环境变量调整端口和默认入口：
+可通过环境变量/选项调整端口和默认入口：
 
 ```powershell
-$env:MKVIEW_PORT = "8080"; .\markview.exe
-$env:MKVIEW_ENTRY = "guide.md"; .\markview.exe
+markview -p 6543
+markview . "guide.md"
 ```
 
-## Development
+## 开发
 
-### Prerequisites
+### 前提
 
 - **Go** 1.22+
 - **Bun** 1.0+
 
-### Project Structure
+### 项目结构
 
 ```text
 markview/
@@ -87,7 +93,7 @@ markview/
 └── README.md
 ```
 
-### Build from Source
+### 从源代码构建
 
 1. 安装前端依赖并构建：
 
@@ -120,7 +126,7 @@ make build
 make run
 ```
 
-### Verification
+### 验证
 
 常用验证命令：
 
