@@ -700,6 +700,16 @@
             margin-left: var(--sidebar-collapsed-width);
         }
 
+        /* Split Layout (when preview is open) */
+        body.preview-active .content-wrapper {
+            width: 60%;
+            margin-right: 40%;
+        }
+
+        body.preview-active .paper {
+            max-width: none;
+        }
+
         .paper {
             background: var(--bg-paper);
             width: 100%;
@@ -879,6 +889,147 @@
         .mermaid-container:hover .mermaid-actions {
             opacity: 1;
         }
+
+        /* Link Preview Button */
+        .link-preview-wrapper {
+            position: relative;
+            display: inline;
+        }
+
+        .link-preview-btn {
+            position: absolute;
+            top: 50%;
+            left: calc(100% + 4px);
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .link-preview-btn.visible {
+            opacity: 1;
+        }
+
+        .link-preview-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .link-preview-btn svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        /* Preview Panel */
+        .preview-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 40%;
+            height: 100vh;
+            background: var(--bg-surface);
+            border-left: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+            box-shadow: -4px 0 12px rgba(0,0,0,0.08);
+        }
+
+        .preview-header {
+            height: 40px;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-canvas);
+        }
+
+        .preview-close {
+            width: 28px;
+            height: 28px;
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+
+        .preview-close:hover {
+            color: var(--text-heading);
+            background: var(--accent-subtle);
+            border-color: var(--accent-border);
+        }
+
+        .preview-content {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        .preview-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 12px;
+            color: var(--text-muted);
+        }
+
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border-light);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .preview-body {
+            /* 内容区域 */
+        }
+
+        .preview-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .preview-error {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .preview-error.visible {
+            display: flex;
+        }
+
         .mermaid-fullscreen-btn,
         .mermaid-source-btn {
             background: white;
@@ -1227,6 +1378,23 @@
         <div class="mermaid-modal-close" onclick="closeMermaidModal()">&times;</div>
         <div id="mermaid-modal-content" class="mermaid-modal-content"></div>
         <aside id="mermaid-source-panel" class="mermaid-source-panel"></aside>
+    </div>
+
+    <!-- Link Preview Panel -->
+    <div id="preview-panel" class="preview-panel" style="display: none;">
+        <div class="preview-header">
+            <button class="preview-close" type="button">×</button>
+        </div>
+        <div class="preview-content">
+            <div class="preview-loading">
+                <div class="loading-spinner"></div>
+                <span>加载中...</span>
+            </div>
+            <div class="preview-body"></div>
+            <div class="preview-error">
+                <span>无法预览此链接</span>
+            </div>
+        </div>
     </div>
 
     <!-- Main Application Script -->
