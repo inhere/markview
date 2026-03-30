@@ -208,7 +208,8 @@ func watchDirectory(dir string) {
 			}
 			if event.Has(fsnotify.Write) {
 				if strings.HasSuffix(event.Name, ".md") {
-					clog.Warnf("WATCH: Modified file: %s", event.Name)
+					relPath, _ := filepath.Rel(dir, event.Name)
+					clog.Warnf("Modified file: %s", relPath)
 					broadcast("reload")
 				}
 			}

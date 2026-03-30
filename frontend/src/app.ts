@@ -14,6 +14,7 @@ import yaml from 'highlight.js/lib/languages/yaml';
 import sql from 'highlight.js/lib/languages/sql';
 import python from 'highlight.js/lib/languages/python';
 import rust from 'highlight.js/lib/languages/rust';
+import plaintext from 'highlight.js/lib/languages/plaintext';
 import powershell from 'highlight.js/lib/languages/powershell';
 import { setupLiveReloadStatus } from './live-status';
 import { enhanceMermaidContent, setupMermaidModal } from './mermaid';
@@ -97,6 +98,7 @@ function ensureHighlightLanguages() {
     hljs.registerLanguage('sql', sql);
     hljs.registerLanguage('python', python);
     hljs.registerLanguage('rust', rust);
+    hljs.registerLanguage('plaintext', plaintext);
     hljs.registerLanguage('powershell', powershell);
 
     highlightReady = true;
