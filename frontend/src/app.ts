@@ -49,6 +49,7 @@ import {
     rewriteAttributeURLs,
     scrollToHash,
 } from './util';
+import { setupLinkPreview } from './link-preview';
 
 interface RenderPageOptions {
     hash?: string;
@@ -364,6 +365,7 @@ function setupOnce() {
     setupToolbar();
     setupInlineNavigation();
     setupMermaidModal();
+    setupLinkPreview();
     // Sidebar collapse and resize
     const sidebarPrefs = readSidebarPreferences();
     applyInitialSidebarWidth(sidebarPrefs.sidebarWidth);
