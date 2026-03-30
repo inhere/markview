@@ -31,12 +31,9 @@ jobs:
       with:
         go-version: ${{ matrix.go_version }}
 
-#    - name: Revive check
-#      uses: morphy2k/revive-action@v2.5.10
-#      if: ${{ matrix.os == 'ubuntu-latest' && matrix.go_version == '1.23' }}
-#      with:
-#        # Exclude patterns, separated by semicolons (optional)
-#        exclude: "./internal/..."
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
 
     - name: Run staticcheck
       uses: reviewdog/action-staticcheck@v1
@@ -50,8 +47,11 @@ jobs:
         # Exit with 1 when it finds at least one finding.
         fail_level: 'none'
 
-    - name: Tidy go mod
-      run: go mod tidy
+    - name: Mod tidy and bun install
+      run: |
+        go mod tidy
+        cd frontend && bun install
+
     - name: Run unit tests
       # run: go test -v -cover ./...
       # must add " for profile.cov on Windows OS

@@ -23,14 +23,20 @@ jobs:
         with:
           go-version: "stable"
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Setup ENV
         # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
         run: |
           echo "RELEASE_TAG=${GITHUB_REF:10}" >> $GITHUB_ENV
           echo "RELEASE_NAME=$GITHUB_WORKFLOW" >> $GITHUB_ENV
 
-      - name: Run mod tidy
-        run: go mod tidy
+      - name: Mod tidy and bun install
+        run: |
+          go mod tidy
+          cd frontend && bun install
 
       - name: Build bin package
         run: |
