@@ -85,7 +85,7 @@ function handleEscapeKey(event: KeyboardEvent): void {
     }
 }
 
-function enhanceLinksInContent(root: HTMLElement): void {
+export function enhanceLinksInContent(root: HTMLElement): void {
     const anchors = root.querySelectorAll('a[href]');
     
     for (const anchor of anchors) {

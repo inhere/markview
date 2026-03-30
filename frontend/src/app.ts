@@ -49,7 +49,7 @@ import {
     rewriteAttributeURLs,
     scrollToHash,
 } from './util';
-import { setupLinkPreview } from './link-preview';
+import { setupLinkPreview, enhanceLinksInContent } from './link-preview';
 
 interface RenderPageOptions {
     hash?: string;
@@ -182,6 +182,12 @@ async function renderCurrentPage(options: RenderPageOptions = {}) {
     generateTOC();
     await enhancePageContent();
     highlightTOC();
+
+    // 增强链接预览
+    const content = document.querySelector(CONTENT_SELECTOR);
+    if (content instanceof HTMLElement && window.innerWidth >= 1024) {
+        enhanceLinksInContent(content);
+    }
 
     const applyScroll = () => {
         if (options.hash) {
