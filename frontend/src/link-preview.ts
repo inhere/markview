@@ -1,5 +1,10 @@
 // frontend/src/link-preview.ts
 
+import {
+    parsePageSnapshot,
+    type PageSnapshot,
+} from './page';
+
 // 静态资源扩展名
 const STATIC_RESOURCE_EXTENSIONS = [
     '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.avif',
@@ -189,7 +194,63 @@ function resetPanelState(): void {
 }
 
 async function loadInternalContent(url: string): Promise<void> {
-    console.log('Loading internal content:', url);
+    const panel = document.getElementById('preview-panel');
+    if (!panel) return;
+    
+    try {
+        // 构造 URL（添加 inline navigation header）
+        const targetUrl = new URL(url, window.location.href);
+        
+        // fetch 页面
+        const response = await fetch(targetUrl.toString(), {
+            headers: { 'X-MarkView-Navigation': 'inline' },
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.status}`);
+        }
+        
+        const html = await response.text();
+        
+        // 解析页面，只提取 #content
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const content = doc.querySelector('#content');
+        
+        if (!(content instanceof HTMLElement)) {
+            throw new Error('Missing #content in fetched page');
+        }
+        
+        // 渲染到 preview-body
+        const bodyEl = panel.querySelector('.preview-body');
+        const loadingEl = panel.querySelector('.preview-loading');
+        
+        if (bodyEl) {
+            bodyEl.innerHTML = content.innerHTML;
+            // 添加 paper 样式给预览内容
+            bodyEl.style.padding = '20px';
+        }
+        if (loadingEl) loadingEl.style.display = 'none';
+        
+    } catch (error) {
+        console.error('Internal content load failed:', error);
+        showErrorState();
+    }
+}
+
+function showErrorState(): void {
+    const panel = document.getElementById('preview-panel');
+    if (!panel) return;
+    
+    const loading = panel.querySelector('.preview-loading');
+    const error = panel.querySelector('.preview-error');
+    
+    if (loading) loading.style.display = 'none';
+    if (error) {
+        error.classList.add('visible');
+        // 3秒后自动关闭
+        setTimeout(closePreviewPanel, 3000);
+    }
 }
 
 function loadExternalContent(url: string): void {
