@@ -11,9 +11,6 @@ const STATIC_RESOURCE_EXTENSIONS = [
     '.mp4', '.webm', '.mp3', '.ogg', '.wav', '.pdf', '.zip', '.tar', '.gz'
 ];
 
-// iframe 加载超时 (毫秒)
-const IFRAME_TIMEOUT_MS = 8000;
-
 function shouldShowPreviewButton(anchor: HTMLAnchorElement): boolean {
     const href = anchor.getAttribute('href');
     if (!href) return false;
@@ -30,16 +27,9 @@ function shouldShowPreviewButton(anchor: HTMLAnchorElement): boolean {
     // 排除 download 属性
     if (anchor.hasAttribute('download')) return false;
     
-    // 排除 target="_blank" (外站链接已有此属性)
-    if (anchor.target === '_blank') {
-        // 外站链接仍可预览（iframe方式）
-        return true;
-    }
-    
-    // 站内链接需要是 Markdown 文件
     const url = new URL(anchor.href, window.location.href);
     if (url.origin !== window.location.origin) {
-        return true; // 站外链接，iframe 预览
+        return false;
     }
     
     // 站内路径：检查是否为 .md 或无扩展名
@@ -50,12 +40,7 @@ function shouldShowPreviewButton(anchor: HTMLAnchorElement): boolean {
         return lastSegment.toLowerCase().endsWith('.md');
     }
     
-    return true; // 无扩展名的路径视为可预览
-}
-
-function isInternalLink(anchor: HTMLAnchorElement): boolean {
-    const url = new URL(anchor.href, window.location.href);
-    return url.origin === window.location.origin;
+    return true;
 }
 
 export function setupLinkPreview(): void {
@@ -152,15 +137,8 @@ function openPreviewPanel(url: string, triggerButton: HTMLElement): void {
     // 重置面板状态
     resetPanelState();
     
-    // 加载内容
-    const anchor = triggerButton.previousElementSibling;
-    if (anchor instanceof HTMLAnchorElement) {
-        if (isInternalLink(anchor)) {
-            loadInternalContent(url);
-        } else {
-            loadExternalContent(url);
-        }
-    }
+    console.log('[link-preview] loading:', url);
+    loadInternalContent(url);
 }
 
 function closePreviewPanel(): void {
@@ -171,11 +149,6 @@ function closePreviewPanel(): void {
     panel.style.display = 'none';
     document.body.classList.remove('preview-active');
     
-    // 清除 iframe（如果有）
-    const iframe = panel.querySelector('iframe');
-    if (iframe) iframe.remove();
-    
-    // 重置状态
     currentPreviewUrl = null;
     currentTriggerButton = null;
     previewPanelOpen = false;
@@ -251,49 +224,6 @@ function showErrorState(): void {
     if (loading) loading.style.display = 'none';
     if (error) {
         error.classList.add('visible');
-        // 3秒后自动关闭
         setTimeout(closePreviewPanel, 3000);
     }
-}
-
-function loadExternalContent(url: string): void {
-    const panel = document.getElementById('preview-panel');
-    if (!panel) return;
-    
-    const bodyEl = panel.querySelector('.preview-body');
-    const loadingEl = panel.querySelector('.preview-loading');
-    
-    if (!bodyEl) return;
-    
-    const iframe = document.createElement('iframe');
-    iframe.src = url;
-    iframe.style.width = '100%';
-    iframe.style.height = '100%';
-    iframe.style.border = 'none';
-    iframe.title = 'Preview';
-    
-    let loaded = false;
-    const timeoutId = setTimeout(() => {
-        if (!loaded) {
-            console.warn('iframe load timeout for:', url);
-            iframe.remove();
-            showErrorState();
-        }
-    }, IFRAME_TIMEOUT_MS);
-    
-    iframe.onload = () => {
-        loaded = true;
-        clearTimeout(timeoutId);
-        if (loadingEl) loadingEl.style.display = 'none';
-    };
-    
-    iframe.onerror = () => {
-        loaded = true;
-        clearTimeout(timeoutId);
-        iframe.remove();
-        showErrorState();
-    };
-    
-    bodyEl.innerHTML = '';
-    bodyEl.appendChild(iframe);
 }
