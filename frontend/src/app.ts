@@ -29,13 +29,19 @@ import {
     persistFontSize,
     persistLayoutWidth,
     readStoredPreferences,
+    readSidebarPreferences,
     type LayoutWidth,
 } from './preferences';
 import {
     generateTOC,
     highlightTOC,
     renderFileTree,
+    setupSidebarCollapse,
 } from './sidebar';
+import {
+    applyInitialSidebarWidth,
+    initSidebarResize,
+} from './sidebar-resize';
 import {
     buildContentBaseURL,
     isInlineNavigablePath,
@@ -356,6 +362,11 @@ function setupOnce() {
     setupToolbar();
     setupInlineNavigation();
     setupMermaidModal();
+    // Sidebar collapse and resize
+    const sidebarPrefs = readSidebarPreferences();
+    applyInitialSidebarWidth(sidebarPrefs.sidebarWidth);
+    initSidebarResize();
+    setupSidebarCollapse();
     window.addEventListener('scroll', () => {
         highlightTOC();
     }, { passive: true });

@@ -1,6 +1,14 @@
 export const LAYOUT_WIDTH_STORAGE_KEY = 'markview:layout-width';
 export const FONT_SIZE_STORAGE_KEY = 'markview:font-size';
 
+export const SIDEBAR_COLLAPSED_STORAGE_KEY = 'markview:sidebar-collapsed';
+export const SIDEBAR_WIDTH_STORAGE_KEY = 'markview:sidebar-width';
+export const FILES_COLLAPSED_STORAGE_KEY = 'markview:files-collapsed';
+
+export const DEFAULT_SIDEBAR_WIDTH = 280;
+export const MIN_SIDEBAR_WIDTH = 200;
+export const MAX_SIDEBAR_WIDTH = 400;
+
 export const LAYOUT_WIDTH_OPTIONS = ['768px', '960px', '1200px', '100%'] as const;
 export type LayoutWidth = (typeof LAYOUT_WIDTH_OPTIONS)[number];
 
@@ -66,4 +74,49 @@ export function persistFontSize(value: number, storage: StorageWriter = window.l
     } catch {
         // Ignore storage failures so reading continues to work in restrictive contexts.
     }
+}
+
+export function normalizeSidebarWidth(value: string | null | undefined): number {
+    if (!value) return DEFAULT_SIDEBAR_WIDTH;
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isNaN(parsed)) return DEFAULT_SIDEBAR_WIDTH;
+    return Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, parsed));
+}
+
+export function normalizeSidebarCollapsed(value: string | null | undefined): boolean {
+    return value === 'true';
+}
+
+export function readSidebarPreferences(storage: StorageReader = window.localStorage) {
+    try {
+        return {
+            sidebarWidth: normalizeSidebarWidth(storage.getItem(SIDEBAR_WIDTH_STORAGE_KEY)),
+            sidebarCollapsed: normalizeSidebarCollapsed(storage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)),
+            filesCollapsed: normalizeSidebarCollapsed(storage.getItem(FILES_COLLAPSED_STORAGE_KEY)),
+        };
+    } catch {
+        return {
+            sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
+            sidebarCollapsed: false,
+            filesCollapsed: false,
+        };
+    }
+}
+
+export function persistSidebarWidth(value: number, storage: StorageWriter = window.localStorage) {
+    try {
+        storage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(value));
+    } catch {}
+}
+
+export function persistSidebarCollapsed(value: boolean, storage: StorageWriter = window.localStorage) {
+    try {
+        storage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(value));
+    } catch {}
+}
+
+export function persistFilesCollapsed(value: boolean, storage: StorageWriter = window.localStorage) {
+    try {
+        storage.setItem(FILES_COLLAPSED_STORAGE_KEY, String(value));
+    } catch {}
 }

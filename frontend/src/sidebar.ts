@@ -6,6 +6,11 @@ import {
     folderIcon,
     readJSONScript,
 } from './util';
+import {
+    persistSidebarCollapsed,
+    persistFilesCollapsed,
+    readSidebarPreferences,
+} from './preferences';
 
 export interface FileTreeNode {
     name: string;
@@ -234,4 +239,71 @@ function nodeContainsPath(node: FileTreeNode, currentFilePath: string): boolean 
         return true;
     }
     return node.children?.some(child => nodeContainsPath(child, currentFilePath)) ?? false;
+}
+
+export function setupSidebarCollapse() {
+    const collapseBtn = document.getElementById('sidebar-collapse-btn');
+    const sidebar = document.querySelector('.sidebar');
+    const filesPanel = document.getElementById('files-panel');
+
+    if (!collapseBtn || !sidebar || !filesPanel) return;
+
+    const prefs = readSidebarPreferences();
+
+    const updateBodyClass = (collapsed: boolean) => {
+        document.body.classList.toggle('sidebar-collapsed', collapsed);
+    };
+
+    // Apply initial state
+    if (prefs.sidebarCollapsed) {
+        sidebar.classList.add('sidebar-collapsed');
+        updateBodyClass(true);
+    }
+    if (prefs.filesCollapsed) {
+        filesPanel.classList.add('files-collapsed');
+    }
+
+    // Collapse button click
+    collapseBtn.addEventListener('click', () => {
+        const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
+        updateBodyClass(isCollapsed);
+        persistSidebarCollapsed(isCollapsed);
+
+        // Update aria-label
+        collapseBtn.setAttribute('aria-label', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        collapseBtn.setAttribute('title', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    });
+
+    // Files collapse button
+    const filesCollapseBtn = document.getElementById('files-collapse-btn');
+    if (filesCollapseBtn) {
+        filesCollapseBtn.addEventListener('click', () => {
+            const isCollapsed = filesPanel.classList.toggle('files-collapsed');
+            persistFilesCollapsed(isCollapsed);
+
+            filesCollapseBtn.setAttribute('aria-label', isCollapsed ? 'Expand Files section' : 'Collapse Files section');
+            filesCollapseBtn.setAttribute('title', isCollapsed ? 'Expand Files' : 'Collapse Files');
+        });
+    }
+
+    // Sidebar icon buttons (for collapsed state)
+    const iconButtons = document.querySelectorAll('.sidebar-icon-btn');
+    iconButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Expand sidebar
+            sidebar.classList.remove('sidebar-collapsed');
+            updateBodyClass(false);
+            persistSidebarCollapsed(false);
+
+            collapseBtn.setAttribute('aria-label', 'Collapse sidebar');
+            collapseBtn.setAttribute('title', 'Collapse sidebar');
+
+            // If Files button clicked, ensure Files is expanded
+            const panel = btn.getAttribute('data-panel');
+            if (panel === 'files') {
+                filesPanel.classList.remove('files-collapsed');
+                persistFilesCollapsed(false);
+            }
+        });
+    });
 }

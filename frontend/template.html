@@ -41,6 +41,7 @@
 
             --layout-max-width: 960px;
             --sidebar-width: 280px;
+            --sidebar-collapsed-width: 48px;
             --base-font-size: 16px;
         }
 
@@ -149,6 +150,7 @@
             top: 0;
             left: 0;
             z-index: 10;
+            transition: width 0.15s ease;
         }
 
         .sidebar-header {
@@ -156,6 +158,48 @@
             border-bottom: 1px solid var(--border-light);
             margin-bottom: 10px;
             flex-shrink: 0;
+            position: relative;
+        }
+
+        /* Collapsed header - vertical layout */
+        .sidebar-collapsed-header {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0;
+            gap: 10px;
+        }
+
+        .sidebar-collapsed .sidebar-collapsed-header {
+            display: flex;
+        }
+
+        .sidebar-collapsed-logo {
+            width: 24px;
+            height: 24px;
+            margin-top: 7px;
+        }
+
+        .sidebar-collapsed-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: live-pulse 2s infinite;
+        }
+
+        /* Hide normal header content in collapsed state */
+        .sidebar-collapsed .sidebar-header {
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 10px;
+            padding: 0;
+        }
+
+        .sidebar-collapsed .sidebar-header .doc-meta,
+        .sidebar-collapsed .sidebar-header .brand-lockup,
+        .sidebar-collapsed .sidebar-header .brand-divider,
+        .sidebar-collapsed .sidebar-header .doc-status {
+            display: none;
         }
 
         .sidebar-panels {
@@ -185,6 +229,149 @@
 
         .sidebar-panel-toc {
             flex: 2;
+        }
+
+        /* Sidebar collapsed state */
+        .sidebar.sidebar-collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar-collapsed .sidebar-panels {
+            display: none;
+        }
+
+        .sidebar-icons {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 10px;
+        }
+
+        /* In collapsed state, icons appear right after header */
+        .sidebar-collapsed .sidebar-icons {
+            display: flex;
+            margin-top: 0x;
+        }
+
+        .sidebar-icon-btn {
+            width: 28px;
+            height: 28px;
+            border: 1px solid transparent;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+
+        .sidebar-icon-btn:hover {
+            background: var(--accent-subtle);
+            color: var(--accent-primary);
+            border-color: var(--accent-border);
+        }
+
+        .sidebar-icon-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Collapse button - absolute positioned, doesn't take space */
+        .sidebar-collapse-btn {
+            position: absolute;
+            top: 20px;
+            right: -20px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: #ffffff;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.15s;
+            z-index: 2;
+        }
+
+        .sidebar-collapse-btn:hover {
+            background: var(--bg-canvas);
+            color: var(--text-heading);
+        }
+
+        .sidebar-collapse-btn svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.15s;
+        }
+
+        .sidebar-collapsed .sidebar-collapse-btn svg {
+            transform: rotate(180deg);
+        }
+
+        /* Resize handle */
+        .sidebar-resize-handle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            cursor: col-resize;
+            background: transparent;
+            transition: background 0.15s;
+        }
+
+        .sidebar-resize-handle:hover {
+            background: var(--border-focus);
+        }
+
+        .sidebar-resize-handle.is-resizing {
+            background: var(--accent-primary);
+        }
+
+        .sidebar.sidebar-collapsed .sidebar-resize-handle {
+            display: none;
+        }
+
+        /* Files collapse button */
+        .sidebar-section-collapse-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: none;
+            border-radius: 4px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+
+        .sidebar-section-collapse-btn:hover {
+            background: var(--bg-canvas);
+            color: var(--text-heading);
+        }
+
+        .sidebar-section-collapse-btn svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.15s;
+        }
+
+        .files-collapsed .sidebar-section-collapse-btn svg {
+            transform: rotate(-90deg);
+        }
+
+        .files-collapsed .sidebar-scroll {
+            display: none;
+        }
+
+        /* When files collapsed, only show title bar */
+        .sidebar-panel-files.files-collapsed {
+            flex: 0 0 auto;
         }
 
         .sidebar-section-title {
@@ -231,6 +418,11 @@
             width: 28px;
             height: 1px;
             background: linear-gradient(90deg, var(--accent-border), transparent);
+        }
+
+        /* Hide after pseudo-element on Files title since it has collapse button */
+        .sidebar-panel-files .sidebar-section-title::after {
+            display: none;
         }
 
         .sidebar-scroll {
@@ -495,12 +687,17 @@
 
         /* --- Main Content: Natural Flow --- */
         .content-wrapper {
-            margin-left: var(--sidebar-width); /* Offset for fixed sidebar */
+            margin-left: var(--sidebar-width);
             flex: 1;
             padding: 40px 60px;
             display: flex;
             justify-content: center;
             min-height: 100vh;
+            transition: margin-left 0.15s ease;
+        }
+
+        body.sidebar-collapsed .content-wrapper {
+            margin-left: var(--sidebar-collapsed-width);
         }
 
         .paper {
@@ -942,7 +1139,14 @@
 
     <!-- Sidebar -->
     <aside class="sidebar">
+        <div class="sidebar-resize-handle" id="sidebar-resize-handle"></div>
         <div class="sidebar-header">
+            <!-- Collapsed state: vertical logo + status -->
+            <div class="sidebar-collapsed-header">
+                <img src="/static/logo.svg" alt="" class="sidebar-collapsed-logo">
+                <div class="sidebar-collapsed-status"></div>
+            </div>
+            <!-- Expanded state: horizontal layout -->
             <div class="doc-meta">
                 <div class="brand-lockup" aria-label="MarkView">
                     <img src="/static/logo.svg" alt="" class="brand-logo">
@@ -954,9 +1158,12 @@
                 <span id="status-text">Live</span>
                 </div>
             </div>
+            <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
         </div>
         <div class="sidebar-panels">
-            <section class="sidebar-panel sidebar-panel-files">
+            <section class="sidebar-panel sidebar-panel-files" id="files-panel">
                 <div class="sidebar-section-title">
                     <span class="sidebar-section-label">
                         <span class="sidebar-section-icon" aria-hidden="true">
@@ -964,6 +1171,9 @@
                         </span>
                         <span>Files</span>
                     </span>
+                    <button class="sidebar-section-collapse-btn" id="files-collapse-btn" title="Collapse Files" aria-label="Collapse Files section">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
                 </div>
                 <div class="sidebar-scroll" id="file-tree"></div>
             </section>
@@ -980,6 +1190,14 @@
                     <ul class="toc-list" id="toc-list"></ul>
                 </div>
             </section>
+        </div>
+        <div class="sidebar-icons" id="sidebar-icons">
+            <button class="sidebar-icon-btn" data-panel="files" title="Files">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </button>
+            <button class="sidebar-icon-btn" data-panel="toc" title="Table of Contents">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"></circle></svg>
+            </button>
         </div>
     </aside>
 
