@@ -1,5 +1,8 @@
 export const LAYOUT_WIDTH_STORAGE_KEY = 'markview:layout-width';
 export const FONT_SIZE_STORAGE_KEY = 'markview:font-size';
+export const COLOR_SCHEME_STORAGE_KEY = 'markview:color-scheme';
+export const THEME_STORAGE_KEY = 'markview:theme';
+export const TOOLBAR_COLLAPSED_STORAGE_KEY = 'markview:toolbar-collapsed';
 
 export const SIDEBAR_COLLAPSED_STORAGE_KEY = 'markview:sidebar-collapsed';
 export const SIDEBAR_WIDTH_STORAGE_KEY = 'markview:sidebar-width';
@@ -16,6 +19,20 @@ export const DEFAULT_LAYOUT_WIDTH: LayoutWidth = '960px';
 export const DEFAULT_FONT_SIZE = 16;
 export const MIN_FONT_SIZE = 12;
 export const MAX_FONT_SIZE = 24;
+
+export const COLOR_SCHEME_OPTIONS = ['system', 'light', 'dark'] as const;
+export type ColorScheme = (typeof COLOR_SCHEME_OPTIONS)[number];
+export const DEFAULT_COLOR_SCHEME: ColorScheme = 'system';
+
+export const THEME_OPTIONS = [
+    'default',
+    'github',
+    'one-dark',
+    'dracula',
+    'nord',
+] as const;
+export type ThemePreset = (typeof THEME_OPTIONS)[number];
+export const DEFAULT_THEME: ThemePreset = 'default';
 
 interface StorageReader {
     getItem(key: string): string | null;
@@ -46,16 +63,40 @@ export function normalizeFontSize(value: string | null | undefined) {
     return Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, parsed));
 }
 
+export function normalizeColorScheme(value: string | null | undefined): ColorScheme {
+    if (value && COLOR_SCHEME_OPTIONS.includes(value as ColorScheme)) {
+        return value as ColorScheme;
+    }
+    return DEFAULT_COLOR_SCHEME;
+}
+
+export function normalizeTheme(value: string | null | undefined): ThemePreset {
+    if (value && THEME_OPTIONS.includes(value as ThemePreset)) {
+        return value as ThemePreset;
+    }
+    return DEFAULT_THEME;
+}
+
+export function normalizeToolbarCollapsed(value: string | null | undefined): boolean {
+    return value === 'true';
+}
+
 export function readStoredPreferences(storage: StorageReader = window.localStorage) {
     try {
         return {
             layoutWidth: normalizeLayoutWidth(storage.getItem(LAYOUT_WIDTH_STORAGE_KEY)),
             fontSize: normalizeFontSize(storage.getItem(FONT_SIZE_STORAGE_KEY)),
+            colorScheme: normalizeColorScheme(storage.getItem(COLOR_SCHEME_STORAGE_KEY)),
+            theme: normalizeTheme(storage.getItem(THEME_STORAGE_KEY)),
+            toolbarCollapsed: normalizeToolbarCollapsed(storage.getItem(TOOLBAR_COLLAPSED_STORAGE_KEY)),
         };
     } catch {
         return {
             layoutWidth: DEFAULT_LAYOUT_WIDTH,
             fontSize: DEFAULT_FONT_SIZE,
+            colorScheme: DEFAULT_COLOR_SCHEME,
+            theme: DEFAULT_THEME,
+            toolbarCollapsed: false,
         };
     }
 }
@@ -74,6 +115,24 @@ export function persistFontSize(value: number, storage: StorageWriter = window.l
     } catch {
         // Ignore storage failures so reading continues to work in restrictive contexts.
     }
+}
+
+export function persistColorScheme(value: ColorScheme, storage: StorageWriter = window.localStorage) {
+    try {
+        storage.setItem(COLOR_SCHEME_STORAGE_KEY, value);
+    } catch {}
+}
+
+export function persistTheme(value: ThemePreset, storage: StorageWriter = window.localStorage) {
+    try {
+        storage.setItem(THEME_STORAGE_KEY, value);
+    } catch {}
+}
+
+export function persistToolbarCollapsed(value: boolean, storage: StorageWriter = window.localStorage) {
+    try {
+        storage.setItem(TOOLBAR_COLLAPSED_STORAGE_KEY, String(value));
+    } catch {}
 }
 
 export function normalizeSidebarWidth(value: string | null | undefined): number {

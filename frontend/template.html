@@ -16,7 +16,7 @@
 
     <style>
         :root {
-            /* Palette */
+            /* Palette - Light Theme */
             --bg-canvas: #f8f9fa;
             --bg-paper: #ffffff;
             --bg-surface: #ffffff;
@@ -45,6 +45,91 @@
             --base-font-size: 16px;
         }
 
+        [data-color-scheme="dark"] {
+            --bg-canvas: #0f172a;
+            --bg-paper: #1e293b;
+            --bg-surface: #1e293b;
+
+            --border-light: #334155;
+            --border-focus: #475569;
+
+            --text-heading: #f1f5f9;
+            --text-body: #cbd5e1;
+            --text-muted: #94a3b8;
+
+            --accent-primary: #3b82f6;
+            --accent-subtle: #1e3a5f;
+            --accent-border: #3b82f6;
+
+            --status-live: #10b981;
+            --status-warn: #f59e0b;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            [data-color-scheme="system"] {
+                --bg-canvas: #0f172a;
+                --bg-paper: #1e293b;
+                --bg-surface: #1e293b;
+
+                --border-light: #334155;
+                --border-focus: #475569;
+
+                --text-heading: #f1f5f9;
+                --text-body: #cbd5e1;
+                --text-muted: #94a3b8;
+
+                --accent-primary: #3b82f6;
+                --accent-subtle: #1e3a5f;
+                --accent-border: #3b82f6;
+            }
+        }
+
+        [data-theme="github"] {
+            --bg-canvas: #f6f8fa;
+            --bg-paper: #ffffff;
+            --bg-surface: #ffffff;
+            --border-light: #d0d7de;
+            --text-heading: #1f2328;
+            --text-body: #57606a;
+            --accent-primary: #0969da;
+        }
+
+        [data-theme="one-dark"] {
+            --bg-canvas: #282c34;
+            --bg-paper: #21242b;
+            --bg-surface: #21242b;
+            --border-light: #3e4451;
+            --text-heading: #e5c07b;
+            --text-body: #abb2bf;
+            --text-muted: #5c6370;
+            --accent-primary: #61afef;
+            --accent-subtle: #3e4451;
+        }
+
+        [data-theme="dracula"] {
+            --bg-canvas: #282a36;
+            --bg-paper: #44475a;
+            --bg-surface: #44475a;
+            --border-light: #6272a4;
+            --text-heading: #f8f8f2;
+            --text-body: #f8f8f2;
+            --text-muted: #6272a4;
+            --accent-primary: #bd93f9;
+            --accent-subtle: #44475a;
+        }
+
+        [data-theme="nord"] {
+            --bg-canvas: #2e3440;
+            --bg-paper: #3b4252;
+            --bg-surface: #3b4252;
+            --border-light: #4c566a;
+            --text-heading: #eceff4;
+            --text-body: #d8dee9;
+            --text-muted: #4c566a;
+            --accent-primary: #88c0d0;
+            --accent-subtle: #4c566a;
+        }
+
         /* --- Reset & Base --- */
         * {
             box-sizing: border-box;
@@ -71,22 +156,69 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(8px);
             border: 1px solid var(--border-light);
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            padding: 6px 12px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+            align-items: stretch;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        .toolbar:not(.expanded) {
+            opacity: 1;
+            padding: 6px;
+        }
+        .toolbar:not(.expanded):hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .toolbar.expanded {
+            opacity: 0.5;
+            padding: 12px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        }
+        .toolbar.expanded:hover {
+            opacity: 0.95;
+        }
+        .toolbar-toggle-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+        .toolbar-toggle-btn:hover {
+            background: var(--accent-subtle);
+            color: var(--accent-primary);
+        }
+        .toolbar-toggle-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+        .toolbar-content {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            align-items: stretch;
+        }
+        .toolbar.expanded .toolbar-content {
+            display: flex;
+        }
+        .toolbar-row {
             display: flex;
             gap: 16px;
-            z-index: 100;
             align-items: center;
-            font-size: 13px;
-            transition: opacity 0.2s;
-        }
-        .toolbar:hover {
-            opacity: 1;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
         }
         .toolbar-group {
             display: flex;
@@ -135,6 +267,31 @@
             text-transform: uppercase;
             font-weight: 700;
             letter-spacing: 0.5px;
+        }
+        .toolbar-select {
+            padding: 4px 8px;
+            border: 1px solid var(--border-light);
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-body);
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s;
+            appearance: none;
+            padding-right: 20px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+        }
+        .toolbar-select:hover {
+            border-color: var(--accent-primary);
+        }
+        .toolbar-select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px var(--accent-subtle);
         }
 
         /* --- Sidebar: Fixed Position --- */
@@ -1272,19 +1429,52 @@
 <body>
     <!-- Top Toolbar -->
     <div class="toolbar" id="toolbar">
-        <div class="toolbar-group">
-            <span class="toolbar-label">Width</span>
-            <button class="toolbar-btn" data-width="768px">S</button>
-            <button class="toolbar-btn active" data-width="960px">M</button>
-            <button class="toolbar-btn" data-width="1200px">L</button>
-            <button class="toolbar-btn" data-width="100%">Full</button>
+        <div class="toolbar-header">
+          <button class="toolbar-toggle-btn" id="toolbar-toggle" title="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
         </div>
-        <div class="toolbar-divider"></div>
-        <div class="toolbar-group">
-            <span class="toolbar-label">Font</span>
-            <button class="toolbar-btn toolbar-icon-btn" id="font-dec" title="Decrease Font">-</button>
-            <button class="toolbar-btn" id="font-reset" title="Reset Font">Reset</button>
-            <button class="toolbar-btn toolbar-icon-btn" id="font-inc" title="Increase Font">+</button>
+        <div class="toolbar-content">
+            <div class="toolbar-row">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Width</span>
+                    <button class="toolbar-btn" data-width="768px">S</button>
+                    <button class="toolbar-btn active" data-width="960px">M</button>
+                    <button class="toolbar-btn" data-width="1200px">L</button>
+                    <button class="toolbar-btn" data-width="100%">Full</button>
+                </div>
+                <div class="toolbar-divider"></div>
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Font</span>
+                    <button class="toolbar-btn toolbar-icon-btn" id="font-dec" title="Decrease Font">-</button>
+                    <button class="toolbar-btn" id="font-reset" title="Reset Font">Reset</button>
+                    <button class="toolbar-btn toolbar-icon-btn" id="font-inc" title="Increase Font">+</button>
+                </div>
+            </div>
+            <div class="toolbar-row">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Color</span>
+                    <select class="toolbar-select" id="color-scheme-select">
+                        <option value="system">System</option>
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </div>
+                <div class="toolbar-divider"></div>
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Theme</span>
+                    <select class="toolbar-select" id="theme-select">
+                        <option value="default">Default</option>
+                        <option value="github">GitHub</option>
+                        <option value="one-dark">One Dark</option>
+                        <option value="dracula">Dracula</option>
+                        <option value="nord">Nord</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </div>
 

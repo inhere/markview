@@ -32,6 +32,13 @@ import {
     readStoredPreferences,
     readSidebarPreferences,
     type LayoutWidth,
+    type ColorScheme,
+    type ThemePreset,
+    DEFAULT_COLOR_SCHEME,
+    DEFAULT_THEME,
+    persistColorScheme,
+    persistTheme,
+    persistToolbarCollapsed,
 } from './preferences';
 import {
     generateTOC,
@@ -133,8 +140,49 @@ function setupToolbar() {
         return;
     }
 
+    const storedPreferences = readStoredPreferences();
     const widthButtons = toolbar.querySelectorAll('[data-width]');
     const fontReset = document.getElementById('font-reset');
+    const fontIncrease = document.getElementById('font-inc');
+    const fontDecrease = document.getElementById('font-dec');
+    const toolbarToggle = document.getElementById('toolbar-toggle');
+    const colorSchemeSelect = document.getElementById('color-scheme-select') as HTMLSelectElement | null;
+    const themeSelect = document.getElementById('theme-select') as HTMLSelectElement | null;
+
+    let currentFontSize = storedPreferences.fontSize;
+
+    if (storedPreferences.toolbarCollapsed) {
+        toolbar.classList.remove('expanded');
+    } else {
+        toolbar.classList.add('expanded');
+    }
+
+    applyLayoutWidth(widthButtons, storedPreferences.layoutWidth);
+    applyFontSize(currentFontSize);
+    applyColorScheme(storedPreferences.colorScheme);
+    applyTheme(storedPreferences.theme);
+
+    if (colorSchemeSelect) {
+        colorSchemeSelect.value = storedPreferences.colorScheme;
+        colorSchemeSelect.addEventListener('change', () => {
+            const scheme = colorSchemeSelect.value as ColorScheme;
+            applyColorScheme(scheme);
+        });
+    }
+
+    if (themeSelect) {
+        themeSelect.value = storedPreferences.theme;
+        themeSelect.addEventListener('change', () => {
+            const theme = themeSelect.value as ThemePreset;
+            applyTheme(theme);
+        });
+    }
+
+    toolbarToggle?.addEventListener('click', () => {
+        const isExpanded = toolbar.classList.toggle('expanded');
+        persistToolbarCollapsed(!isExpanded);
+    });
+
     widthButtons.forEach(button => {
         button.addEventListener('click', () => {
             const width = (button as HTMLElement).dataset.width as LayoutWidth | undefined;
@@ -145,14 +193,6 @@ function setupToolbar() {
             applyLayoutWidth(widthButtons, width);
         });
     });
-
-    const fontIncrease = document.getElementById('font-inc');
-    const fontDecrease = document.getElementById('font-dec');
-    const storedPreferences = readStoredPreferences();
-    let currentFontSize = storedPreferences.fontSize;
-
-    applyLayoutWidth(widthButtons, storedPreferences.layoutWidth);
-    applyFontSize(currentFontSize);
 
     fontIncrease?.addEventListener('click', () => {
         if (currentFontSize < MAX_FONT_SIZE) {
@@ -402,6 +442,16 @@ function applyLayoutWidth(widthButtons: NodeListOf<Element>, width: LayoutWidth)
 function applyFontSize(fontSize: number) {
     document.documentElement.style.fontSize = `${fontSize}px`;
     persistFontSize(fontSize);
+}
+
+function applyColorScheme(scheme: ColorScheme) {
+    document.documentElement.setAttribute('data-color-scheme', scheme);
+    persistColorScheme(scheme);
+}
+
+function applyTheme(theme: ThemePreset) {
+    document.documentElement.setAttribute('data-theme', theme);
+    persistTheme(theme);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
