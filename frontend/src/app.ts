@@ -1,6 +1,10 @@
 // Mark as ES module so `declare global` works correctly
 export {};
 
+// 引入 highlight.css 和 app.css
+import './style/highlight.css';
+import './style/app.css';
+
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
 import typescript from 'highlight.js/lib/languages/typescript';

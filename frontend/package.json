@@ -4,8 +4,8 @@
   "description": "Frontend assets for MarkView",
   "type": "module",
   "scripts": {
-    "build": "rm -rf ./dist && mkdir -p ./dist && bun build ./src/app.ts --outdir ./dist --splitting --minify && cp ./highlight.css ./logo.svg ./favicon.svg ./dist/",
-    "dev": "rm -rf ./dist && mkdir -p ./dist && cp ./highlight.css ./logo.svg ./favicon.svg ./dist/ && bun build ./src/app.ts --outdir ./dist --splitting --watch"
+    "build": "bun run bun.build.ts",
+    "dev": "WATCH=true bun run bun.build.ts"
   },
   "dependencies": {
     "mermaid": "^10.9.0",
