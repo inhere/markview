@@ -87,7 +87,7 @@ func main() {
 		DefaultEntry, DefaultPort, DefaultEntry,
 	)
 
-	cmd.IntVar(&portInt, "port", 0, "port for the live server;;p")
+	cmd.IntVar(&portInt, "port", 0, "HTTP port to listen on;;p")
 	cmd.Func = run
 	cmd.QuickRun()
 }

@@ -1,6 +1,10 @@
 # MarkView
 
-![MarkView](https://img.shields.io/badge/MarkView-v1.0.0-blue)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/inhere/markview?style=flat-square)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/inhere/markview)](https://github.com/inhere/markview)
+[![Unit-Tests](https://github.com/inhere/markview/actions/workflows/go.yml/badge.svg)](https://github.com/inhere/markview)
+
+---
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 

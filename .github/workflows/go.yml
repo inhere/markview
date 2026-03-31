@@ -57,24 +57,4 @@ jobs:
       # must add " for profile.cov on Windows OS
       run: |
         cd frontend && bun run build
-        go test -coverprofile="profile.cov" ./...
-
-    - name: Send coverage
-      uses: shogo82148/actions-goveralls@v1
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      with:
-        path-to-profile: profile.cov
-        flag-name: Go-${{ matrix.go_version }}
-        shallow: true
-        parallel: true
-
-  # notifies that all test jobs are finished.
-  # https://github.com/shogo82148/actions-goveralls
-  finish:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: shogo82148/actions-goveralls@v1
-        with:
-          shallow: true
-          parallel-finished: true
+        cd .. && go test -coverprofile="profile.cov" ./...
