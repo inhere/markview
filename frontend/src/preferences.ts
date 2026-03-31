@@ -78,7 +78,7 @@ export function normalizeTheme(value: string | null | undefined): ThemePreset {
 }
 
 export function normalizeToolbarCollapsed(value: string | null | undefined): boolean {
-    return value === 'true';
+    return value !== 'false';
 }
 
 export function readStoredPreferences(storage: StorageReader = window.localStorage) {
@@ -96,7 +96,7 @@ export function readStoredPreferences(storage: StorageReader = window.localStora
             fontSize: DEFAULT_FONT_SIZE,
             colorScheme: DEFAULT_COLOR_SCHEME,
             theme: DEFAULT_THEME,
-            toolbarCollapsed: false,
+            toolbarCollapsed: true,
         };
     }
 }

@@ -56,7 +56,7 @@ jobs:
       # run: go test -v -cover ./...
       # must add " for profile.cov on Windows OS
       run: |
-        cd frontend && bun build
+        cd frontend && bun run build
         go test -coverprofile="profile.cov" ./...
 
     - name: Send coverage

@@ -151,7 +151,7 @@ function setupToolbar() {
 
     let currentFontSize = storedPreferences.fontSize;
 
-    if (storedPreferences.toolbarCollapsed) {
+    if (storedPreferences.toolbarCollapsed !== false) {
         toolbar.classList.remove('expanded');
     } else {
         toolbar.classList.add('expanded');
