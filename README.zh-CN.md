@@ -29,6 +29,7 @@ MarkView 是一个零配置的 Markdown 预览服务器，使用 Go 提供后端
 - **📖 分屏预览**：hover 站内 Markdown 链接显示预览按钮，点击后右侧 40% 面板预览目标文档
 - **🎨 丰富渲染能力**：
   - GFM（GitHub Flavored Markdown）
+  - 图片全屏查看
   - `highlight.js` 代码高亮
   - `mermaid.js` 图表渲染、源码展开、全屏查看
 - **⚙️ 阅读设置**：

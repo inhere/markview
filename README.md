@@ -29,6 +29,7 @@ It focuses on local documentation reading: fast startup, live updates, clear sid
 - **📖 Split preview**: hover over internal Markdown links to reveal a preview button, click to open the target document in a side-by-side panel
 - **🎨 Rich rendering**:
   - GFM (GitHub Flavored Markdown)
+  - Image fullscreen viewer
   - `highlight.js` syntax highlighting
   - `mermaid.js` rendering with source toggle and fullscreen viewer
 - **⚙️ Reading preferences**:

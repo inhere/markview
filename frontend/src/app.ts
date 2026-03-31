@@ -18,6 +18,7 @@ import plaintext from 'highlight.js/lib/languages/plaintext';
 import powershell from 'highlight.js/lib/languages/powershell';
 import { setupLiveReloadStatus } from './live-status';
 import { enhanceMermaidContent, setupMermaidModal } from './mermaid';
+import { enhanceImagesInContent, setupImageModal } from './image-modal';
 import {
     applyPageSnapshot,
     parsePageSnapshot,
@@ -132,6 +133,7 @@ async function enhancePageContent() {
         hljs.highlightElement(block);
     });
     await enhanceMermaidContent(contentRoot);
+    enhanceImagesInContent(contentRoot);
 }
 
 function setupToolbar() {
@@ -413,6 +415,7 @@ function setupOnce() {
     setupToolbar();
     setupInlineNavigation();
     setupMermaidModal();
+    setupImageModal();
     setupLinkPreview();
     // Sidebar collapse and resize
     const sidebarPrefs = readSidebarPreferences();
