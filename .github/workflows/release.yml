@@ -41,7 +41,7 @@ jobs:
       - name: Build bin package
         run: |
           make build-all
-          ./build/markview-linux-amd64 -V
+          ./dist/markview-linux-amd64 -V
 
       - name: Generate changelog
         run: |

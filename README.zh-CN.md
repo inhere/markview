@@ -12,6 +12,8 @@ MarkView 是一个零配置的 Markdown 预览服务器，使用 Go 提供后端
 
 它专注于本地文档阅读体验：快速启动、实时刷新、清晰的侧边导航，以及对 Mermaid / 代码高亮等常见文档内容的良好支持。
 
+![MarkView](./example/images/screenshot_example.png)
+
 ## 功能特性
 
 - **🚀 Zero Config**：在任意目录直接启动，默认打开 `README.md`

@@ -12,6 +12,8 @@ MarkView is a zero-config Markdown preview server powered by Go and Bun.
 
 It focuses on local documentation reading: fast startup, live updates, clear sidebar navigation, and solid support for Mermaid diagrams and code highlighting.
 
+![MarkView](./example/images/screenshot_example.png)
+
 ## Features
 
 - **🚀 Zero Config**: run it in any directory and open `README.md` by default
