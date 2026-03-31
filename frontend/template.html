@@ -1127,8 +1127,19 @@
             display: flex;
             align-items: center;
             justify-content: flex-start;
+            gap: 12px;
             border-bottom: 1px solid var(--border-light);
             background: var(--bg-canvas);
+        }
+
+        .preview-title {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-heading);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .preview-close {
@@ -1593,6 +1604,7 @@
     <div id="preview-panel" class="preview-panel" style="display: none;">
         <div class="preview-header">
             <button class="preview-close" type="button">×</button>
+            <span class="preview-title" id="preview-title"></span>
         </div>
         <div class="preview-content">
             <div class="preview-loading">

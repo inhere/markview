@@ -197,6 +197,12 @@ async function loadInternalContent(url: string): Promise<void> {
             throw new Error('Missing #content in fetched page');
         }
         
+        const titleEl = document.getElementById('preview-title');
+        if (titleEl) {
+            const h1 = content.querySelector('h1');
+            titleEl.textContent = h1?.textContent?.trim() || doc.title || 'Preview';
+        }
+        
         // 渲染到 preview-body
         const bodyEl = panel.querySelector('.preview-body');
         const loadingEl = panel.querySelector('.preview-loading');
