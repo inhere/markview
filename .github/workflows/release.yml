@@ -41,7 +41,7 @@ jobs:
       - name: Build bin package
         run: |
           make build-all
-          ./dist/markview-linux-amd64 -V
+          ./dist/markview-linux-amd64 -h
 
       - name: Generate changelog
         run: |
@@ -51,6 +51,7 @@ jobs:
           cat changelog.md
 
       # https://github.com/softprops/action-gh-release
+      # 注意：需要在 仓库的设置中配置 Actions Workflow 权限，否则会报错
       - name: Create release and upload assets
         uses: softprops/action-gh-release@v2
         env:
