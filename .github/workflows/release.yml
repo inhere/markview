@@ -48,6 +48,7 @@ jobs:
           curl https://github.com/gookit/gitw/releases/latest/download/chlog-linux-amd64 -L -o /usr/local/bin/chlog
           chmod a+x /usr/local/bin/chlog
           chlog -c .github/changelog.yml -o changelog.md prev last
+          cat changelog.md
 
       # https://github.com/softprops/action-gh-release
       - name: Create release and upload assets
@@ -60,8 +61,8 @@ jobs:
           body_path: changelog.md
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            build/markview-darwin-amd64
-            build/markview-darwin-arm64
-            build/markview-linux-amd64
-            build/markview-linux-arm64
-            build/markview-windows-amd64.exe
+            dist/markview-darwin-amd64
+            dist/markview-darwin-arm64
+            dist/markview-linux-amd64
+            dist/markview-linux-arm64
+            dist/markview-windows-amd64.exe
