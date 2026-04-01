@@ -110,7 +110,7 @@ func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {
 }
 
 func TestStaticHandlerSetsRevalidateCacheHeaders(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/static/highlight.css", nil)
+	req := httptest.NewRequest(http.MethodGet, "/static/app.css", nil)
 	rec := httptest.NewRecorder()
 
 	newStaticHandler().ServeHTTP(rec, req)
