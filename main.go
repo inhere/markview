@@ -19,7 +19,7 @@ import (
 	"github.com/gookit/goutil/x/clog"
 )
 
-//go:embed frontend/template.html frontend/dist
+//go:embed frontend/template.html frontend/template-main.html frontend/dist
 var content embed.FS
 
 // Build-time variables injected via -ldflags
@@ -55,6 +55,7 @@ const (
 type PageData struct {
 	Title               string
 	Content             template.HTML
+	MainContent         template.HTML
 	FileName            string
 	FilePath            string
 	FileSize            string

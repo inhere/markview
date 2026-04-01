@@ -28,9 +28,6 @@ export function parsePageSnapshot(html: string, selectors: PageMountSelectors): 
     if (!(fileMeta instanceof HTMLElement)) {
         throw new Error('Missing file meta node in fetched page');
     }
-    if (!fileTreeScript?.textContent) {
-        throw new Error('Missing file tree data in fetched page');
-    }
     if (!currentFilePathScript?.textContent) {
         throw new Error('Missing current file path data in fetched page');
     }
@@ -39,7 +36,7 @@ export function parsePageSnapshot(html: string, selectors: PageMountSelectors): 
         title: nextDocument.title,
         contentHTML: content.innerHTML,
         fileMetaHTML: fileMeta.innerHTML,
-        fileTreeJSON: fileTreeScript.textContent,
+        fileTreeJSON: fileTreeScript?.textContent,
         currentFilePathJSON: currentFilePathScript.textContent,
     };
 }

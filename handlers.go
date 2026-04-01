@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -81,15 +80,6 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filePath)
 }
 
-// PageContentJSON is the JSON response structure for q=main requests
-type PageContentJSON struct {
-	Title               string `json:"title"`
-	ContentHTML         string `json:"contentHTML"`
-	FileMetaHTML        string `json:"fileMetaHTML"`
-	CurrentFilePathJSON string `json:"currentFilePathJSON"`
-}
-
-// renderMarkdown renders full HTML page (for initial page load)
 func renderMarkdown(w http.ResponseWriter, filePath string) {
 	info, err := os.Stat(filePath)
 	if err != nil {
@@ -102,16 +92,6 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 		http.Error(w, "Failed to render markdown", 500)
 		return
 	}
-
-	// Read template
-	tmplData, err := content.ReadFile("frontend/template.html")
-	if err != nil {
-		http.Error(w, "Template not found", 500)
-		return
-	}
-
-	// Use html/template properly
-	t := template.Must(template.New("index").Parse(string(tmplData)))
 
 	fileName := filepath.Base(filePath)
 	createdAt := "Unavailable"
@@ -130,7 +110,7 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 		return
 	}
 
-	data := PageData{
+	mainData := PageData{
 		Title:               fileName,
 		Content:             template.HTML(contentHTML),
 		FileName:            fileName,
@@ -138,6 +118,31 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 		FileSize:            formatFileSize(info.Size()),
 		CreatedAt:           createdAt,
 		ModifiedAt:          formatTimestamp(info.ModTime()),
+		CurrentFilePathJSON: mustMarshalJSON(normalizeRelativePath(currentRelativePath)),
+	}
+
+	mainTmplData, err := content.ReadFile("frontend/template-main.html")
+	if err != nil {
+		http.Error(w, "Template-main not found", 500)
+		return
+	}
+	mainTmpl := template.Must(template.New("main").Parse(string(mainTmplData)))
+	var mainContentBuf bytes.Buffer
+	if err = mainTmpl.Execute(&mainContentBuf, mainData); err != nil {
+		http.Error(w, "Failed to render main template", 500)
+		return
+	}
+
+	tmplData, err := content.ReadFile("frontend/template.html")
+	if err != nil {
+		http.Error(w, "Template not found", 500)
+		return
+	}
+	t := template.Must(template.New("index").Parse(string(tmplData)))
+
+	data := PageData{
+		Title:               fileName,
+		MainContent:         template.HTML(mainContentBuf.String()),
 		FileTreeJSON:        mustMarshalJSON(fileTree),
 		CurrentFilePathJSON: mustMarshalJSON(normalizeRelativePath(currentRelativePath)),
 	}
@@ -174,7 +179,6 @@ func renderMarkdownContent(filePath string) (string, error) {
 	return buf.String(), nil
 }
 
-// renderMainContent renders JSON response with only content parts (for inline navigation)
 func renderMainContent(w http.ResponseWriter, filePath string) {
 	info, err := os.Stat(filePath)
 	if err != nil {
@@ -199,26 +203,32 @@ func renderMainContent(w http.ResponseWriter, filePath string) {
 		return
 	}
 
-	fileMetaHTML := fmt.Sprintf(
-		`<div class="file-meta-line"><span><strong>%s</strong></span><span class="file-meta-sep">•</span><span>%s</span><span class="file-meta-sep">•</span><span>创建于 %s</span><span class="file-meta-sep">•</span><span>更新于 %s</span></div>`,
-		fileName, formatFileSize(info.Size()), createdAt, formatTimestamp(info.ModTime()),
-	)
-
-	data := PageContentJSON{
+	mainData := PageData{
 		Title:               fileName,
-		ContentHTML:         contentHTML,
-		FileMetaHTML:        fileMetaHTML,
-		CurrentFilePathJSON: string(mustMarshalJSON(normalizeRelativePath(currentRelativePath))),
+		Content:             template.HTML(contentHTML),
+		FileName:            fileName,
+		FilePath:            filePath,
+		FileSize:            formatFileSize(info.Size()),
+		CreatedAt:           createdAt,
+		ModifiedAt:          formatTimestamp(info.ModTime()),
+		CurrentFilePathJSON: mustMarshalJSON(normalizeRelativePath(currentRelativePath)),
+	}
+
+	mainTmplData, err := content.ReadFile("frontend/template-main.html")
+	if err != nil {
+		http.Error(w, "Template-main not found", 500)
+		return
+	}
+	mainTmpl := template.Must(template.New("main").Parse(string(mainTmplData)))
+	var mainContentBuf bytes.Buffer
+	if err = mainTmpl.Execute(&mainContentBuf, mainData); err != nil {
+		http.Error(w, "Failed to render main template", 500)
+		return
 	}
 
 	setPageCacheHeaders(w)
-	w.Header().Set("Content-Type", "application/json")
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		http.Error(w, "Failed to marshal JSON", 500)
-		return
-	}
-	w.Write(jsonData)
+	w.Header().Set("Content-Type", "text/html")
+	w.Write(mainContentBuf.Bytes())
 }
 
 func handleSSE(w http.ResponseWriter, r *http.Request) {

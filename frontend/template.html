@@ -139,21 +139,8 @@
     <!-- Main Content -->
     <main class="content-wrapper">
         <div style="width: 100%; max-width: var(--layout-max-width); display: flex; flex-direction: column; align-items: center;">
-            <article class="paper" id="content">
-                {{ .Content }}
-            </article>
-
-            <div class="file-meta" id="file-meta">
-                <div class="file-meta-line">
-                    <span><strong>{{ .FileName }}</strong></span>
-                    <span class="file-meta-sep">•</span>
-                    <span>{{ .FileSize }}</span>
-                    <span class="file-meta-sep">•</span>
-                    <span>创建于 {{ .CreatedAt }}</span>
-                    <span class="file-meta-sep">•</span>
-                    <span>更新于 {{ .ModifiedAt }}</span>
-                </div>
-            </div>
+            <!-- inject the tempalte-main.html -->
+            {{ .MainContent }}
         </div>
     </main>
 
@@ -190,7 +177,6 @@
 
     <!-- Main Application Script -->
     <script id="file-tree-data" type="application/json">{{ .FileTreeJSON }}</script>
-    <script id="current-file-path-data" type="application/json">{{ .CurrentFilePathJSON }}</script>
     <script type="module" src="/static/app.js"></script>
 </body>
 </html>

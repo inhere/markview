@@ -2,7 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**重要** 优先使用中文回复和响应
+**重要**:
+- 优先使用中文回复和响应
+- 关键方法或逻辑的注释要保留
 
 ## Build and run
 

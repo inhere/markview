@@ -1,0 +1,17 @@
+<article class="paper" id="content">
+    {{ .Content }}
+</article>
+
+<div class="file-meta" id="file-meta">
+    <div class="file-meta-line">
+        <span><strong>{{ .FileName }}</strong></span>
+        <span class="file-meta-sep">•</span>
+        <span>{{ .FileSize }}</span>
+        <span class="file-meta-sep">•</span>
+        <span>创建于 {{ .CreatedAt }}</span>
+        <span class="file-meta-sep">•</span>
+        <span>更新于 {{ .ModifiedAt }}</span>
+    </div>
+</div>
+
+<script id="current-file-path-data" type="application/json">{{ .CurrentFilePathJSON }}</script>
