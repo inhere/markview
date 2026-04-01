@@ -17,7 +17,7 @@ It focuses on local documentation reading: fast startup, live updates, clear sid
 ## Features
 
 - **🚀 Zero Config**: run it in any directory and open `README.md` by default
-- **⚡ Single-binary delivery**: the Go binary embeds `frontend/dist` and the HTML template, so no separate static deployment is required
+- **⚡ Single-binary delivery**: the Go binary embeds `web/dist` and the HTML template, so no separate static deployment is required
 - **🔄 Live Reload**: watches Markdown changes and updates the page through SSE
 - **🧭 Dual sidebar navigation**:
   - `Files` tree with expandable directories and current-file highlighting
@@ -85,7 +85,7 @@ $env:MKVIEW_ENTRY = "guide.md"; .\markview
 
 ```text
 markview/
-├── frontend/           # Frontend source, template, and build output
+├── web/           # Frontend source, template, and build output
 │   ├── src/
 │   │   ├── app.ts              # Page lifecycle, navigation, orchestration
 │   │   ├── sidebar.ts          # File tree and TOC logic
@@ -104,15 +104,15 @@ markview/
 
 ### Build from source
 
-1. Install frontend dependencies and build:
+1. Install web dependencies and build:
 
 ```bash
-cd frontend
+cd web
 bun install
 bun run build
 ```
 
-This generates `frontend/dist/` and also copies:
+This generates `web/dist/` and also copies:
 - `highlight.css`
 - `logo.svg`
 - `favicon.svg`
@@ -130,7 +130,7 @@ go install -ldflags "-s -w" .
 You can also use the provided `Makefile`:
 
 ```bash
-make frontend
+make web
 make build
 make run
 ```
@@ -141,11 +141,11 @@ Useful verification commands:
 
 ```bash
 go test ./...
-cd frontend && bun test ./src/*.test.ts
-cd frontend && bun run build
+cd web && bun test ./src/*.test.ts
+cd web && bun run build
 ```
 
-> `go:embed` packages both `frontend/template.html` and `frontend/dist/` into the final binary.
+> `go:embed` packages both `web/template.html` and `web/dist/` into the final binary.
 
 ## License
 

@@ -15,8 +15,8 @@
 ### Task 1: CSS Variables and Storage Keys Setup
 
 **Files:**
-- Modify: `frontend/template.html:18-45` (CSS variables)
-- Modify: `frontend/src/preferences.ts` (storage keys)
+- Modify: `web/template.html:18-45` (CSS variables)
+- Modify: `web/src/preferences.ts` (storage keys)
 
 - [ ] **Step 1: Add CSS variables for sidebar width**
 
@@ -90,10 +90,10 @@ export function persistFilesCollapsed(value: boolean, storage: StorageWriter = w
 }
 ```
 
-- [ ] **Step 4: Run frontend build**
+- [ ] **Step 4: Run web build**
 
 Run: `bun run build`
-Workdir: `frontend`
+Workdir: `web`
 Expected: PASS
 
 ---
@@ -101,7 +101,7 @@ Expected: PASS
 ### Task 2: Sidebar Collapse CSS Styles
 
 **Files:**
-- Modify: `frontend/template.html:139-190` (sidebar CSS)
+- Modify: `web/template.html:139-190` (sidebar CSS)
 
 - [ ] **Step 1: Add sidebar collapsed state styles**
 
@@ -266,10 +266,10 @@ Expected: PASS
 }
 ```
 
-- [ ] **Step 6: Run frontend build**
+- [ ] **Step 6: Run web build**
 
 Run: `bun run build`
-Workdir: `frontend`
+Workdir: `web`
 Expected: PASS
 
 ---
@@ -277,7 +277,7 @@ Expected: PASS
 ### Task 3: Add HTML Structure for Collapse and Resize
 
 **Files:**
-- Modify: `frontend/template.html:942-982` (sidebar HTML)
+- Modify: `web/template.html:942-982` (sidebar HTML)
 
 - [ ] **Step 1: Add collapse button to sidebar header**
 
@@ -348,10 +348,10 @@ Expected: PASS
 <section class="sidebar-panel sidebar-panel-files" id="files-panel">
 ```
 
-- [ ] **Step 6: Run frontend build**
+- [ ] **Step 6: Run web build**
 
 Run: `bun run build`
-Workdir: `frontend`
+Workdir: `web`
 Expected: PASS
 
 ---
@@ -359,7 +359,7 @@ Expected: PASS
 ### Task 4: Create sidebar-resize.ts Module
 
 **Files:**
-- Create: `frontend/src/sidebar-resize.ts`
+- Create: `web/src/sidebar-resize.ts`
 
 - [ ] **Step 1: Create the resize module**
 
@@ -390,49 +390,49 @@ export function initSidebarResize() {
 
 function startResize(event: MouseEvent) {
     if (event.button !== 0) return;
-    
+
     isResizing = true;
     startX = event.clientX;
-    
+
     const sidebar = document.querySelector(SIDEBAR_SELECTOR);
     if (sidebar) {
         const rect = sidebar.getBoundingClientRect();
         startWidth = rect.width;
     }
-    
+
     const handle = document.getElementById(RESIZE_HANDLE_ID);
     if (handle) {
         handle.classList.add('is-resizing');
     }
-    
+
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
-    
+
     event.preventDefault();
 }
 
 function doResize(event: MouseEvent) {
     if (!isResizing) return;
-    
+
     const deltaX = startX - event.clientX;
     const newWidth = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, startWidth - deltaX));
-    
+
     document.documentElement.style.setProperty(SIDEBAR_WIDTH_VAR, `${newWidth}px`);
 }
 
 function endResize() {
     if (!isResizing) return;
-    
+
     isResizing = false;
-    
+
     const handle = document.getElementById(RESIZE_HANDLE_ID);
     if (handle) {
         handle.classList.remove('is-resizing');
     }
-    
+
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
-    
+
     const currentWidth = getCurrentSidebarWidth();
     persistSidebarWidth(currentWidth);
 }
@@ -446,10 +446,10 @@ export function setSidebarWidth(width: number) {
 export function getCurrentSidebarWidth(): number {
     const value = document.documentElement.style.getPropertyValue(SIDEBAR_WIDTH_VAR);
     if (!value) return DEFAULT_SIDEBAR_WIDTH;
-    
+
     const parsed = Number.parseInt(value.replace('px', ''), 10);
     if (Number.isNaN(parsed)) return DEFAULT_SIDEBAR_WIDTH;
-    
+
     return parsed;
 }
 
@@ -462,10 +462,10 @@ export function applyInitialSidebarWidth(width: number) {
 
 不需要额外导出，sidebar-resize.ts 将独立导入到 app.ts。
 
-- [ ] **Step 3: Run frontend build**
+- [ ] **Step 3: Run web build**
 
 Run: `bun run build`
-Workdir: `frontend`
+Workdir: `web`
 Expected: PASS
 
 ---
@@ -473,7 +473,7 @@ Expected: PASS
 ### Task 5: Add Sidebar Collapse Logic
 
 **Files:**
-- Modify: `frontend/src/sidebar.ts`
+- Modify: `web/src/sidebar.ts`
 
 - [ ] **Step 1: Import preferences**
 
@@ -506,11 +506,11 @@ export function setupSidebarCollapse() {
     const collapseBtn = document.getElementById('sidebar-collapse-btn');
     const sidebar = document.querySelector('.sidebar');
     const filesPanel = document.getElementById('files-panel');
-    
+
     if (!collapseBtn || !sidebar || !filesPanel) return;
-    
+
     const prefs = readSidebarPreferences();
-    
+
     // Apply initial state
     if (prefs.sidebarCollapsed) {
         sidebar.classList.add('sidebar-collapsed');
@@ -518,29 +518,29 @@ export function setupSidebarCollapse() {
     if (prefs.filesCollapsed) {
         filesPanel.classList.add('files-collapsed');
     }
-    
+
     // Collapse button click
     collapseBtn.addEventListener('click', () => {
         const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
         persistSidebarCollapsed(isCollapsed);
-        
+
         // Update aria-label
         collapseBtn.setAttribute('aria-label', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
         collapseBtn.setAttribute('title', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
     });
-    
+
     // Files collapse button
     const filesCollapseBtn = document.getElementById('files-collapse-btn');
     if (filesCollapseBtn) {
         filesCollapseBtn.addEventListener('click', () => {
             const isCollapsed = filesPanel.classList.toggle('files-collapsed');
             persistFilesCollapsed(isCollapsed);
-            
+
             filesCollapseBtn.setAttribute('aria-label', isCollapsed ? 'Expand Files section' : 'Collapse Files section');
             filesCollapseBtn.setAttribute('title', isCollapsed ? 'Expand Files' : 'Collapse Files');
         });
     }
-    
+
     // Sidebar icon buttons (for collapsed state)
     const iconButtons = document.querySelectorAll('.sidebar-icon-btn');
     iconButtons.forEach(btn => {
@@ -548,10 +548,10 @@ export function setupSidebarCollapse() {
             // Expand sidebar
             sidebar.classList.remove('sidebar-collapsed');
             persistSidebarCollapsed(false);
-            
+
             collapseBtn.setAttribute('aria-label', 'Collapse sidebar');
             collapseBtn.setAttribute('title', 'Collapse sidebar');
-            
+
             // If Files button clicked, ensure Files is expanded
             const panel = btn.getAttribute('data-panel');
             if (panel === 'files') {
@@ -563,10 +563,10 @@ export function setupSidebarCollapse() {
 }
 ```
 
-- [ ] **Step 4: Run frontend build**
+- [ ] **Step 4: Run web build**
 
 Run: `bun run build`
-Workdir: `frontend`
+Workdir: `web`
 Expected: PASS
 
 ---
@@ -574,7 +574,7 @@ Expected: PASS
 ### Task 6: Integrate into app.ts
 
 **Files:**
-- Modify: `frontend/src/app.ts`
+- Modify: `web/src/app.ts`
 
 - [ ] **Step 1: Import new modules**
 
@@ -604,13 +604,13 @@ function setupOnce() {
     setupToolbar();
     setupInlineNavigation();
     setupMermaidModal();
-    
+
     // Sidebar collapse and resize
     const sidebarPrefs = readSidebarPreferences();
     applyInitialSidebarWidth(sidebarPrefs.sidebarWidth);
     initSidebarResize();
     setupSidebarCollapse();
-    
+
     window.addEventListener('scroll', () => {
         highlightTOC();
     }, { passive: true });
@@ -624,10 +624,10 @@ function setupOnce() {
 }
 ```
 
-- [ ] **Step 3: Run frontend build**
+- [ ] **Step 3: Run web build**
 
 Run: `bun run build`
-Workdir: `frontend`
+Workdir: `web`
 Expected: PASS
 
 ---
@@ -637,10 +637,10 @@ Expected: PASS
 **Files:**
 - All modified files
 
-- [ ] **Step 1: Run frontend build**
+- [ ] **Step 1: Run web build**
 
 Run: `bun run build`
-Workdir: `frontend`
+Workdir: `web`
 Expected: PASS (no TypeScript errors)
 
 - [ ] **Step 2: Manual browser verification**
@@ -661,6 +661,6 @@ Expected: PASS (no TypeScript errors)
 - [ ] **Step 4: Commit changes**
 
 ```bash
-git add frontend/src/sidebar-resize.ts frontend/src/sidebar.ts frontend/src/preferences.ts frontend/src/app.ts frontend/src/util.ts frontend/template.html
+git add web/src/sidebar-resize.ts web/src/sidebar.ts web/src/preferences.ts web/src/app.ts web/src/util.ts web/template.html
 git commit -m "feat: add sidebar collapse, resize, and files collapse features"
 ```

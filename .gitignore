@@ -1,6 +1,5 @@
 node_modules/
-frontend/app.js
-frontend/dist/
+web/dist/
 dist/
 *.exe
 .omc/

@@ -17,7 +17,7 @@ MarkView 是一个零配置的 Markdown 预览服务器，使用 Go 提供后端
 ## 功能特性
 
 - **🚀 Zero Config**：在任意目录直接启动，默认打开 `README.md`
-- **⚡ 单文件服务**：Go 二进制内嵌 `frontend/dist` 和模板，无需额外静态资源部署
+- **⚡ 单文件服务**：Go 二进制内嵌 `web/dist` 和模板，无需额外静态资源部署
 - **🔄 Live Reload**：监听 Markdown 变更，通过 SSE 局部刷新页面
 - **🧭 双侧边栏导航**：
   - `Files` 文件树，支持目录展开、当前文件高亮
@@ -85,7 +85,7 @@ markview . "guide.md"
 
 ```text
 markview/
-├── frontend/           # 前端源码与模板
+├── web/           # 前端源码与模板
 │   ├── src/
 │   │   ├── app.ts              # 页面生命周期、导航、渲染编排
 │   │   ├── sidebar.ts          # 文件树与 TOC 逻辑
@@ -107,12 +107,12 @@ markview/
 1. 安装前端依赖并构建：
 
 ```bash
-cd frontend
+cd web
 bun install
 bun run build
 ```
 
-这会生成 `frontend/dist/`，并自动复制：
+这会生成 `web/dist/`，并自动复制：
 - `highlight.css`
 - `logo.svg`
 - `favicon.svg`
@@ -130,7 +130,7 @@ go install -ldflags "-s -w" .
 也可以直接使用 `Makefile`：
 
 ```bash
-make frontend
+make web
 make build
 make run
 ```
@@ -141,11 +141,11 @@ make run
 
 ```bash
 go test ./...
-cd frontend && bun test ./src/*.test.ts
-cd frontend && bun run build
+cd web && bun test ./src/*.test.ts
+cd web && bun run build
 ```
 
-> `go:embed` 会将 `frontend/template.html` 与 `frontend/dist/` 一起打包进最终二进制。
+> `go:embed` 会将 `web/template.html` 与 `web/dist/` 一起打包进最终二进制。
 
 ## License
 

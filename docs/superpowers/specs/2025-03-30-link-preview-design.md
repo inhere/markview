@@ -33,9 +33,9 @@
 
 | 文件 | 改动类型 | 描述 |
 |------|----------|------|
-| `frontend/src/link-preview.ts` | 新建 | 核心逻辑模块 |
-| `frontend/src/app.ts` | 修改 | 引入并调用 `setupLinkPreview()` |
-| `frontend/template.html` | 修改 | CSS 分屏布局 + 面板 HTML + 按钮样式 |
+| `web/src/link-preview.ts` | 新建 | 核心逻辑模块 |
+| `web/src/app.ts` | 修改 | 引入并调用 `setupLinkPreview()` |
+| `web/template.html` | 修改 | CSS 分屏布局 + 面板 HTML + 按钮样式 |
 
 ### CSS 结构
 

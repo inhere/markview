@@ -20,10 +20,10 @@
 
 相关文件：
 
-- `frontend/template.html`：侧边栏 HTML 结构和 CSS
-- `frontend/src/sidebar.ts`：文件树渲染逻辑
-- `frontend/src/preferences.ts`：偏好设置存储
-- `frontend/src/app.ts`：应用入口
+- `web/template.html`：侧边栏 HTML 结构和 CSS
+- `web/src/sidebar.ts`：文件树渲染逻辑
+- `web/src/preferences.ts`：偏好设置存储
+- `web/src/app.ts`：应用入口
 
 ## Architecture
 
@@ -105,7 +105,7 @@
 
 **实现**：
 
-新增模块 `frontend/src/sidebar-resize.ts`：
+新增模块 `web/src/sidebar-resize.ts`：
 
 ```typescript
 export function initSidebarResize() {
@@ -158,11 +158,11 @@ export function setSidebarWidth(width: number) {
 
 | 文件 | 修改内容 |
 |------|----------|
-| `frontend/template.html` | CSS 样式、HTML 结构调整 |
-| `frontend/src/sidebar.ts` | Files 折叠逻辑、收起状态图标栏 |
-| `frontend/src/sidebar-resize.ts` | **新增**：拖动调整宽度逻辑 |
-| `frontend/src/preferences.ts` | 存取三个状态键 |
-| `frontend/src/app.ts` | 初始化时恢复状态、调用 resize 初始化 |
+| `web/template.html` | CSS 样式、HTML 结构调整 |
+| `web/src/sidebar.ts` | Files 折叠逻辑、收起状态图标栏 |
+| `web/src/sidebar-resize.ts` | **新增**：拖动调整宽度逻辑 |
+| `web/src/preferences.ts` | 存取三个状态键 |
+| `web/src/app.ts` | 初始化时恢复状态、调用 resize 初始化 |
 
 ## Risks
 

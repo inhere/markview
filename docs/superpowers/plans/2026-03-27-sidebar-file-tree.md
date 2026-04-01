@@ -60,7 +60,7 @@ Expected: PASS
 ### Task 3: Update sidebar layout and styles
 
 **Files:**
-- Modify: `frontend/template.html`
+- Modify: `web/template.html`
 
 - [ ] **Step 1: Add Files and TOC sections**
 
@@ -74,10 +74,10 @@ Expected: PASS
 
 实现 section 标题、树节点、箭头按钮、当前节点高亮和独立滚动区域。
 
-### Task 4: Render and control the tree in frontend
+### Task 4: Render and control the tree in web
 
 **Files:**
-- Modify: `frontend/app.ts`
+- Modify: `web/app.ts`
 
 - [ ] **Step 1: Read tree data from DOM**
 
@@ -98,8 +98,8 @@ Expected: PASS
 ### Task 5: Verify build and runtime integration
 
 **Files:**
-- Modify: `frontend/app.ts`
-- Modify: `frontend/template.html`
+- Modify: `web/app.ts`
+- Modify: `web/template.html`
 - Modify: `handlers.go`
 - Modify: `main.go`
 
@@ -108,10 +108,10 @@ Expected: PASS
 Run: `go test ./...`
 Expected: PASS
 
-- [ ] **Step 2: Run frontend build**
+- [ ] **Step 2: Run web build**
 
 Run: `bun run build`
-Workdir: `frontend`
+Workdir: `web`
 Expected: PASS
 
 - [ ] **Step 3: Review final diff**

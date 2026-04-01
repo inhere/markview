@@ -14,32 +14,32 @@
 
 | File | Action | Responsibility |
 |------|--------|----------------|
-| `frontend/src/link-preview.ts` | Create | 核心逻辑：链接增强、面板管理、内容加载 |
-| `frontend/src/app.ts` | Modify | 引入并调用 `setupLinkPreview()` |
-| `frontend/template.html` | Modify | CSS 分屏布局 + 预览面板 HTML + 按钮样式 |
+| `web/src/link-preview.ts` | Create | 核心逻辑：链接增强、面板管理、内容加载 |
+| `web/src/app.ts` | Modify | 引入并调用 `setupLinkPreview()` |
+| `web/template.html` | Modify | CSS 分屏布局 + 预览面板 HTML + 按钮样式 |
 
 ---
 
 ## Task 1: 创建 link-preview.ts 基础模块
 
 **Files:**
-- Create: `frontend/src/link-preview.ts`
+- Create: `web/src/link-preview.ts`
 
 - [ ] **Step 1: 创建模块骨架**
 
 创建文件，导出 `setupLinkPreview` 入口函数，声明状态变量：
 
 ```typescript
-// frontend/src/link-preview.ts
+// web/src/link-preview.ts
 
 export function setupLinkPreview(): void {
     if (window.innerWidth < 1024) {
         return; // 移动端不启用
     }
-    
+
     // 监听 ESC 键关闭面板
     document.addEventListener('keydown', handleEscapeKey);
-    
+
     // 增强当前内容区域的链接
     const content = document.querySelector('#content');
     if (content instanceof HTMLElement) {
@@ -73,7 +73,7 @@ function closePreviewPanel(): void {
 
 - [ ] **Step 2: 验证模块可导入**
 
-在 `frontend/src/app.ts` 顶部添加临时导入验证：
+在 `web/src/app.ts` 顶部添加临时导入验证：
 
 ```typescript
 import { setupLinkPreview } from './link-preview';
@@ -82,7 +82,7 @@ import { setupLinkPreview } from './link-preview';
 运行构建确认无语法错误：
 
 ```bash
-cd frontend && bun run build
+cd web && bun run build
 ```
 
 Expected: Build succeeds (可能有空函数警告，忽略)
@@ -90,7 +90,7 @@ Expected: Build succeeds (可能有空函数警告，忽略)
 - [ ] **Step 3: Commit**
 
 ```bash
-git add frontend/src/link-preview.ts frontend/src/app.ts
+git add web/src/link-preview.ts web/src/app.ts
 git commit -m "feat(link-preview): create module skeleton with setupLinkPreview export"
 ```
 
@@ -99,7 +99,7 @@ git commit -m "feat(link-preview): create module skeleton with setupLinkPreview 
 ## Task 2: 实现链接增强函数 enhanceLinksInContent
 
 **Files:**
-- Modify: `frontend/src/link-preview.ts`
+- Modify: `web/src/link-preview.ts`
 
 - [ ] **Step 1: 实现 shouldShowPreviewButton 判断函数**
 
@@ -115,39 +115,39 @@ const STATIC_RESOURCE_EXTENSIONS = [
 function shouldShowPreviewButton(anchor: HTMLAnchorElement): boolean {
     const href = anchor.getAttribute('href');
     if (!href) return false;
-    
+
     // 排除锚点链接
     if (href.startsWith('#')) return false;
-    
+
     // 排除静态资源
     const lowerHref = href.toLowerCase();
     for (const ext of STATIC_RESOURCE_EXTENSIONS) {
         if (lowerHref.endsWith(ext)) return false;
     }
-    
+
     // 排除 download 属性
     if (anchor.hasAttribute('download')) return false;
-    
+
     // 排除 target="_blank" (外站链接已有此属性)
     if (anchor.target === '_blank') {
         // 外站链接仍可预览（iframe方式）
         return true;
     }
-    
+
     // 站内链接需要是 Markdown 文件
     const url = new URL(anchor.href, window.location.href);
     if (url.origin !== window.location.origin) {
         return true; // 站外链接，iframe 预览
     }
-    
+
     // 站内路径：检查是否为 .md 或无扩展名
     const pathname = url.pathname;
     const lastSegment = pathname.split('/').filter(Boolean).pop() || '';
-    
+
     if (lastSegment.includes('.')) {
         return lastSegment.toLowerCase().endsWith('.md');
     }
-    
+
     return true; // 无扩展名的路径视为可预览
 }
 
@@ -164,24 +164,24 @@ function isInternalLink(anchor: HTMLAnchorElement): boolean {
 ```typescript
 function enhanceLinksInContent(root: HTMLElement): void {
     const anchors = root.querySelectorAll('a[href]');
-    
+
     for (const anchor of anchors) {
         if (!(anchor instanceof HTMLAnchorElement)) continue;
         if (!shouldShowPreviewButton(anchor)) continue;
-        
+
         // 为链接创建包装容器（用于定位按钮）
         const wrapper = document.createElement('span');
         wrapper.className = 'link-preview-wrapper';
         anchor.parentNode?.insertBefore(wrapper, anchor);
         wrapper.appendChild(anchor);
-        
+
         // 创建预览按钮
         const btn = document.createElement('button');
         btn.className = 'link-preview-btn';
         btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>`;
         btn.title = '分屏预览';
         btn.type = 'button';
-        
+
         // hover 显示逻辑
         wrapper.addEventListener('mouseenter', () => {
             btn.classList.add('visible');
@@ -189,14 +189,14 @@ function enhanceLinksInContent(root: HTMLElement): void {
         wrapper.addEventListener('mouseleave', () => {
             btn.classList.remove('visible');
         });
-        
+
         // 点击处理
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             openPreviewPanel(anchor.href, btn);
         });
-        
+
         wrapper.appendChild(btn);
     }
 }
@@ -209,7 +209,7 @@ function enhanceLinksInContent(root: HTMLElement): void {
 ```typescript
 export function setupLinkPreview(): void {
     // ... 原有代码 ...
-    
+
     const content = document.querySelector('#content');
     if (content instanceof HTMLElement) {
         enhanceLinksInContent(content);
@@ -221,7 +221,7 @@ export function setupLinkPreview(): void {
 运行服务，打开包含 Markdown 链接的页面：
 
 ```bash
-cd frontend && bun run build && cd .. && go run ./cmd/markview
+cd web && bun run build && cd .. && go run ./cmd/markview
 ```
 
 Expected: Console 显示 "Link preview: enhanced links"，检查 DOM 确认 `.link-preview-wrapper` 和 `.link-preview-btn` 元素存在。
@@ -229,7 +229,7 @@ Expected: Console 显示 "Link preview: enhanced links"，检查 DOM 确认 `.li
 - [ ] **Step 4: Commit**
 
 ```bash
-git add frontend/src/link-preview.ts
+git add web/src/link-preview.ts
 git commit -m "feat(link-preview): implement enhanceLinksInContent with hover buttons"
 ```
 
@@ -238,7 +238,7 @@ git commit -m "feat(link-preview): implement enhanceLinksInContent with hover bu
 ## Task 3: 添加预览按钮 CSS 样式
 
 **Files:**
-- Modify: `frontend/template.html`
+- Modify: `web/template.html`
 
 - [ ] **Step 1: 添加 .link-preview-wrapper 和 .link-preview-btn CSS**
 
@@ -306,7 +306,7 @@ Expected: 预览按钮出现在链接右侧，hover 时显示，移出时隐藏�
 - [ ] **Step 3: Commit**
 
 ```bash
-git add frontend/template.html
+git add web/template.html
 git commit -m "feat(link-preview): add CSS for hover preview button"
 ```
 
@@ -315,7 +315,7 @@ git commit -m "feat(link-preview): add CSS for hover preview button"
 ## Task 4: 实现预览面板 HTML 结构
 
 **Files:**
-- Modify: `frontend/template.html`
+- Modify: `web/template.html`
 
 - [ ] **Step 1: 添加预览面板 HTML**
 
@@ -470,7 +470,7 @@ Expected: `#preview-panel` 元素存在，CSS 正确渲染（默认隐藏）。
 - [ ] **Step 5: Commit**
 
 ```bash
-git add frontend/template.html
+git add web/template.html
 git commit -m "feat(link-preview): add preview panel HTML and CSS"
 ```
 
@@ -479,7 +479,7 @@ git commit -m "feat(link-preview): add preview panel HTML and CSS"
 ## Task 5: 实现面板开关逻辑
 
 **Files:**
-- Modify: `frontend/src/link-preview.ts`
+- Modify: `web/src/link-preview.ts`
 
 - [ ] **Step 1: 实现 openPreviewPanel 和 closePreviewPanel**
 
@@ -487,31 +487,31 @@ git commit -m "feat(link-preview): add preview panel HTML and CSS"
 function openPreviewPanel(url: string, triggerButton: HTMLElement): void {
     const panel = document.getElementById('preview-panel');
     if (!panel) return;
-    
+
     // 若点击同一链接的按钮，关闭面板
     if (previewPanelOpen && currentPreviewUrl === url) {
         closePreviewPanel();
         return;
     }
-    
+
     // 更新状态
     currentPreviewUrl = url;
     currentTriggerButton = triggerButton;
     previewPanelOpen = true;
-    
+
     // 显示面板
     panel.style.display = 'flex';
     document.body.classList.add('preview-active');
-    
+
     // 绑定关闭按钮
     const closeBtn = panel.querySelector('.preview-close');
     if (closeBtn) {
         closeBtn.onclick = closePreviewPanel;
     }
-    
+
     // 重置面板状态
     resetPanelState();
-    
+
     // 加载内容
     const anchor = triggerButton.previousElementSibling;
     if (anchor instanceof HTMLAnchorElement) {
@@ -526,31 +526,31 @@ function openPreviewPanel(url: string, triggerButton: HTMLElement): void {
 function closePreviewPanel(): void {
     const panel = document.getElementById('preview-panel');
     if (!panel) return;
-    
+
     // 隐藏面板
     panel.style.display = 'none';
     document.body.classList.remove('preview-active');
-    
+
     // 清除 iframe（如果有）
     const iframe = panel.querySelector('iframe');
     if (iframe) iframe.remove();
-    
+
     // 重置状态
     currentPreviewUrl = null;
     currentTriggerButton = null;
     previewPanelOpen = false;
-    
+
     resetPanelState();
 }
 
 function resetPanelState(): void {
     const panel = document.getElementById('preview-panel');
     if (!panel) return;
-    
+
     const loading = panel.querySelector('.preview-loading');
     const body = panel.querySelector('.preview-body');
     const error = panel.querySelector('.preview-error');
-    
+
     if (loading) loading.style.display = 'flex';
     if (body) body.innerHTML = '';
     if (error) error.classList.remove('visible');
@@ -561,7 +561,7 @@ function resetPanelState(): void {
 
 刷新页面，点击预览按钮：
 
-Expected: 
+Expected:
 - 面板显示在右侧 40%
 - body 添加 `.preview-active` 类
 - 显示加载状态
@@ -573,7 +573,7 @@ Expected: 面板关闭。
 - [ ] **Step 3: Commit**
 
 ```bash
-git add frontend/src/link-preview.ts
+git add web/src/link-preview.ts
 git commit -m "feat(link-preview): implement openPreviewPanel and closePreviewPanel"
 ```
 
@@ -582,7 +582,7 @@ git commit -m "feat(link-preview): implement openPreviewPanel and closePreviewPa
 ## Task 6: 实现站内内容加载
 
 **Files:**
-- Modify: `frontend/src/link-preview.ts`
+- Modify: `web/src/link-preview.ts`
 
 - [ ] **Step 1: 导入 page.ts 函数**
 
@@ -603,42 +603,42 @@ import {
 async function loadInternalContent(url: string): Promise<void> {
     const panel = document.getElementById('preview-panel');
     if (!panel) return;
-    
+
     try {
         // 构造 URL（添加 inline navigation header）
         const targetUrl = new URL(url, window.location.href);
-        
+
         // fetch 页面
         const response = await fetch(targetUrl.toString(), {
             headers: { 'X-MarkView-Navigation': 'inline' },
         });
-        
+
         if (!response.ok) {
             throw new Error(`Failed to fetch: ${response.status}`);
         }
-        
+
         const html = await response.text();
-        
+
         // 解析页面，只提取 #content
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         const content = doc.querySelector('#content');
-        
+
         if (!(content instanceof HTMLElement)) {
             throw new Error('Missing #content in fetched page');
         }
-        
+
         // 渲染到 preview-body
         const bodyEl = panel.querySelector('.preview-body');
         const loadingEl = panel.querySelector('.preview-loading');
-        
+
         if (bodyEl) {
             bodyEl.innerHTML = content.innerHTML;
             // 添加 paper 样式给预览内容
             bodyEl.style.padding = '20px';
         }
         if (loadingEl) loadingEl.style.display = 'none';
-        
+
     } catch (error) {
         console.error('Internal content load failed:', error);
         showErrorState();
@@ -648,10 +648,10 @@ async function loadInternalContent(url: string): Promise<void> {
 function showErrorState(): void {
     const panel = document.getElementById('preview-panel');
     if (!panel) return;
-    
+
     const loading = panel.querySelector('.preview-loading');
     const error = panel.querySelector('.preview-error');
-    
+
     if (loading) loading.style.display = 'none';
     if (error) {
         error.classList.add('visible');
@@ -674,7 +674,7 @@ Expected: 右侧面板显示 other.md 的 #content 内容（无 sidebar），样
 - [ ] **Step 4: Commit**
 
 ```bash
-git add frontend/src/link-preview.ts
+git add web/src/link-preview.ts
 git commit -m "feat(link-preview): implement loadInternalContent using fetchPageSnapshot"
 ```
 
@@ -683,7 +683,7 @@ git commit -m "feat(link-preview): implement loadInternalContent using fetchPage
 ## Task 7: 实现站外 iframe 加载
 
 **Files:**
-- Modify: `frontend/src/link-preview.ts`
+- Modify: `web/src/link-preview.ts`
 
 - [ ] **Step 1: 实现 loadExternalContent**
 
@@ -693,12 +693,12 @@ const IFRAME_TIMEOUT_MS = 8000;
 function loadExternalContent(url: string): void {
     const panel = document.getElementById('preview-panel');
     if (!panel) return;
-    
+
     const bodyEl = panel.querySelector('.preview-body');
     const loadingEl = panel.querySelector('.preview-loading');
-    
+
     if (!bodyEl) return;
-    
+
     // 创建 iframe
     const iframe = document.createElement('iframe');
     iframe.src = url;
@@ -706,7 +706,7 @@ function loadExternalContent(url: string): void {
     iframe.style.height = '100%';
     iframe.style.border = 'none';
     iframe.title = 'Preview';
-    
+
     // 超时检测
     let loaded = false;
     const timeoutId = setTimeout(() => {
@@ -716,20 +716,20 @@ function loadExternalContent(url: string): void {
             showErrorState();
         }
     }, IFRAME_TIMEOUT_MS);
-    
+
     iframe.onload = () => {
         loaded = true;
         clearTimeout(timeoutId);
         if (loadingEl) loadingEl.style.display = 'none';
     };
-    
+
     iframe.onerror = () => {
         loaded = true;
         clearTimeout(timeoutId);
         iframe.remove();
         showErrorState();
     };
-    
+
     bodyEl.innerHTML = '';
     bodyEl.appendChild(iframe);
 }
@@ -748,7 +748,7 @@ Expected:
 - [ ] **Step 3: Commit**
 
 ```bash
-git add frontend/src/link-preview.ts
+git add web/src/link-preview.ts
 git commit -m "feat(link-preview): implement loadExternalContent with iframe and timeout"
 ```
 
@@ -757,7 +757,7 @@ git commit -m "feat(link-preview): implement loadExternalContent with iframe and
 ## Task 8: 集成到 app.ts
 
 **Files:**
-- Modify: `frontend/src/app.ts`
+- Modify: `web/src/app.ts`
 
 - [ ] **Step 1: 导入并调用 setupLinkPreview**
 
@@ -798,13 +798,13 @@ async function renderCurrentPage(options: RenderPageOptions = {}) {
     generateTOC();
     await enhancePageContent();
     highlightTOC();
-    
+
     // 新增：增强链接预览
     const content = document.querySelector(CONTENT_SELECTOR);
     if (content instanceof HTMLElement && window.innerWidth >= 1024) {
         enhanceLinksInContent(content);
     }
-    
+
     // ... 后续代码 ...
 }
 ```
@@ -830,7 +830,7 @@ Expected:
 - [ ] **Step 4: Commit**
 
 ```bash
-git add frontend/src/link-preview.ts frontend/src/app.ts
+git add web/src/link-preview.ts web/src/app.ts
 git commit -m "feat(link-preview): integrate setupLinkPreview into app lifecycle"
 ```
 

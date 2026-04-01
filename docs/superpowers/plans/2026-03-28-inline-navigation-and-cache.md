@@ -40,7 +40,7 @@ Expected: PASS
 ### Task 2: Prepare template for local assets and patchable sections
 
 **Files:**
-- Modify: `frontend/template.html`
+- Modify: `web/template.html`
 
 - [ ] **Step 1: Localize highlight stylesheet**
 
@@ -50,10 +50,10 @@ Expected: PASS
 
 保证正文、文件信息、内嵌 JSON 都有稳定选择器供局部替换。
 
-### Task 3: Refactor frontend init lifecycle
+### Task 3: Refactor web init lifecycle
 
 **Files:**
-- Modify: `frontend/app.ts`
+- Modify: `web/app.ts`
 
 - [ ] **Step 1: Split one-time setup from per-page render**
 
@@ -66,7 +66,7 @@ Expected: PASS
 ### Task 4: Implement inline navigation and history
 
 **Files:**
-- Modify: `frontend/app.ts`
+- Modify: `web/app.ts`
 
 - [ ] **Step 1: Parse target HTML**
 
@@ -87,7 +87,7 @@ Expected: PASS
 ### Task 5: Reuse the same pipeline for SSE
 
 **Files:**
-- Modify: `frontend/app.ts`
+- Modify: `web/app.ts`
 
 - [ ] **Step 1: Replace full reload**
 
@@ -100,8 +100,8 @@ SSE 收到更新时不再执行 `window.location.reload()`。
 ### Task 6: Verify end-to-end behavior
 
 **Files:**
-- Modify: `frontend/app.ts`
-- Modify: `frontend/template.html`
+- Modify: `web/app.ts`
+- Modify: `web/template.html`
 - Modify: `handlers.go`
 - Modify: `main.go`
 
@@ -110,10 +110,10 @@ SSE 收到更新时不再执行 `window.location.reload()`。
 Run: `go test ./...`
 Expected: PASS
 
-- [ ] **Step 2: Run frontend build**
+- [ ] **Step 2: Run web build**
 
 Run: `bun run build`
-Workdir: `frontend`
+Workdir: `web`
 Expected: PASS
 
 - [ ] **Step 3: Browser verification**
