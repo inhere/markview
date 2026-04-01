@@ -2,7 +2,7 @@ export interface PageSnapshot {
     title: string;
     contentHTML: string;
     fileMetaHTML: string;
-    fileTreeJSON: string;
+    fileTreeJSON?: string;
     currentFilePathJSON: string;
 }
 
@@ -57,6 +57,8 @@ export function applyPageSnapshot(snapshot: PageSnapshot, selectors: PageMountSe
     document.title = snapshot.title;
     content.innerHTML = snapshot.contentHTML;
     fileMeta.innerHTML = snapshot.fileMetaHTML;
-    fileTreeScript.textContent = snapshot.fileTreeJSON;
+    if (snapshot.fileTreeJSON) {
+        fileTreeScript.textContent = snapshot.fileTreeJSON;
+    }
     currentFilePathScript.textContent = snapshot.currentFilePathJSON;
 }

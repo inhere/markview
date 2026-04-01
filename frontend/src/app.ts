@@ -264,7 +264,10 @@ async function fetchPageSnapshot(url: URL): Promise<PageSnapshot> {
     const controller = new AbortController();
     navigationController = controller;
 
-    const response = await fetch(url.toString(), {
+    const fetchUrl = new URL(url.toString());
+    fetchUrl.searchParams.set('q', 'main');
+
+    const response = await fetch(fetchUrl.toString(), {
         cache: 'no-store',
         headers: {
             'X-MarkView-Navigation': 'inline',
@@ -277,6 +280,14 @@ async function fetchPageSnapshot(url: URL): Promise<PageSnapshot> {
     }
 
     const contentType = response.headers.get('Content-Type') || '';
+    if (contentType.includes('application/json')) {
+        const json = await response.json();
+        if (requestId !== navigationRequestId) {
+            throw new DOMException('Stale navigation response', 'AbortError');
+        }
+        return json as PageSnapshot;
+    }
+
     if (!contentType.includes('text/html')) {
         throw new Error(`Unexpected content-type: ${contentType}`);
     }

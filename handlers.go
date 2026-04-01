@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -67,7 +68,12 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if strings.HasSuffix(strings.ToLower(filePath), ".md") {
-		renderMarkdown(w, filePath)
+		queryParam := r.URL.Query().Get("q")
+		if queryParam == "main" {
+			renderMainContent(w, filePath)
+		} else {
+			renderMarkdown(w, filePath)
+		}
 		return
 	}
 
@@ -75,6 +81,15 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filePath)
 }
 
+// PageContentJSON is the JSON response structure for q=main requests
+type PageContentJSON struct {
+	Title               string `json:"title"`
+	ContentHTML         string `json:"contentHTML"`
+	FileMetaHTML        string `json:"fileMetaHTML"`
+	CurrentFilePathJSON string `json:"currentFilePathJSON"`
+}
+
+// renderMarkdown renders full HTML page (for initial page load)
 func renderMarkdown(w http.ResponseWriter, filePath string) {
 	info, err := os.Stat(filePath)
 	if err != nil {
@@ -82,26 +97,8 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 		return
 	}
 
-	mdData, err := os.ReadFile(filePath)
+	contentHTML, err := renderMarkdownContent(filePath)
 	if err != nil {
-		http.Error(w, "Failed to read file", 500)
-		return
-	}
-
-	// Configure goldmark
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-		),
-		goldmark.WithRendererOptions(
-			html.WithHardWraps(),
-			html.WithUnsafe(), // Allow raw HTML
-		),
-	)
-
-	var buf bytes.Buffer
-	if err = md.Convert(mdData, &buf); err != nil {
 		http.Error(w, "Failed to render markdown", 500)
 		return
 	}
@@ -135,7 +132,7 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 
 	data := PageData{
 		Title:               fileName,
-		Content:             template.HTML(buf.String()),
+		Content:             template.HTML(contentHTML),
 		FileName:            fileName,
 		FilePath:            filePath,
 		FileSize:            formatFileSize(info.Size()),
@@ -148,6 +145,80 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 	setPageCacheHeaders(w)
 	w.Header().Set("Content-Type", "text/html")
 	t.Execute(w, data)
+}
+
+// renderMarkdownContent renders just the markdown content (shared function)
+func renderMarkdownContent(filePath string) (string, error) {
+	mdData, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", err
+	}
+
+	// Configure goldmark
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
+			html.WithUnsafe(), // Allow raw HTML
+		),
+	)
+
+	var buf bytes.Buffer
+	if err = md.Convert(mdData, &buf); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+// renderMainContent renders JSON response with only content parts (for inline navigation)
+func renderMainContent(w http.ResponseWriter, filePath string) {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		http.Error(w, "Failed to stat file", 500)
+		return
+	}
+
+	contentHTML, err := renderMarkdownContent(filePath)
+	if err != nil {
+		http.Error(w, "Failed to render markdown", 500)
+		return
+	}
+
+	fileName := filepath.Base(filePath)
+	createdAt := "Unavailable"
+	if created := fileCreatedTime(info); !created.IsZero() {
+		createdAt = formatTimestamp(created)
+	}
+	currentRelativePath, err := filepath.Rel(targetDir, filePath)
+	if err != nil {
+		http.Error(w, "Failed to resolve current file path", 500)
+		return
+	}
+
+	fileMetaHTML := fmt.Sprintf(
+		`<div class="file-meta-line"><span><strong>%s</strong></span><span class="file-meta-sep">•</span><span>%s</span><span class="file-meta-sep">•</span><span>创建于 %s</span><span class="file-meta-sep">•</span><span>更新于 %s</span></div>`,
+		fileName, formatFileSize(info.Size()), createdAt, formatTimestamp(info.ModTime()),
+	)
+
+	data := PageContentJSON{
+		Title:               fileName,
+		ContentHTML:         contentHTML,
+		FileMetaHTML:        fileMetaHTML,
+		CurrentFilePathJSON: string(mustMarshalJSON(normalizeRelativePath(currentRelativePath))),
+	}
+
+	setPageCacheHeaders(w)
+	w.Header().Set("Content-Type", "application/json")
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		http.Error(w, "Failed to marshal JSON", 500)
+		return
+	}
+	w.Write(jsonData)
 }
 
 func handleSSE(w http.ResponseWriter, r *http.Request) {

@@ -172,48 +172,55 @@ function resetPanelState(): void {
 async function loadInternalContent(url: string): Promise<void> {
     const panel = document.getElementById('preview-panel');
     if (!panel) return;
-    
+
     try {
-        // 构造 URL（添加 inline navigation header）
         const targetUrl = new URL(url, window.location.href);
-        
-        // fetch 页面
+        targetUrl.searchParams.set('q', 'main');
+
         const response = await fetch(targetUrl.toString(), {
             headers: { 'X-MarkView-Navigation': 'inline' },
         });
-        
+
         if (!response.ok) {
             throw new Error(`Failed to fetch: ${response.status}`);
         }
-        
-        const html = await response.text();
-        
-        // 解析页面，只提取 #content
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const content = doc.querySelector('#content');
-        
-        if (!(content instanceof HTMLElement)) {
-            throw new Error('Missing #content in fetched page');
+
+        const contentType = response.headers.get('Content-Type') || '';
+        let contentHTML: string;
+        let docTitle: string;
+
+        if (contentType.includes('application/json')) {
+            const data = await response.json();
+            contentHTML = data.contentHTML;
+            docTitle = data.title;
+        } else {
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const content = doc.querySelector('#content');
+
+            if (!(content instanceof HTMLElement)) {
+                throw new Error('Missing #content in fetched page');
+            }
+
+            contentHTML = content.innerHTML;
+            docTitle = doc.title;
         }
-        
+
         const titleEl = document.getElementById('preview-title');
         if (titleEl) {
-            const h1 = content.querySelector('h1');
-            titleEl.textContent = h1?.textContent?.trim() || doc.title || 'Preview';
+            titleEl.textContent = docTitle || 'Preview';
         }
-        
-        // 渲染到 preview-body
+
         const bodyEl = panel.querySelector('.preview-body');
         const loadingEl = panel.querySelector('.preview-loading');
-        
+
         if (bodyEl) {
-            bodyEl.innerHTML = content.innerHTML;
-            // 添加 paper 样式给预览内容
+            bodyEl.innerHTML = contentHTML;
             bodyEl.style.padding = '20px';
         }
         if (loadingEl) loadingEl.style.display = 'none';
-        
+
     } catch (error) {
         console.error('Internal content load failed:', error);
         showErrorState();
