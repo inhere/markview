@@ -3,10 +3,10 @@ import { $ } from "bun";
 // export {};
 
 // 清理并创建 dist 目录
-console.log("Cleaning up ...");
-await $`rm -rf ./dist && mkdir -p ./dist`;
+console.log("Cleaning dist ...");
+await $`rm -rf ./dist`;
 
-console.log("Building ...");
+console.log("Building project ...");
 // 构建项目
 const result = await Bun.build({
   entrypoints: ["./src/app.ts"],
@@ -18,7 +18,7 @@ const result = await Bun.build({
 });
 
 if (result.success) {
-  console.log("Build successful!");
+  console.log("✅ Build successful!");
 
   // 在构建成功后手动拷贝目录
   console.log("Copying public assets...");

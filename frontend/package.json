@@ -4,8 +4,8 @@
   "description": "Frontend assets for MarkView",
   "type": "module",
   "scripts": {
-    "build": "bun run bun.build.ts",
-    "dev": "WATCH=true bun run bun.build.ts"
+    "build": "rm -rf ./dist && bun run bun.build.ts",
+    "dev": "WATCH=true && rm -rf ./dist && bun run bun.build.ts"
   },
   "dependencies": {
     "mermaid": "^10.9.0",
