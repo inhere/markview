@@ -187,12 +187,13 @@ async function loadInternalContent(url: string): Promise<void> {
 
         const contentType = response.headers.get('Content-Type') || '';
         let contentHTML: string;
-        let docTitle: string;
+        let docTitle = url;
 
+        // TODO remove 不会返回 JSON 格式的内容
         if (contentType.includes('application/json')) {
             const data = await response.json();
             contentHTML = data.contentHTML;
-            docTitle = data.title;
+            docTitle = data.title || url;
         } else {
             const html = await response.text();
             const parser = new DOMParser();
@@ -204,7 +205,12 @@ async function loadInternalContent(url: string): Promise<void> {
             }
 
             contentHTML = content.innerHTML;
-            docTitle = doc.title;
+
+            // 获取第一个 h1 标题作为文档标题
+            const h1 = content.querySelector('h1');
+            if (h1) {
+                docTitle = h1.textContent || docTitle;
+            }
         }
 
         const titleEl = document.getElementById('preview-title');

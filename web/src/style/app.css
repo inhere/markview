@@ -1232,7 +1232,7 @@ img {
 
 .link-preview-btn {
     position: absolute;
-    top: 50%;
+    top: 15%;
     left: calc(100% + 4px);
     transform: translateY(-50%);
     width: 20px;
@@ -1242,6 +1242,7 @@ img {
     border-radius: 4px;
     cursor: pointer;
     opacity: 0;
+    padding: 0;
     transition: opacity 0.2s;
     display: flex;
     align-items: center;
@@ -1261,8 +1262,8 @@ img {
 }
 
 .link-preview-btn svg {
-    width: 12px;
-    height: 12px;
+    width: 18px;
+    height: 18px;
 }
 
 /* Preview Panel */
