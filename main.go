@@ -19,7 +19,7 @@ import (
 	"github.com/gookit/goutil/x/clog"
 )
 
-//go:embed frontend/template.html frontend/template-main.html frontend/dist
+//go:embed web/template.html web/template-main.html web/dist
 var content embed.FS
 
 // Build-time variables injected via -ldflags
@@ -119,7 +119,7 @@ func newServerMux() *http.ServeMux {
 }
 
 func newStaticHandler() http.Handler {
-	distFS, err := fs.Sub(content, "frontend/dist")
+	distFS, err := fs.Sub(content, "web/dist")
 	if err != nil {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

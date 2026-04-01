@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "markview-frontend",
+      "name": "markview-web",
       "dependencies": {
         "highlight.js": "^11.9.0",
         "mermaid": "^10.9.0",

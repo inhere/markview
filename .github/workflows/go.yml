@@ -50,11 +50,11 @@ jobs:
     - name: Mod tidy and bun install
       run: |
         go mod tidy
-        cd frontend && bun install
+        cd web && bun install
 
     - name: Run unit tests
       # run: go test -v -cover ./...
       # must add " for profile.cov on Windows OS
       run: |
-        cd frontend && bun run build
+        cd web && bun run build
         cd .. && go test -coverprofile="profile.cov" ./...

@@ -9,7 +9,7 @@ import {
     readStoredPreferences,
 } from './preferences';
 
-describe('frontend preferences', () => {
+describe('web preferences', () => {
     test('normalizeLayoutWidth accepts supported widths and falls back otherwise', () => {
         expect(normalizeLayoutWidth('1200px')).toBe('1200px');
         expect(normalizeLayoutWidth('bad-width')).toBe(DEFAULT_LAYOUT_WIDTH);

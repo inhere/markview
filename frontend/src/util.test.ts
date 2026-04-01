@@ -8,7 +8,7 @@ import {
     toDisplaySlug,
 } from './util';
 
-describe('frontend util', () => {
+describe('web util', () => {
     test('escapeHtml escapes reserved characters', () => {
         expect(escapeHtml(`<tag attr="x">&'`)).toBe('&lt;tag attr=&quot;x&quot;&gt;&amp;&#39;');
     });

@@ -36,7 +36,7 @@ jobs:
       - name: Mod tidy and bun install
         run: |
           go mod tidy
-          cd frontend && bun install
+          cd web && bun install
 
       - name: Build bin package
         run: |

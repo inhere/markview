@@ -13,18 +13,18 @@ LDFLAGS := -s -w \
 	-X main.GitHash=$(GIT_HASH) \
 	-X 'main.BuildTime=$(BUILD_TIME)'
 
-.PHONY: all build frontend backend clean help
+.PHONY: all build web backend clean help
 
-## all: build frontend then backend (default)
+## all: build web then backend (default)
 all: build
 
-## build: build frontend and Go binary (current platform)
-build: frontend backend
+## build: build web and Go binary (current platform)
+build: web backend
 
-## frontend: bundle TypeScript with Bun
-frontend:
-	@echo "📦 Building frontend..."
-	@cd frontend && \
+## web: bundle TypeScript with Bun
+web:
+	@echo "📦 Building web..."
+	@cd web && \
 		([ -d node_modules ] || bun install) && \
 		bun run build
 	@echo "✅ Frontend done"
@@ -36,7 +36,7 @@ backend:
 	@echo "✅ Binary: $(BINARY) ($$(du -sh $(BINARY) | cut -f1))"
 
 ## install: install Go binary to $GOPATH/bin
-install: frontend
+install: web
 	@go install -ldflags "$(LDFLAGS)" .
 	@echo "✅ Installed to GOPATH/bin"
 
@@ -49,7 +49,7 @@ run: build
 DIST_DIR := dist
 
 ## build-all: cross-compile for all platforms
-build-all: frontend build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows
+build-all: web build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows
 
 ## build-linux: compile for Linux amd64
 build-linux:
@@ -89,7 +89,7 @@ build-windows:
 ## clean: remove build artifacts
 clean:
 	@rm -f $(BINARY)
-	@rm -rf frontend/dist $(DIST_DIR)
+	@rm -rf web/dist $(DIST_DIR)
 	@echo "🧹 Cleaned"
 
 ## help: show this help

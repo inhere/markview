@@ -4,7 +4,7 @@ import {
     parseMermaidContainerIndex,
 } from './mermaid';
 
-describe('frontend mermaid helpers', () => {
+describe('web mermaid helpers', () => {
     test('buildMermaidContainerId uses stable prefix', () => {
         expect(buildMermaidContainerId(12)).toBe('mermaid-12');
     });

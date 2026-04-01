@@ -1,5 +1,5 @@
 {
-  "name": "markview-frontend",
+  "name": "markview-web",
   "version": "1.0.0",
   "description": "Frontend assets for MarkView",
   "type": "module",

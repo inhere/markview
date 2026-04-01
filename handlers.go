@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark-emoji"
-	"github.com/yuin/goldmark-meta"
+	emoji "github.com/yuin/goldmark-emoji"
+	meta "github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
@@ -124,7 +124,7 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 		CurrentFilePathJSON: mustMarshalJSON(normalizeRelativePath(currentRelativePath)),
 	}
 
-	mainTmplData, err := content.ReadFile("frontend/template-main.html")
+	mainTmplData, err := content.ReadFile("web/template-main.html")
 	if err != nil {
 		http.Error(w, "Template-main not found", 500)
 		return
@@ -136,7 +136,7 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 		return
 	}
 
-	tmplData, err := content.ReadFile("frontend/template.html")
+	tmplData, err := content.ReadFile("web/template.html")
 	if err != nil {
 		http.Error(w, "Template not found", 500)
 		return
@@ -144,9 +144,9 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 	t := template.Must(template.New("index").Parse(string(tmplData)))
 
 	data := PageData{
-		Title:               fileName,
-		MainContent:         template.HTML(mainContentBuf.String()),
-		FileTreeJSON:        mustMarshalJSON(fileTree),
+		Title:        fileName,
+		MainContent:  template.HTML(mainContentBuf.String()),
+		FileTreeJSON: mustMarshalJSON(fileTree),
 		// CurrentFilePathJSON: mustMarshalJSON(normalizeRelativePath(currentRelativePath)),
 	}
 
@@ -167,14 +167,14 @@ func renderMarkdownContent(filePath string) (string, error) {
 		// GFM 扩展支持表格、删除线、链接化和任务列表
 		goldmark.WithExtensions(extension.GFM, emoji.Emoji, meta.New(meta.WithTable())),
 		goldmark.WithParserOptions(
-			// parser.WithAutoHeadingID(),
+		// parser.WithAutoHeadingID(),
 		),
 		goldmark.WithRendererOptions(
 			html.WithHardWraps(),
 			html.WithUnsafe(), // Allow raw HTML
 			renderer.WithNodeRenderers(
-                util.Prioritized(extension.NewTableHTMLRenderer(), 500),
-            ),
+				util.Prioritized(extension.NewTableHTMLRenderer(), 500),
+			),
 		),
 	)
 
@@ -221,7 +221,7 @@ func renderMainContent(w http.ResponseWriter, filePath string) {
 		CurrentFilePathJSON: mustMarshalJSON(normalizeRelativePath(currentRelativePath)),
 	}
 
-	mainTmplData, err := content.ReadFile("frontend/template-main.html")
+	mainTmplData, err := content.ReadFile("web/template-main.html")
 	if err != nil {
 		http.Error(w, "Template-main not found", 500)
 		return
