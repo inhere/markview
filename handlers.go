@@ -13,9 +13,12 @@ import (
 	"time"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark-emoji"
+	"github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/util"
 )
 
 type FileTreeNode struct {
@@ -144,7 +147,7 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 		Title:               fileName,
 		MainContent:         template.HTML(mainContentBuf.String()),
 		FileTreeJSON:        mustMarshalJSON(fileTree),
-		CurrentFilePathJSON: mustMarshalJSON(normalizeRelativePath(currentRelativePath)),
+		// CurrentFilePathJSON: mustMarshalJSON(normalizeRelativePath(currentRelativePath)),
 	}
 
 	setPageCacheHeaders(w)
@@ -161,13 +164,17 @@ func renderMarkdownContent(filePath string) (string, error) {
 
 	// Configure goldmark
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
+		// GFM 扩展支持表格、删除线、链接化和任务列表
+		goldmark.WithExtensions(extension.GFM, emoji.Emoji, meta.New(meta.WithTable())),
 		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
+			// parser.WithAutoHeadingID(),
 		),
 		goldmark.WithRendererOptions(
 			html.WithHardWraps(),
 			html.WithUnsafe(), // Allow raw HTML
+			renderer.WithNodeRenderers(
+                util.Prioritized(extension.NewTableHTMLRenderer(), 500),
+            ),
 		),
 	)
 
