@@ -1691,6 +1691,10 @@ div.mermaid {
 }
 
 /* Search filter hidden state */
-.file-tree-node.search-hidden {
+.file-tree-node.hidden {
+    display: none;
+}
+
+.file-tree-children.hidden {
     display: none;
 }
