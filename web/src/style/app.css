@@ -562,6 +562,7 @@ body {
     align-items: center;
     gap: 8px;
     min-width: 0;
+    flex-shrink: 0;
 }
 
 .sidebar-section-icon {
