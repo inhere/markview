@@ -106,17 +106,18 @@
                         <span>Files</span>
                     </span>
                     <!-- 文件搜索框 -->
-                    <div class="files-search-box">
+                    <form class="files-search-box" role="search">
+                        <label for="files-search-input" class="visually-hidden">搜索文件</label>
                         <input 
                             type="text" 
                             id="files-search-input" 
                             placeholder="搜索文件..."
                             autocomplete="off"
                         />
-                        <button id="files-search-clear" class="search-clear-btn" aria-label="清除搜索">
+                        <button id="files-search-clear" class="search-clear-btn" type="button" aria-label="清除搜索">
                             ×
                         </button>
-                    </div>
+                    </form>
                     <button class="sidebar-section-collapse-btn" id="files-collapse-btn" title="Collapse Files" aria-label="Collapse Files section">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
