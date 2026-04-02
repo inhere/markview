@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gookit/goutil/cflag"
@@ -34,7 +34,20 @@ var (
 	defaultEntry string
 	portInt      int
 	port         string
+	enableDebug   bool
 )
+
+var (
+	enableWatch   bool
+	watchDirs     []string
+	watchSkipDirs []string
+)
+var defaultSkipDirs = []string{
+	"node_modules",
+	"dist",
+	"tmp",
+	"temp",
+}
 
 var (
 	clients   = make(map[chan string]bool)
@@ -50,6 +63,13 @@ const (
 const (
 	EnvPort  = "MKVIEW_PORT"
 	EnvEntry = "MKVIEW_ENTRY"
+	EnvDebug = "MKVIEW_DEBUG"
+	EnvWatch = "MKVIEW_WATCH"
+	// Watch directory. multi use comma split
+	EnvWatchDir = "MKVIEW_WATCH_DIR"
+	// Watch skip directory. multi use comma split
+	//  - 前缀 override: 覆盖默认的设置, append: 追加到默认的设置
+	EnvWatchSkipDir = "MKVIEW_WATCH_SKIP_DIR"
 )
 
 type PageData struct {
@@ -104,7 +124,9 @@ func run(c *cflag.CFlags) error {
 	fmt.Printf("🚀 Server running at http://localhost:%s\n", port)
 
 	// - Watcher
-	go watchDirectory(targetDir)
+	if enableWatch {
+		go watchDirectory(targetDir)
+	}
 
 	log.Fatal(http.ListenAndServe(":"+port, newServerMux()))
 	return nil
@@ -157,19 +179,30 @@ func prepare(args []string) {
 		defaultEntry = envutil.Getenv(EnvEntry, DefaultEntry)
 	}
 
+	// Environment variables
+	enableDebug = envutil.GetBool(EnvDebug, false)
+	enableWatch = envutil.GetBool(EnvWatch, true)
+
 	// port value
 	if portInt > 0 {
 		port = fmt.Sprintf("%d", portInt)
 	} else {
 		port = envutil.Getenv(EnvPort, DefaultPort)
 	}
-}
 
-var skipDirNames = []string{
-	"node_modules",
-	"dist",
-	"tmp",
-	"temp",
+	// Watch directory. multi use comma split
+	if dirstr := envutil.Getenv(EnvWatchDir, ""); dirstr != "" {
+		watchDirs = strings.Split(dirstr, ",")
+	}
+
+	// Watch skip directory. multi use comma split
+	if skipstr := envutil.Getenv(EnvWatchSkipDir, ""); skipstr != "" {
+		if strings.HasPrefix(skipstr, "override") {
+			watchSkipDirs = strings.Split(skipstr[10:], ",")
+		} else {
+			watchSkipDirs = append(defaultSkipDirs, strings.Split(skipstr, ",")...)
+		}
+	}
 }
 
 func watchDirectory(dir string) {
@@ -188,10 +221,18 @@ func watchDirectory(dir string) {
 		}
 		if d.IsDir() {
 			name := d.Name()
-			// Skip directories start with dot or in skipDirNames
+			// Skip directories start with dot or in watchSkipDirs
 			if shouldSkipDir(name) {
+				debugf("Skip watch directory: %s", name)
 				return filepath.SkipDir
 			}
+			// watchDirs is not empty, only watch directories in watchDirs
+			if len(watchDirs) > 0 && !slices.Contains(watchDirs, name) {
+				debugf("Skip watch directory: %s", name)
+				return filepath.SkipDir
+			}
+
+			debugf("Watch directory: %s", name)
 			return watcher.Add(path)
 		}
 		return nil
@@ -227,25 +268,6 @@ func watchDirectory(dir string) {
 			clog.Errorf("WATCH: Watcher error: %v", err)
 		}
 	}
-}
-
-func formatFileSize(size int64) string {
-	const unit = 1024
-	if size < unit {
-		return fmt.Sprintf("%d B", size)
-	}
-
-	div, exp := int64(unit), 0
-	for n := size / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-
-	return fmt.Sprintf("%.1f %ciB", float64(size)/float64(div), "KMGTPE"[exp])
-}
-
-func formatTimestamp(t time.Time) string {
-	return t.Local().Format("2006-01-02 15:04:05")
 }
 
 func broadcast(msg string) {

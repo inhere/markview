@@ -69,6 +69,9 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	debugf("Request: %s query: %s, filePath: %s", urlPath, r.URL.Query(), filePath)
+
+		// Render markdown file
 	if strings.HasSuffix(strings.ToLower(filePath), ".md") {
 		queryParam := r.URL.Query().Get("q")
 		if queryParam == "main" {
@@ -363,13 +366,13 @@ func sortFileTreeNodes(nodes []FileTreeNode) {
 	})
 }
 
-// Skip directories start with dot or in skipDirNames
+// Skip directories start with dot or in watchSkipDirs
 func shouldSkipDir(name string) bool {
 	// Skip directories start with dot
 	if name[0] == '.' {
 		return true
 	}
-	return slices.Contains(skipDirNames, name)
+	return slices.Contains(watchSkipDirs, name)
 }
 
 func setPageCacheHeaders(w http.ResponseWriter) {
