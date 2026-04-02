@@ -167,7 +167,7 @@ function expandAncestorsForSearch(nodeEl: HTMLElement) {
     let parent = nodeEl.parentElement;
     while (parent) {
         if (parent.classList.contains('file-tree-children')) {
-            parent.hidden = false;
+            parent.classList.remove('hidden');
             const toggle = parent.previousElementSibling?.querySelector('.tree-toggle');
             if (toggle instanceof HTMLElement) {
                 toggle.classList.add('expanded');
