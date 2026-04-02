@@ -45,7 +45,7 @@ Files Section (sidebar-section-title)
 |------|----------|--------|
 | `web/template.html` | 添加搜索框 DOM 元素 | ~10 行 |
 | `web/src/sidebar.ts` | 添加搜索逻辑函数 | ~60-80 行 |
-| `web/src/style.css` | 添加搜索框样式 | ~20-30 行 |
+| `web/src/style/app.css` | 添加搜索框样式 | ~20-30 行 |
 
 ### 数据流
 
@@ -59,7 +59,7 @@ Files Section (sidebar-section-title)
 
 ### 搜索框 DOM 结构
 
-在 `template.html` 第 102-103 行之间插入（Files 文字后面、折叠按钮前面）：
+在 `template.html` 第 107-108 行之间插入（Files 文字后的 `</span>` 和折叠按钮 `<button>` 之间）：
 
 ```html
 <div class="sidebar-section-title">
@@ -142,7 +142,8 @@ function initFilesSearch() {
 // 2. 过滤文件树
 function filterFileTree(query: string) {
   const allNodes = document.querySelectorAll('.file-tree-node');
-  const fileTreeData = getTreeData(); // 从 JSON script 获取
+  // 从 JSON script 重新读取数据（复用 readJSONScript 工具函数）
+  const fileTreeData = readJSONScript<FileTreeNode[]>('file-tree-data');
   
   allNodes.forEach(nodeEl => {
     const isMatch = findMatchingNodes(fileTreeData, query, nodeEl);
@@ -177,9 +178,12 @@ function findMatchingNodes(
 function expandAncestors(nodeEl: HTMLElement) {
   let parent = nodeEl.parentElement;
   while (parent && parent.classList.contains('file-tree-children')) {
-    parent.classList.remove('collapsed');
+    parent.hidden = false;  // 使用 hidden 属性，不是 collapsed 类
     const toggle = parent.previousElementSibling?.querySelector('.tree-toggle');
-    if (toggle) toggle.classList.add('expanded');
+    if (toggle) {
+      toggle.classList.add('expanded');
+      toggle.setAttribute('aria-expanded', 'true');
+    }
     parent = parent.parentElement?.closest('.file-tree-node')?.parentElement;
   }
 }
@@ -319,7 +323,6 @@ function debounce(fn: Function, delay: number) {
 | T7 | 实时搜索 | 输入过程中（debounce 200ms）自动触发搜索 |
 | T8 | 大小写不敏感 | 输入 `README` 和 `readme` 效果一致 |
 | T9 | 祖先链展开 | 匹配深层文件时，父目录自动展开 |
-| T10 | 折叠状态恢复 | 清除搜索后，恢复用户手动展开的状态 |
 
 ### 测试方法
 
