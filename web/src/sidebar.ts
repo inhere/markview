@@ -121,6 +121,71 @@ export function renderFileTree(options: RenderFileTreeOptions) {
     }
 }
 
+// 文件树搜索过滤函数
+function filterFileTree(query: string) {
+    const allNodes = document.querySelectorAll('.file-tree-node');
+    const matchedNodes = new Set<HTMLElement>();
+    const normalizedQuery = query.toLowerCase().trim();
+
+    if (!normalizedQuery) {
+        // 清空搜索时恢复所有节点
+        allNodes.forEach(nodeEl => {
+            nodeEl.classList.remove('hidden');
+        });
+        return;
+    }
+
+    // 第一遍：收集匹配节点及其祖先节点
+    allNodes.forEach(nodeEl => {
+        const nodeName = nodeEl.querySelector('.tree-text')?.textContent || '';
+        if (nodeName.toLowerCase().includes(normalizedQuery)) {
+            matchedNodes.add(nodeEl);
+            // 收集所有祖先 .file-tree-node 元素
+            let parent = nodeEl.parentElement?.closest('.file-tree-node');
+            while (parent) {
+                matchedNodes.add(parent);
+                parent = parent.parentElement?.closest('.file-tree-node');
+            }
+        }
+    });
+
+    // 第二遍：应用显示状态
+    allNodes.forEach(nodeEl => {
+        const isMatch = matchedNodes.has(nodeEl);
+        nodeEl.classList.toggle('hidden', !isMatch);
+
+        // 如果是直接匹配项，展开祖先链
+        const nodeName = nodeEl.querySelector('.tree-text')?.textContent || '';
+        if (nodeName.toLowerCase().includes(normalizedQuery)) {
+            expandAncestorsForSearch(nodeEl);
+        }
+    });
+}
+
+// 搜索时展开祖先目录链
+function expandAncestorsForSearch(nodeEl: HTMLElement) {
+    let parent = nodeEl.parentElement;
+    while (parent) {
+        if (parent.classList.contains('file-tree-children')) {
+            parent.hidden = false;
+            const toggle = parent.previousElementSibling?.querySelector('.tree-toggle');
+            if (toggle instanceof HTMLElement) {
+                toggle.classList.add('expanded');
+                toggle.setAttribute('aria-expanded', 'true');
+            }
+        }
+        parent = parent.parentElement?.closest('.file-tree-node')?.parentElement;
+    }
+}
+
+// 清除搜索过滤
+function clearFilesSearch() {
+    const allNodes = document.querySelectorAll('.file-tree-node');
+    allNodes.forEach(nodeEl => {
+        nodeEl.classList.remove('hidden');
+    });
+}
+
 export function highlightTOC(contentSelector = '#content', sidebarSelector = '.toc-container') {
     const scrollPos = window.scrollY + 100;
     const headers = document.querySelectorAll(`${contentSelector} h1, ${contentSelector} h2, ${contentSelector} h3`);
