@@ -110,9 +110,9 @@ Files Section (sidebar-section-title)
 |--------|------|------|
 | `initFilesSearch()` | 初始化搜索功能，绑定事件 | - |
 | `filterFileTree(query: string)` | 过滤文件树，显示/隐藏节点 | 搜索关键词 |
-| `findMatchingNodes(node: FileTreeNode, query: string): boolean` | 递归判断节点是否匹配 | 节点对象、关键词 |
 | `expandAncestors(nodeEl: HTMLElement)` | 展开匹配项的祖先目录链 | DOM 节点元素 |
 | `clearFilesSearch()` | 清除搜索，恢复完整文件树 | - |
+| `debounce(fn: Function, delay: number)` | 防抖工具函数 | 函数、延迟时间 |
 
 ### 搜索流程伪代码
 
@@ -142,11 +142,11 @@ function initFilesSearch() {
 // 2. 过滤文件树
 function filterFileTree(query: string) {
   const allNodes = document.querySelectorAll('.file-tree-node');
-  // 从 JSON script 重新读取数据（复用 readJSONScript 工具函数）
-  const fileTreeData = readJSONScript<FileTreeNode[]>('file-tree-data');
   
   allNodes.forEach(nodeEl => {
-    const isMatch = findMatchingNodes(fileTreeData, query, nodeEl);
+    // 从 DOM 元素获取节点名进行匹配
+    const nodeName = nodeEl.querySelector('.tree-text')?.textContent || '';
+    const isMatch = nodeName.toLowerCase().includes(query);
     nodeEl.classList.toggle('hidden', !isMatch);
     
     if (isMatch) {
@@ -155,23 +155,12 @@ function filterFileTree(query: string) {
   });
 }
 
-// 3. 递归匹配算法
-function findMatchingNodes(
-  node: FileTreeNode, 
-  query: string,
-  targetEl?: HTMLElement
-): boolean {
-  // 当前节点名匹配？
-  if (node.name.toLowerCase().includes(query)) {
-    return true;
-  }
-  
-  // 子节点中有匹配？
-  if (node.children) {
-    return node.children.some(child => findMatchingNodes(child, query));
-  }
-  
-  return false;
+// 3. 递归匹配算法（用于完整数据树匹配，可选）
+function hasMatchingNodeInTree(nodes: FileTreeNode[], query: string): boolean {
+  return nodes.some(node => 
+    node.name.toLowerCase().includes(query) 
+    || (node.children && hasMatchingNodeInTree(node.children, query))
+  );
 }
 
 // 4. 展开祖先链
@@ -186,6 +175,14 @@ function expandAncestors(nodeEl: HTMLElement) {
     }
     parent = parent.parentElement?.closest('.file-tree-node')?.parentElement;
   }
+}
+
+// 5. 清除搜索，恢复文件树
+function clearFilesSearch() {
+  const allNodes = document.querySelectorAll('.file-tree-node');
+  allNodes.forEach(nodeEl => {
+    nodeEl.classList.remove('hidden');
+  });
 }
 ```
 
