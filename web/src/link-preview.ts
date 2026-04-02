@@ -215,7 +215,7 @@ async function loadInternalContent(url: string): Promise<void> {
 
         const titleEl = document.getElementById('preview-title');
         if (titleEl) {
-            titleEl.textContent = docTitle || 'Preview';
+            titleEl.textContent = " 📖 " + docTitle;
         }
 
         const bodyEl = panel.querySelector('.preview-body');

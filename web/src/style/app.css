@@ -1296,7 +1296,7 @@ img {
 
 .preview-title {
     flex: 1;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--text-heading);
     overflow: hidden;

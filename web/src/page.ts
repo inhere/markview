@@ -32,8 +32,17 @@ export function parsePageSnapshot(html: string, selectors: PageMountSelectors): 
         throw new Error('Missing current file path data in fetched page');
     }
 
+    let docTitle : string;
+    // 获取第一个 h1 标题作为文档标题
+    const h1 = content.querySelector('h1');
+    if (h1) {
+        docTitle = h1.textContent || nextDocument.title;
+    } else {
+        docTitle = nextDocument.title;
+    }
+
     return {
-        title: nextDocument.title,
+        title: docTitle,
         contentHTML: content.innerHTML,
         fileMetaHTML: fileMeta.innerHTML,
         fileTreeJSON: fileTreeScript?.textContent,
