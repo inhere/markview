@@ -119,6 +119,8 @@ export function renderFileTree(options: RenderFileTreeOptions) {
     if (activeNode instanceof HTMLElement) {
         activeNode.scrollIntoView({ block: 'nearest' });
     }
+    
+    initFilesSearch();
 }
 
 // 文件树搜索过滤函数
@@ -183,6 +185,47 @@ function clearFilesSearch() {
     const allNodes = document.querySelectorAll('.file-tree-node');
     allNodes.forEach(nodeEl => {
         nodeEl.classList.remove('hidden');
+    });
+}
+
+// 初始化文件搜索功能
+export function initFilesSearch() {
+    const input = document.getElementById('files-search-input');
+    const clearBtn = document.getElementById('files-search-clear');
+    
+    if (!input || !clearBtn) {
+        return;
+    }
+    
+    // 实时搜索（debounce 200ms）
+    const debouncedFilter = debounce((value: string) => {
+        const query = value.trim();
+        if (query) {
+            filterFileTree(query);
+        } else {
+            clearFilesSearch();
+        }
+    }, 200);
+    
+    input.addEventListener('input', (e) => {
+        const target = e.target as HTMLInputElement;
+        debouncedFilter(target.value);
+    });
+    
+    // 清除按钮
+    clearBtn.addEventListener('click', () => {
+        input.value = '';
+        clearFilesSearch();
+        input.focus();
+    });
+    
+    // ESC 键清除搜索
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            input.value = '';
+            clearFilesSearch();
+            input.blur();
+        }
     });
 }
 
