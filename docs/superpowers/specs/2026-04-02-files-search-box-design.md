@@ -139,18 +139,34 @@ function initFilesSearch() {
   });
 }
 
-// 2. 过滤文件树
+// 2. 过滤文件树（两遍算法：确保父目录也显示）
 function filterFileTree(query: string) {
   const allNodes = document.querySelectorAll('.file-tree-node');
+  const matchedNodes = new Set<HTMLElement>();
   
+  // 第一遍：收集匹配节点及其祖先节点
   allNodes.forEach(nodeEl => {
-    // 从 DOM 元素获取节点名进行匹配
     const nodeName = nodeEl.querySelector('.tree-text')?.textContent || '';
-    const isMatch = nodeName.toLowerCase().includes(query);
+    if (nodeName.toLowerCase().includes(query)) {
+      matchedNodes.add(nodeEl);
+      // 收集所有祖先 .file-tree-node 元素
+      let parent = nodeEl.parentElement?.closest('.file-tree-node');
+      while (parent) {
+        matchedNodes.add(parent);
+        parent = parent.parentElement?.closest('.file-tree-node');
+      }
+    }
+  });
+  
+  // 第二遍：应用显示状态并展开祖先链
+  allNodes.forEach(nodeEl => {
+    const isMatch = matchedNodes.has(nodeEl);
     nodeEl.classList.toggle('hidden', !isMatch);
     
-    if (isMatch) {
-      expandAncestors(nodeEl); // 自动展开祖先链
+    // 检查是否是直接匹配项（非祖先节点）
+    const nodeName = nodeEl.querySelector('.tree-text')?.textContent || '';
+    if (nodeName.toLowerCase().includes(query)) {
+      expandAncestors(nodeEl);
     }
   });
 }
