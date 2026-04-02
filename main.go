@@ -182,6 +182,7 @@ func prepare(args []string) {
 	// Environment variables
 	enableDebug = envutil.GetBool(EnvDebug, false)
 	enableWatch = envutil.GetBool(EnvWatch, true)
+	debugf("Config: Debug=%v, Watch=%v", enableDebug, enableWatch)
 
 	// port value
 	if portInt > 0 {
@@ -192,6 +193,7 @@ func prepare(args []string) {
 
 	// Watch directory. multi use comma split
 	if dirstr := envutil.Getenv(EnvWatchDir, ""); dirstr != "" {
+		debugf("Config: Watch directory=%s", dirstr)
 		watchDirs = strings.Split(dirstr, ",")
 	}
 
@@ -202,6 +204,7 @@ func prepare(args []string) {
 		} else {
 			watchSkipDirs = append(defaultSkipDirs, strings.Split(skipstr, ",")...)
 		}
+		debugf("Config: Watch skip directory=%s", strings.Join(watchSkipDirs, ","))
 	}
 }
 
