@@ -23,6 +23,7 @@ import powershell from 'highlight.js/lib/languages/powershell';
 import { setupLiveReloadStatus } from './live-status';
 import { enhanceMermaidContent, setupMermaidModal } from './mermaid';
 import { enhanceImagesInContent, setupImageModal } from './image-modal';
+import { setupContentSearch } from './content-search';
 import {
     applyPageSnapshot,
     parsePageSnapshot,
@@ -424,7 +425,7 @@ function setupOnce() {
     setupMermaidModal();
     setupImageModal();
     setupLinkPreview();
-    // Sidebar collapse and resize
+    setupContentSearch();
     const sidebarPrefs = readSidebarPreferences();
     applyInitialSidebarWidth(sidebarPrefs.sidebarWidth);
     initSidebarResize();
