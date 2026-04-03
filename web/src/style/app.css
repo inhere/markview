@@ -1705,10 +1705,14 @@ div.mermaid {
 /* ===== Content Search ===== */
 
 .content-search-wrapper {
-    position: absolute;
+    position: fixed;
     top: 12px;
-    left: 12px;
+    left: calc(var(--sidebar-width) + 20px);
     z-index: 100;
+}
+
+body.sidebar-collapsed .content-search-wrapper {
+    left: calc(var(--sidebar-collapsed-width) + 12px);
 }
 
 .content-search-box {
@@ -1725,7 +1729,7 @@ div.mermaid {
     padding: 0 32px 0 12px;
     border: 1px solid var(--border-light);
     border-radius: 6px;
-    background: var(--bg-paper);
+    background: none;
     font-size: 14px;
     font-family: var(--font-ui);
     color: var(--text-body);
