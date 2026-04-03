@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 优先使用中文回复和响应
 - 关键方法或逻辑的注释要保留
 
+# development
+
+- 项目依赖 Go 1.20+ 和 Bun 1.0+。
+
 ## Build and run
 
 - `make help` — show available make targets.
