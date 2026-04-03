@@ -160,28 +160,10 @@ function updateClearButton(input: HTMLInputElement): void {
 }
 
 export function setupContentSearch(): void {
-    const contentWrapper = document.querySelector('.content-wrapper');
-    if (!contentWrapper) {
-        console.warn('.content-wrapper not found, skipping content search setup');
+    const searchWrapper = document.getElementById('content-search');
+    if (!searchWrapper) {
         return;
     }
-    
-    const searchWrapper = document.createElement('div');
-    searchWrapper.className = 'content-search-wrapper';
-    searchWrapper.innerHTML = `
-        <div class="content-search-box">
-            <input 
-                type="text" 
-                class="content-search-input" 
-                placeholder="Search in content..."
-                autocomplete="off"
-            />
-            <button class="content-search-clear" type="button" aria-label="Clear search">×</button>
-        </div>
-        <div class="content-search-results"></div>
-    `;
-    
-    contentWrapper.insertBefore(searchWrapper, contentWrapper.firstChild);
     
     const input = searchWrapper.querySelector('.content-search-input') as HTMLInputElement;
     const clearBtn = searchWrapper.querySelector('.content-search-clear') as HTMLButtonElement;

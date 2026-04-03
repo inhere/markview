@@ -150,6 +150,20 @@
 
     <!-- Main Content -->
     <main class="content-wrapper">
+        <!-- Content Search -->
+        <div class="content-search-wrapper" id="content-search">
+            <div class="content-search-box">
+                <input 
+                    type="text" 
+                    class="content-search-input" 
+                    id="content-search-input"
+                    placeholder="Search in content..."
+                    autocomplete="off"
+                />
+                <button class="content-search-clear" type="button" aria-label="Clear search">×</button>
+            </div>
+            <div class="content-search-results"></div>
+        </div>
         <div style="width: 100%; max-width: var(--layout-max-width); display: flex; flex-direction: column; align-items: center;">
             <!-- inject the tempalte-main.html -->
             {{ .MainContent }}
