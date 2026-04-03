@@ -1788,7 +1788,7 @@ body.sidebar-collapsed .content-search-wrapper {
 }
 
 .content-search-box {
-    width: 180px;
+    width: 160px;
     display: flex;
     align-items: center;
     position: relative;
@@ -1797,7 +1797,7 @@ body.sidebar-collapsed .content-search-wrapper {
 }
 
 .content-search-box:focus-within {
-    width: 300px;
+    width: 260px;
 }
 
 .content-search-input {
