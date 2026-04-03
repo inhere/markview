@@ -75,9 +75,81 @@
 
 1. 验证参数（关键词长度 ≥ 2）
 2. 遍历 `targetDir` 下所有 `.md` 文件
-3. 读取文件内容，逐行匹配（`strings.Contains`，不区分大小写）
+3. 读取文件内容，逐行匹配（使用 `strings.ToLower()` 转换后匹配，实现不区分大小写）
 4. 提取匹配行号 + 前后 50 字符上下文
 5. 返回 JSON 响应
+
+**后端实现细节**（`handlers.go`）：
+
+```go
+func handleSearch(w http.ResponseWriter, r *http.Request) {
+    query := r.URL.Query().Get("q")
+    if len(query) < 2 {
+        http.Error(w, "Query too short", 400)
+        return
+    }
+
+    limit := 5
+    if l := r.URL.Query().Get("limit"); l != "" {
+        if n, err := strconv.Atoi(l); err == nil && n > 0 {
+            limit = n
+        }
+    }
+
+    // 不区分大小写搜索
+    queryLower := strings.ToLower(query)
+    results := []SearchResult{}
+
+    // 遍历所有 md 文件
+    err := filepath.WalkDir(targetDir, func(path string, d fs.DirEntry, err error) error {
+        if err != nil || d.IsDir() || !strings.HasSuffix(strings.ToLower(path), ".md") {
+            return nil
+        }
+
+        content, err := os.ReadFile(path)
+        if err != nil {
+            return nil
+        }
+
+        relPath, _ := filepath.Rel(targetDir, path)
+        matches := searchInContent(string(content), queryLower, limit)
+        if len(matches) > 0 {
+            results = append(results, SearchResult{
+                File:    relPath,
+                Href:    "/" + strings.ReplaceAll(relPath, "\\", "/"),
+                Matches: matches,
+            })
+        }
+        return nil
+    })
+
+    // 返回 JSON 响应
+    json.NewEncoder(w).Encode(SearchResponse{
+        Query:        query,
+        TotalFiles:   len(results),
+        TotalMatches: countMatches(results),
+        Results:      results,
+    })
+}
+
+func searchInContent(content, queryLower string, limit int) []SearchMatch {
+    lines := strings.Split(content, "\n")
+    matches := []SearchMatch{}
+
+    for i, line := range lines {
+        if strings.Contains(strings.ToLower(line), queryLower) {
+            matches = append(matches, SearchMatch{
+                Line:    i + 1,
+                Snippet: extractSnippet(line, queryLower),
+            })
+            if len(matches) >= limit {
+                break
+            }
+        }
+    }
+    return matches
+}
+```
 
 ### 文件改动
 
@@ -399,20 +471,30 @@ export function initContentSearch() {
 async function performSearch(query: string) {
     const resultsPanel = document.getElementById('content-search-results');
     if (!resultsPanel) return;
-    
+
+    // 显示加载状态
+    resultsPanel.innerHTML = `
+        <div class="search-results-header">
+            <span class="search-results-count">搜索中...</span>
+        </div>
+    `;
+    resultsPanel.style.display = 'block';
+
     try {
         const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error('Search failed');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         const data: SearchResponse = await response.json();
         renderSearchResults(data, query);
     } catch (error) {
         console.error('Search error:', error);
+        const errorMsg = error instanceof Error ? error.message : '未知错误';
         resultsPanel.innerHTML = `
             <div class="search-results-header">
-                <span class="search-results-count">搜索失败</span>
+                <span class="search-results-count">搜索失败: ${errorMsg}</span>
             </div>
         `;
-        resultsPanel.style.display = 'block';
     }
 }
 
@@ -478,12 +560,27 @@ function closeSearchResults() {
 }
 
 // 导航到结果（复用现有内联导航机制）
+// 说明：app.ts 中的 setupInlineNavigation() 在 document 上监听点击事件
+// 我们创建真实的 <a> 元素并派发点击事件，让它被内联导航捕获
 function navigateToResult(href: string) {
     closeSearchResults();
-    // 触发内联导航（app.ts 中的 navigateTo）
+
+    // 创建真实的 <a> 元素
     const link = document.createElement('a');
     link.href = href;
-    link.click();
+    link.style.display = 'none';
+    document.body.appendChild(link);
+
+    // 派发点击事件（会被 setupInlineNavigation 捕获）
+    const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        button: 0,  // 左键
+    });
+    link.dispatchEvent(clickEvent);
+
+    // 清理
+    document.body.removeChild(link);
 }
 ```
 
