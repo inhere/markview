@@ -34,7 +34,7 @@ var (
 	defaultEntry string
 	portInt      int
 	port         string
-	enableDebug   bool
+	enableDebug  bool
 )
 
 var (
@@ -136,6 +136,7 @@ func newServerMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/static/", newStaticHandler())
 	mux.HandleFunc("/sse", handleSSE)
+	mux.HandleFunc("/api/search", handleSearch)
 	mux.HandleFunc("/", handleRequest)
 	return mux
 }
