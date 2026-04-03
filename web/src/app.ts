@@ -64,6 +64,7 @@ import {
     scrollToHash,
 } from './util';
 import { setupLinkPreview, enhanceLinksInContent } from './link-preview';
+import { enhanceCodeBlocks } from './code-copy';
 
 interface RenderPageOptions {
     hash?: string;
@@ -137,6 +138,8 @@ async function enhancePageContent() {
         }
         hljs.highlightElement(block);
     });
+    
+    enhanceCodeBlocks(contentRoot);
     await enhanceMermaidContent(contentRoot);
     enhanceImagesInContent(contentRoot);
 }
