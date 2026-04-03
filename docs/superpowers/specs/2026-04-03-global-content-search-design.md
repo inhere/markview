@@ -74,14 +74,75 @@
 ### 搜索逻辑
 
 1. 验证参数（关键词长度 ≥ 2）
-2. 遍历 `targetDir` 下所有 `.md` 文件
-3. 读取文件内容，逐行匹配（使用 `strings.ToLower()` 转换后匹配，实现不区分大小写）
-4. 提取匹配行号 + 前后 50 字符上下文
-5. 返回 JSON 响应
+2. **解析搜索词**：
+   - 多个关键词用空格隔开表示 **AND**（必须全部匹配）
+   - 关键词第一个字符为 `!` 表示**排除**（不能包含该词）
+   - 示例：`api !deprecated` = 包含 "api" 但不包含 "deprecated"
+3. 遍历 `targetDir` 下所有 `.md` 文件
+4. 读取文件内容，逐行匹配（使用 `strings.ToLower()` 转换后匹配，实现不区分大小写）
+5. 提取匹配行号 + 前后 50 字符上下文
+6. 返回 JSON 响应
+
+**搜索词解析规则**：
+
+| 输入 | 含义 | 匹配条件 |
+|------|------|----------|
+| `api` | 单关键词 | 包含 "api" |
+| `api config` | 多关键词 (AND) | 同时包含 "api" 和 "config" |
+| `!deprecated` | 排除词 | 不包含 "deprecated" |
+| `api !deprecated` | 混合 | 包含 "api" 且不包含 "deprecated" |
 
 **后端实现细节**（`handlers.go`）：
 
 ```go
+// 搜索词结构
+type SearchTerms struct {
+    Include []string // 必须包含的关键词
+    Exclude []string // 必须排除的关键词
+}
+
+// 解析搜索词
+func parseSearchTerms(query string) SearchTerms {
+    terms := SearchTerms{}
+    parts := strings.Fields(query) // 按空格分割
+
+    for _, part := range parts {
+        if strings.HasPrefix(part, "!") {
+            // 排除词（去掉 ! 前缀）
+            if exclude := strings.TrimPrefix(part, "!"); len(exclude) >= 2 {
+                terms.Exclude = append(terms.Exclude, strings.ToLower(exclude))
+            }
+        } else {
+            // 包含词
+            if len(part) >= 2 {
+                terms.Include = append(terms.Include, strings.ToLower(part))
+            }
+        }
+    }
+    return terms
+}
+
+// 检查行是否匹配搜索条件
+func lineMatchesMatch(line string, terms SearchTerms) bool {
+    lineLower := strings.ToLower(line)
+
+    // 检查排除词
+    for _, exclude := range terms.Exclude {
+        if strings.Contains(lineLower, exclude) {
+            return false // 包含排除词，不匹配
+        }
+    }
+
+    // 检查包含词（必须全部匹配）
+    for _, include := range terms.Include {
+        if !strings.Contains(lineLower, include) {
+            return false // 缺少包含词，不匹配
+        }
+    }
+
+    return len(terms.Include) > 0 // 至少有一个包含词
+}
+
 func handleSearch(w http.ResponseWriter, r *http.Request) {
     query := r.URL.Query().Get("q")
     if len(query) < 2 {
@@ -96,8 +157,13 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    // 不区分大小写搜索
-    queryLower := strings.ToLower(query)
+    // 解析搜索词
+    terms := parseSearchTerms(query)
+    if len(terms.Include) == 0 {
+        http.Error(w, "No valid search terms", 400)
+        return
+    }
+
     results := []SearchResult{}
 
     // 遍历所有 md 文件
@@ -112,7 +178,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
         }
 
         relPath, _ := filepath.Rel(targetDir, path)
-        matches := searchInContent(string(content), queryLower, limit)
+        matches := searchInContent(string(content), terms, limit)
         if len(matches) > 0 {
             results = append(results, SearchResult{
                 File:    relPath,
@@ -132,15 +198,15 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
     })
 }
 
-func searchInContent(content, queryLower string, limit int) []SearchMatch {
+func searchInContent(content string, terms SearchTerms, limit int) []SearchMatch {
     lines := strings.Split(content, "\n")
     matches := []SearchMatch{}
 
     for i, line := range lines {
-        if strings.Contains(strings.ToLower(line), queryLower) {
+        if lineMatchesMatch(line, terms) {
             matches = append(matches, SearchMatch{
                 Line:    i + 1,
-                Snippet: extractSnippet(line, queryLower),
+                Snippet: extractSnippet(line, terms.Include),
             })
             if len(matches) >= limit {
                 break
@@ -149,13 +215,51 @@ func searchInContent(content, queryLower string, limit int) []SearchMatch {
     }
     return matches
 }
+
+// 提取匹配片段（高亮第一个匹配的关键词）
+func extractSnippet(line string, includeTerms []string) string {
+    lineLower := strings.ToLower(line)
+    snippet := line
+
+    // 找到第一个匹配关键词的位置
+    for _, term := range includeTerms {
+        if idx := strings.Index(lineLower, term); idx != -1 {
+            // 提取匹配位置前后 30 个字符
+            start := idx - 30
+            if start < 0 {
+                start = 0
+            }
+            end := idx + len(term) + 30
+            if end > len(line) {
+                end = len(line)
+            }
+            snippet = line[start:end]
+            if start > 0 {
+                snippet = "..." + snippet
+            }
+            if end < len(line) {
+                snippet = snippet + "..."
+            }
+            break
+        }
+    }
+    return snippet
+}
+
+func countMatches(results []SearchResult) int {
+    count := 0
+    for _, r := range results {
+        count += len(r.Matches)
+    }
+    return count
+}
 ```
 
 ### 文件改动
 
 | 文件 | 改动 |
 |------|------|
-| `handlers.go` | 新增 `handleSearch()` 函数 (~80 行) |
+| `handlers.go` | 新增 `handleSearch()` + 辅助函数 (~120 行) |
 | `main.go` | 新增路由 `http.HandleFunc("/api/search", handleSearch)` |
 
 ---
