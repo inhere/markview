@@ -19,24 +19,6 @@ interface SearchResponse {
     total: number;
 }
 
-/** 搜索框 HTML 模板 */
-function createSearchHTML(): string {
-    return `
-        <div class="content-search-wrapper">
-            <div class="content-search-box">
-                <input 
-                    type="text" 
-                    class="content-search-input" 
-                    placeholder="Search in content... (min 2 chars)"
-                    autocomplete="off"
-                />
-                <button class="content-search-clear" type="button" aria-label="Clear search">×</button>
-            </div>
-            <div class="content-search-results"></div>
-        </div>
-    `;
-}
-
 /** 高亮关键词 */
 function highlightKeywords(snippet: string, query: string): string {
     // 解析查询词（支持 !前缀过滤词）
@@ -178,21 +160,28 @@ function updateClearButton(input: HTMLInputElement): void {
 }
 
 export function setupContentSearch(): void {
-    const paper = document.querySelector('article.paper');
-    if (!paper) {
-        console.warn('article.paper not found, skipping content search setup');
+    const contentWrapper = document.querySelector('.content-wrapper');
+    if (!contentWrapper) {
+        console.warn('.content-wrapper not found, skipping content search setup');
         return;
     }
     
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = createSearchHTML();
-    const searchWrapper = wrapper.firstElementChild;
+    const searchWrapper = document.createElement('div');
+    searchWrapper.className = 'content-search-wrapper';
+    searchWrapper.innerHTML = `
+        <div class="content-search-box">
+            <input 
+                type="text" 
+                class="content-search-input" 
+                placeholder="Search in content..."
+                autocomplete="off"
+            />
+            <button class="content-search-clear" type="button" aria-label="Clear search">×</button>
+        </div>
+        <div class="content-search-results"></div>
+    `;
     
-    if (!searchWrapper) {
-        return;
-    }
-    
-    paper.parentElement?.insertBefore(searchWrapper, paper);
+    contentWrapper.insertBefore(searchWrapper, contentWrapper.firstChild);
     
     const input = searchWrapper.querySelector('.content-search-input') as HTMLInputElement;
     const clearBtn = searchWrapper.querySelector('.content-search-clear') as HTMLButtonElement;
