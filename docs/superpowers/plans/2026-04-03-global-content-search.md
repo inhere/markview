@@ -23,7 +23,41 @@
 
 ---
 
+## Task Dependency Graph
+
+| Task | Depends On | Reason |
+|------|------------|--------|
+| Task 1: Backend API | None | 后端 API 是独立起点，无前置依赖 |
+| Task 2: Frontend Component | None | 前端可独立开发（可 mock API 测试） |
+| Task 3: Integration Testing | Task 1, Task 2 | 集成测试需要前后端都完成 |
+
+---
+
+## Parallel Execution Graph
+
+```
+Wave 1 (并行启动):
+├── Task 1: Backend API (无依赖)
+└── Task 2: Frontend Component (无依赖, 可 mock API)
+
+Wave 2 (Wave 1 完成后):
+└── Task 3: Integration Testing (依赖: Task 1, Task 2)
+
+Critical Path: max(Task 1, Task 2) + Task 3
+Estimated Parallel Speedup: ~50% faster (backend+frontend 同时开发)
+```
+
+---
+
 ## Task 1: 后端搜索 API
+
+**Delegation Recommendation:**
+- **Category:** `quick` — 单文件改动，遵循清晰模式
+- **Skills:** [`gookit-goutil`] — Go 字符串/文件操作辅助函数模式
+
+**Skills Evaluation:**
+- INCLUDED `gookit-goutil`: 项目使用 gookit 工具库，提供字符串处理辅助函数
+- OMITTED `golang-pro`: 不是并发/微服务任务，标准 Go HTTP 模式即可
 
 **Files:**
 - Modify: `handlers.go` (新增函数)
@@ -344,6 +378,15 @@ git commit -m "feat: 添加全局内容搜索 API
 
 ## Task 2: 前端搜索组件
 
+**Delegation Recommendation:**
+- **Category:** `visual-engineering` — 前端 UI/UX 实现
+- **Skills:** [`frontend-design`, `ui-ux-pro-max`] — 高质量 UI 模式和搜索面板设计
+
+**Skills Evaluation:**
+- INCLUDED `frontend-design`: 确保搜索面板的高设计质量
+- INCLUDED `ui-ux-pro-max`: 搜索结果面板的交互细节和样式
+- OMITTED `vue-best-practices`: 项目使用原生 TypeScript，不是 Vue
+
 **Files:**
 - Create: `web/src/content-search.ts`
 - Modify: `web/src/app.ts` (导入并初始化)
@@ -386,6 +429,10 @@ function createSearchHTML(): string {
                class="content-search-input" 
                placeholder="搜索内容... (空格=AND, !前缀=排除)"
                autocomplete="off">
+        <button class="content-search-clear" 
+                type="button" 
+                aria-label="清除搜索" 
+                style="display:none">×</button>
         <span class="content-search-icon">🔍</span>
         <span class="content-search-loading" style="display:none">⏳</span>
     </div>
@@ -413,7 +460,7 @@ function renderResults(response: SearchResponse, resultsContainer: HTMLElement):
                      data-file="${result.file}" 
                      data-line="${match.line}">
                     <span class="search-result-line">L${match.line}</span>
-                    <span class="search-result-snippet">${match.snippet}</span>
+                    <span class="search-result-snippet">${highlightKeywords(match.snippet, response.query)}</span>
                 </div>
             `).join('')}
         </div>
@@ -429,12 +476,37 @@ function renderResults(response: SearchResponse, resultsContainer: HTMLElement):
     `);
 }
 
+// 高亮关键词（分别高亮每个包含关键词，忽略排除关键词）
+function highlightKeywords(snippet: string, query: string): string {
+    // 分割关键词，排除 ! 前缀的词
+    const terms = query.split(/\s+/)
+        .filter(t => !t.startsWith('!') && t.length > 0)
+        .map(t => t.toLowerCase());
+    
+    let result = snippet;
+    for (const term of terms) {
+        // 使用大小写不敏感匹配
+        const regex = new RegExp(term, 'gi');
+        result = result.replace(regex, '<mark>$&</mark>');
+    }
+    return result;
+}
+
 // 执行搜索
-async function performSearch(query: string, resultsContainer: HTMLElement, loadingEl: HTMLElement): void {
-    if (!query.trim()) {
+async function performSearch(
+    query: string, 
+    resultsContainer: HTMLElement, 
+    loadingEl: HTMLElement,
+    clearBtn: HTMLElement
+): Promise<void> {
+    // 最小长度检查 (与后端一致)
+    if (query.trim().length < 2) {
         resultsContainer.style.display = 'none';
+        clearBtn.style.display = query.trim().length > 0 ? 'inline' : 'none';
         return;
     }
+    
+    clearBtn.style.display = 'inline';
 
     // 取消之前的请求
     if (searchAbortController) {
@@ -518,15 +590,27 @@ export function setupContentSearch(): void {
     const input = wrapper.querySelector('.content-search-input') as HTMLInputElement;
     const resultsContainer = wrapper.querySelector('.content-search-results') as HTMLElement;
     const loadingEl = wrapper.querySelector('.content-search-loading') as HTMLElement;
+    const clearBtn = wrapper.querySelector('.content-search-clear') as HTMLElement;
 
     // 输入事件 - debounce 300ms
     input.addEventListener('input', () => {
+        // 显示/隐藏清除按钮
+        clearBtn.style.display = input.value.length > 0 ? 'inline' : 'none';
+        
         if (searchDebounceTimer) {
             clearTimeout(searchDebounceTimer);
         }
         searchDebounceTimer = window.setTimeout(() => {
-            performSearch(input.value, resultsContainer, loadingEl);
+            performSearch(input.value, resultsContainer, loadingEl, clearBtn);
         }, 300);
+    });
+
+    // 清除按钮点击事件
+    clearBtn.addEventListener('click', () => {
+        input.value = '';
+        resultsContainer.style.display = 'none';
+        clearBtn.style.display = 'none';
+        input.focus();
     });
 
     // 点击结果项导航
@@ -597,6 +681,21 @@ export function setupContentSearch(): void {
 
 .content-search-input::placeholder {
     color: var(--text-muted, #666);
+}
+
+.content-search-clear {
+    margin-left: 4px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--text-muted, #666);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.content-search-clear:hover {
+    color: var(--text-secondary, #333);
 }
 
 .content-search-icon {
@@ -683,6 +782,14 @@ export function setupContentSearch(): void {
 .search-result-error {
     color: #c00;
 }
+
+/* 关键词高亮 */
+.search-result-snippet mark {
+    background: var(--accent-primary, #0066cc);
+    color: #fff;
+    padding: 0 2px;
+    border-radius: 2px;
+}
 ```
 
 - [ ] **Step 2: 添加 CSS 样式到 app.css**
@@ -745,6 +852,13 @@ git commit -m "feat: 添加全局内容搜索前端组件
 ---
 
 ## Task 3: 完整功能测试
+
+**Delegation Recommendation:**
+- **Category:** `unspecified-low` — 测试验证任务
+- **Skills:** [] — 不需要特殊技能
+
+**Skills Evaluation:**
+- OMITTED: 简单测试验证，不需要额外技能注入
 
 ### Step 1: 测试基本搜索
 
