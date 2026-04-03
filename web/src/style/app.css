@@ -1778,7 +1778,7 @@ div.mermaid {
 
 .content-search-wrapper {
     position: fixed;
-    top: 8px;
+    top: 6px;
     left: calc(var(--sidebar-width) + 30px);
     z-index: 100;
 }
@@ -1788,15 +1788,20 @@ body.sidebar-collapsed .content-search-wrapper {
 }
 
 .content-search-box {
-    width: 300px;
+    width: 180px;
     display: flex;
     align-items: center;
     position: relative;
     height: 32px;
+    transition: width 0.2s ease;
+}
+
+.content-search-box:focus-within {
+    width: 300px;
 }
 
 .content-search-input {
-    width: 80%;
+    width: 100%;
     height: 100%;
     padding: 0 32px 0 12px;
     border: 1px solid var(--border-light);
