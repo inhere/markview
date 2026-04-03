@@ -863,6 +863,7 @@ body {
     justify-content: center;
     min-height: 100vh;
     transition: margin-left 0.15s ease;
+    position: relative;
 }
 
 body.sidebar-collapsed .content-wrapper {
@@ -1704,12 +1705,10 @@ div.mermaid {
 /* ===== Content Search ===== */
 
 .content-search-wrapper {
-    position: sticky;
-    top: 0;
+    position: absolute;
+    top: 12px;
+    left: 12px;
     z-index: 100;
-    padding: 12px 20px;
-    background: var(--bg-canvas);
-    border-bottom: 1px solid var(--border-light);
 }
 
 .content-search-box {
