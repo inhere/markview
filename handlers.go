@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -395,8 +396,10 @@ type SearchTerms struct {
 
 // SearchMatch 匹配的行
 type SearchMatch struct {
-	Line    int    `json:"line"`
-	Snippet string `json:"snippet"`
+	Line    int      `json:"line"`
+	Snippet string   `json:"snippet"`
+	Lines   []int    `json:"lines,omitempty"`
+	Context []string `json:"context,omitempty"`
 }
 
 // SearchResult 单个文件的搜索结果
@@ -407,9 +410,11 @@ type SearchResult struct {
 
 // SearchResponse 搜索响应
 type SearchResponse struct {
-	Query   string         `json:"query"`
-	Results []SearchResult `json:"results"`
-	Total   int            `json:"total"`
+	Query        string         `json:"query"`
+	Results      []SearchResult `json:"results"`
+	Total        int            `json:"total"`
+	Duration     int            `json:"duration"`
+	FilesScanned int            `json:"filesScanned"`
 }
 
 // parseSearchTerms 解析查询字符串
@@ -458,18 +463,41 @@ func lineMatchesMatch(line string, terms SearchTerms) bool {
 	return true
 }
 
-// searchInContent 在内容中搜索匹配行
+// searchInContent 在内容中搜索匹配行，收集上下文
 func searchInContent(content string, terms SearchTerms, limit int) []SearchMatch {
 	lines := strings.Split(content, "\n")
 	matches := []SearchMatch{}
+	skipUntil := -1 // 跳过到的行号
 
 	for i, line := range lines {
+		// 跳过已经作为上下文收集的行
+		if i < skipUntil {
+			continue
+		}
+
 		if lineMatchesMatch(line, terms) {
+			// 收集上下文：上一行 + current + 后两行
+			startLine := max(0, i-1)
+			endLine := min(len(lines)-1, i+2)
+
+			contextLines := []string{}
+			lineNums := []int{}
+			for j := startLine; j <= endLine; j++ {
+				contextLines = append(contextLines, strings.TrimSpace(lines[j]))
+				lineNums = append(lineNums, j+1)
+			}
+
 			snippet := extractSnippet(line, terms.Include)
 			matches = append(matches, SearchMatch{
 				Line:    i + 1,
 				Snippet: snippet,
+				Lines:   lineNums,
+				Context: contextLines,
 			})
+
+			// 下一次匹配跳过后两行
+			skipUntil = i + 3
+
 			if len(matches) >= limit {
 				break
 			}
@@ -537,16 +565,21 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	if query == "" {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(SearchResponse{
-			Query:   "",
-			Results: []SearchResult{},
-			Total:   0,
+			Query:        "",
+			Results:      []SearchResult{},
+			Total:        0,
+			Duration:     0,
+			FilesScanned: 0,
 		})
 		return
 	}
 
+	start := time.Now()
 	terms := parseSearchTerms(query)
 	results := []SearchResult{}
-	limit := 50 // 每文件最大匹配数
+	maxFiles := 15
+	maxMatchesPerFile := 50
+	filesScanned := 0
 
 	// Walk through targetDir to find .md files
 	err := filepath.WalkDir(targetDir, func(path string, d fs.DirEntry, err error) error {
@@ -575,13 +608,15 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
+		filesScanned++
+
 		// Read and search file
 		content, err := os.ReadFile(path)
 		if err != nil {
 			return nil
 		}
 
-		matches := searchInContent(string(content), terms, limit)
+		matches := searchInContent(string(content), terms, maxMatchesPerFile)
 		if len(matches) > 0 {
 			results = append(results, SearchResult{
 				File:    relPath,
@@ -589,18 +624,26 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 
+		if len(results) >= maxFiles {
+			return errors.New("max files limit reached")
+		}
+
 		return nil
 	})
 
-	if err != nil {
+	if err != nil && err.Error() != "max files limit reached" {
 		http.Error(w, "Search error: "+err.Error(), 500)
 		return
 	}
 
+	duration := int(time.Since(start).Milliseconds())
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(SearchResponse{
-		Query:   query,
-		Results: results,
-		Total:   countMatches(results),
+		Query:        query,
+		Results:      results,
+		Total:        countMatches(results),
+		Duration:     duration,
+		FilesScanned: filesScanned,
 	})
 }

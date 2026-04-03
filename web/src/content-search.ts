@@ -6,6 +6,8 @@
 interface SearchMatch {
     line: number;
     snippet: string;
+    lines?: number[];
+    context?: string[];
 }
 
 interface SearchResult {
@@ -17,6 +19,8 @@ interface SearchResponse {
     query: string;
     results: SearchResult[];
     total: number;
+    duration?: number;
+    filesScanned?: number;
 }
 
 /** 高亮关键词 */
@@ -45,18 +49,27 @@ function renderResults(response: SearchResponse, container: HTMLElement): void {
         `;
         return;
     }
-    
+
     const html = response.results.map(result => {
         const matchesHtml = result.matches.map(match => {
             const highlightedSnippet = highlightKeywords(match.snippet, response.query);
+            const contextHtml = match.context && match.context.length > 1
+                ? match.context.map((line, idx) => {
+                    const lineNum = match.lines ? match.lines[idx] : match.line;
+                    const isMatchLine = lineNum === match.line;
+                    const cls = isMatchLine ? 'context-line match-line' : 'context-line';
+                    const content = isMatchLine ? highlightedSnippet : line;
+                    return `<div class="${cls}" data-line="${lineNum}"><span class="line-num">${lineNum}</span>${content}</div>`;
+                }).join('')
+                : `<div class="context-line match-line" data-line="${match.line}"><span class="line-num">${match.line}</span>${highlightedSnippet}</div>`;
+
             return `
                 <div class="content-search-match" data-file="${result.file}" data-line="${match.line}">
-                    <span class="match-line">L${match.line}</span>
-                    <span class="match-snippet">${highlightedSnippet}</span>
+                    ${contextHtml}
                 </div>
             `;
         }).join('');
-        
+
         return `
             <div class="content-search-result-group">
                 <div class="content-search-file" data-file="${result.file}">
@@ -68,10 +81,14 @@ function renderResults(response: SearchResponse, container: HTMLElement): void {
             </div>
         `;
     }).join('');
-    
+
+    const statsInfo = response.duration !== undefined && response.filesScanned !== undefined
+        ? ` · ${response.duration}ms · ${response.filesScanned} files`
+        : '';
+
     container.innerHTML = `
         <div class="content-search-header">
-            <span>${response.total} results for "${response.query}"</span>
+            <span>${response.total} results${statsInfo}</span>
         </div>
         <div class="content-search-list">${html}</div>
     `;
@@ -196,7 +213,19 @@ export function setupContentSearch(): void {
     
     resultsContainer.addEventListener('click', (e: MouseEvent) => {
         const target = e.target instanceof Element ? e.target : null;
-        
+
+        const contextLine = target?.closest('.context-line');
+        if (contextLine instanceof HTMLElement) {
+            const matchItem = contextLine.closest('.content-search-match');
+            const file = matchItem instanceof HTMLElement ? matchItem.dataset.file : undefined;
+            const line = contextLine.dataset.line;
+            if (file && line) {
+                navigateToResult(file, parseInt(line, 10));
+                closeResults(resultsContainer, input);
+            }
+            return;
+        }
+
         const matchItem = target?.closest('.content-search-match');
         if (matchItem instanceof HTMLElement) {
             const file = matchItem.dataset.file;
@@ -207,7 +236,7 @@ export function setupContentSearch(): void {
             }
             return;
         }
-        
+
         const fileItem = target?.closest('.content-search-file');
         if (fileItem instanceof HTMLElement) {
             const group = fileItem.closest('.content-search-result-group');

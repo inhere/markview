@@ -1927,10 +1927,7 @@ body.sidebar-collapsed .content-search-wrapper {
 }
 
 .content-search-match {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 6px 16px;
+    padding: 4px 16px;
     cursor: pointer;
     transition: background 0.15s;
     border-left: 2px solid transparent;
@@ -1941,22 +1938,30 @@ body.sidebar-collapsed .content-search-wrapper {
     border-left-color: var(--accent-primary);
 }
 
-.match-line {
-    font-size: 12px;
-    font-family: var(--font-mono);
-    color: var(--text-muted);
-    min-width: 28px;
-}
-
-.match-snippet {
+.context-line {
+    display: flex;
+    gap: 8px;
+    padding: 2px 0;
     font-size: 13px;
-    color: var(--text-body);
+    font-family: var(--font-mono);
     line-height: 1.5;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-.match-snippet mark {
+.context-line .line-num {
+    min-width: 32px;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-align: right;
+    user-select: none;
+}
+
+.context-line.match-line {
+    background: var(--accent-subtle);
+    border-radius: 2px;
+    font-weight: 500;
+}
+
+.context-line mark {
     background: var(--accent-primary);
     color: #ffffff;
     padding: 1px 4px;
