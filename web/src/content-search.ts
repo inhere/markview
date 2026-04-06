@@ -30,11 +30,11 @@ function highlightKeywords(snippet: string, query: string): string {
         .split(/\s+/)
         .filter(word => word.length >= 2 && !word.startsWith('!'))
         .map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); // 转义正则特殊字符
-    
+
     if (keywords.length === 0) {
         return snippet;
     }
-    
+
     const regex = new RegExp(`(${keywords.join('|')})`, 'gi');
     return snippet.replace(regex, '<mark>$1</mark>');
 }
@@ -83,7 +83,7 @@ function renderResults(response: SearchResponse, container: HTMLElement): void {
     }).join('');
 
     const statsInfo = response.duration !== undefined && response.filesScanned !== undefined
-        ? ` · ${response.duration}ms · ${response.filesScanned} files`
+        ? ` · ${response.duration}ms · in ${response.filesScanned} files`
         : '';
 
     container.innerHTML = `
@@ -100,7 +100,7 @@ function debounce<T extends (...args: unknown[]) => unknown>(
     delay: number
 ): (...args: Parameters<T>) => void {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    
+
     return (...args: Parameters<T>) => {
         if (timeoutId) {
             clearTimeout(timeoutId);
@@ -119,20 +119,20 @@ async function performSearch(query: string, resultsContainer: HTMLElement): void
         resultsContainer.style.display = 'none';
         return;
     }
-    
+
     resultsContainer.style.display = 'block';
     resultsContainer.innerHTML = `
         <div class="content-search-loading">
             <span>Searching...</span>
         </div>
     `;
-    
+
     try {
         const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         if (!response.ok) {
             throw new Error(`Search failed: ${response.status}`);
         }
-        
+
         const data: SearchResponse = await response.json();
         renderResults(data, resultsContainer);
     } catch (error) {
@@ -148,7 +148,7 @@ function navigateToResult(file: string, line?: number): void {
     const url = new URL(window.location.href);
     url.pathname = `/${file}`;
     url.hash = line ? `#L${line}` : '';
-    
+
     // 使用虚拟链接触发内联导航（经过 app.ts 的导航处理）
     const anchor = document.createElement('a');
     anchor.href = url.toString();
@@ -181,36 +181,36 @@ export function setupContentSearch(): void {
     if (!searchWrapper) {
         return;
     }
-    
+
     const input = searchWrapper.querySelector('.content-search-input') as HTMLInputElement;
     const clearBtn = searchWrapper.querySelector('.content-search-clear') as HTMLButtonElement;
     const resultsContainer = searchWrapper.querySelector('.content-search-results') as HTMLElement;
-    
+
     if (!input || !clearBtn || !resultsContainer) {
         return;
     }
-    
+
     const debouncedSearch = debounce((query: string) => {
         performSearch(query, resultsContainer);
     }, 300);
-    
+
     input.addEventListener('input', () => {
         const query = input.value.trim();
         updateClearButton(input);
         debouncedSearch(query);
     });
-    
+
     clearBtn.addEventListener('click', () => {
         closeResults(resultsContainer, input);
     });
-    
+
     input.addEventListener('keydown', (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
             closeResults(resultsContainer, input);
             input.blur();
         }
     });
-    
+
     resultsContainer.addEventListener('click', (e: MouseEvent) => {
         const target = e.target instanceof Element ? e.target : null;
 
@@ -245,14 +245,14 @@ export function setupContentSearch(): void {
             }
         }
     });
-    
+
     document.addEventListener('click', (e: MouseEvent) => {
         const target = e.target instanceof Element ? e.target : null;
         if (!searchWrapper.contains(target)) {
             resultsContainer.style.display = 'none';
         }
     });
-    
+
     input.addEventListener('focus', () => {
         if (resultsContainer.innerHTML && input.value.trim().length >= 2) {
             resultsContainer.style.display = 'block';

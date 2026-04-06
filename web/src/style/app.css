@@ -1788,7 +1788,7 @@ body.sidebar-collapsed .content-search-wrapper {
 }
 
 .content-search-box {
-    width: 160px;
+    width: 140px;
     display: flex;
     align-items: center;
     position: relative;
@@ -1815,6 +1815,7 @@ body.sidebar-collapsed .content-search-wrapper {
 }
 
 .content-search-input:focus {
+    background: rgba(var(--bg-surface-rgb), 0.75);
     border-color: var(--accent-primary);
     box-shadow: 0 0 0 2px var(--accent-subtle);
 }
@@ -1856,8 +1857,10 @@ body.sidebar-collapsed .content-search-wrapper {
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
-    width: 480px;
-    max-height: 500px;
+    width: 55vw;
+    min-width: 680px;
+    max-width: 960px;
+    max-height: 650px;
     overflow-y: auto;
     background: var(--bg-paper);
     border: 1px solid var(--border-light);
@@ -1927,10 +1930,11 @@ body.sidebar-collapsed .content-search-wrapper {
 }
 
 .content-search-match {
-    padding: 4px 16px;
+    padding: 4px 10px;
     cursor: pointer;
     transition: background 0.15s;
     border-left: 2px solid transparent;
+    border-top: 1px dashed #ccc;
 }
 
 .content-search-match:hover {
@@ -1940,11 +1944,10 @@ body.sidebar-collapsed .content-search-wrapper {
 
 .context-line {
     display: flex;
-    gap: 8px;
     padding: 2px 0;
     font-size: 13px;
     font-family: var(--font-mono);
-    line-height: 1.5;
+    line-height: 1.3;
 }
 
 .context-line .line-num {
@@ -1953,6 +1956,7 @@ body.sidebar-collapsed .content-search-wrapper {
     font-size: 11px;
     text-align: right;
     user-select: none;
+    padding-right: 5px;
 }
 
 .context-line.match-line {
@@ -1964,7 +1968,7 @@ body.sidebar-collapsed .content-search-wrapper {
 .context-line mark {
     background: var(--accent-primary);
     color: #ffffff;
-    padding: 1px 4px;
+    padding: 1px 2px;
     border-radius: 2px;
     font-weight: 600;
 }
