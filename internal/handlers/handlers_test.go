@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"net/http"
@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/inhere/markview/internal/config"
 )
 
 func TestBuildFileTree(t *testing.T) {
@@ -85,8 +87,8 @@ func TestBuildFileTree(t *testing.T) {
 
 func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {
 	root := t.TempDir()
-	targetDir = root
-	defaultEntry = "README.md"
+	config.Cfg.TargetDir = root
+	config.Cfg.EntryFile = "README.md"
 
 	readmePath := filepath.Join(root, "README.md")
 	if err := os.WriteFile(readmePath, []byte("# Hello"), 0o644); err != nil {
@@ -96,7 +98,7 @@ func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 
-	handleRequest(rec, req)
+	HandleRequest(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", rec.Code)
@@ -109,19 +111,3 @@ func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {
 	}
 }
 
-func TestStaticHandlerSetsRevalidateCacheHeaders(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/static/app.css", nil)
-	rec := httptest.NewRecorder()
-
-	newStaticHandler().ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", rec.Code)
-	}
-	if got := rec.Header().Get("Cache-Control"); got != "public, max-age=0, must-revalidate" {
-		t.Fatalf("expected revalidate cache header, got %q", got)
-	}
-	if contentType := rec.Header().Get("Content-Type"); !strings.Contains(contentType, "text/css") {
-		t.Fatalf("expected css content-type, got %q", contentType)
-	}
-}

@@ -1,9 +1,9 @@
 //go:build !windows
 
-package main
+package utils
 
 import "time"
 
-func fileCreatedTime(_ any) time.Time {
+func FileCreatedTime(_ any) time.Time {
 	return time.Time{}
 }

@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"encoding/json"
@@ -13,18 +13,20 @@ import (
 	"github.com/gookit/goutil/x/clog"
 )
 
-func debugf(format string, args ...any) {
-	if !enableDebug {
+var  EnableDebug bool
+
+func Debugf(format string, args ...any) {
+	if !EnableDebug {
 		return
 	}
 	clog.Debugf(format, args...)
 }
 
-func formatTimestamp(t time.Time) string {
+func FormatTimestamp(t time.Time) string {
 	return t.Local().Format("2006-01-02 15:04:05")
 }
 
-func formatFileSize(size int64) string {
+func FormatFileSize(size int64) string {
 	const unit = 1024
 	if size < unit {
 		return fmt.Sprintf("%d B", size)
@@ -39,24 +41,24 @@ func formatFileSize(size int64) string {
 	return fmt.Sprintf("%.1f %ciB", float64(size)/float64(div), "KMGTPE"[exp])
 }
 
-func isMarkdownFile(name string) bool {
+func IsMarkdownFile(name string) bool {
 	return strings.EqualFold(filepath.Ext(name), ".md")
 }
 
-func isMarkdownFilePresent(path string) bool {
+func IsMarkdownFilePresent(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
 		return false
 	}
-	return !info.IsDir() && isMarkdownFile(info.Name())
+	return !info.IsDir() && IsMarkdownFile(info.Name())
 }
 
-func normalizeRelativePath(path string) string {
+func NormalizeRelativePath(path string) string {
 	return filepath.ToSlash(path)
 }
 
-func toURLPath(relativePath string) string {
-	normalized := normalizeRelativePath(relativePath)
+func ToURLPath(relativePath string) string {
+	normalized := NormalizeRelativePath(relativePath)
 	if normalized == "" || normalized == "." {
 		return "/"
 	}
@@ -69,7 +71,7 @@ func toURLPath(relativePath string) string {
 	return "/" + strings.Join(segments, "/")
 }
 
-func mustMarshalJSON(value any) template.JS {
+func MustMarshalJSON(value any) template.JS {
 	payload, err := json.Marshal(value)
 	if err != nil {
 		return "null"

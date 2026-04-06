@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package utils
 
 import (
 	"os"
@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func fileCreatedTime(info os.FileInfo) time.Time {
+func FileCreatedTime(info os.FileInfo) time.Time {
 	data, ok := info.Sys().(*syscall.Win32FileAttributeData)
 	if !ok {
 		return time.Time{}
