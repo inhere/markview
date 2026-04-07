@@ -78,7 +78,7 @@ func newServerMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/static/", newStaticHandler())
 	mux.HandleFunc("/sse", handlers.HandleSSE)
-	mux.HandleFunc("/api/search", handlers.HandleSearch)
+	mux.HandleFunc("/api/file-tree", handlers.HandleFileTreeAPI)
 	mux.HandleFunc("/", handlers.HandleRequest)
 	return mux
 }
@@ -127,7 +127,7 @@ func prepare(args []string) {
 	config.EnableDebug = utils.EnableDebug
 	config.Cfg.Init(targetDir, entryFile)
 
-	handlers.IfsReader = func (path string) ([]byte, error)  {
+	handlers.IfsReader = func(path string) ([]byte, error) {
 		return content.ReadFile(path)
 	}
 }

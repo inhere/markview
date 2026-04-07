@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"os"
@@ -330,6 +331,25 @@ func buildFileTreeDir(absDir, relativeDir string) ([]FileTreeNode, error) {
 	sortFileTreeNodes(files)
 
 	return append(directories, files...), nil
+}
+
+// HandleFileTreeAPI returns file tree JSON for dynamic refresh
+func HandleFileTreeAPI(w http.ResponseWriter, r *http.Request) {
+	targetDir := config.Cfg.TargetDir
+	fileTree, err := buildFileTree(targetDir)
+	if err != nil {
+		http.Error(w, "Failed to build file tree", 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	data, err := json.Marshal(fileTree)
+	if err != nil {
+		http.Error(w, "Failed to marshal file tree", 500)
+		return
+	}
+	w.Write(data)
 }
 
 func sortFileTreeNodes(nodes []FileTreeNode) {

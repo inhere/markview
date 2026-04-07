@@ -22,14 +22,20 @@ var watcher *fsnotify.Watcher
 var (
 	debounceTimer *time.Timer
 	debounceMutex sync.Mutex
-	pendingFiles  []string
+	pendingFiles  []fileChange
 	watchedDir    string
 )
 
+type fileChange struct {
+	path  string
+	isNew bool
+}
+
 // ReloadMessage for JSON notification format
 type ReloadMessage struct {
-	Type  string   `json:"type"`
-	Files []string `json:"files"`
+	Type   string   `json:"type"`
+	Files  []string `json:"files"`
+	Action string   `json:"action,omitempty"`
 }
 
 // WatchDirectory watches the directory and its subdirectories for changes.
@@ -88,8 +94,14 @@ func WatchDirectory(dir string) {
 			}
 			if event.Has(fsnotify.Create) {
 				info, err := os.Stat(event.Name)
-				if err == nil && info.IsDir() {
-					watcher.Add(event.Name)
+				if err == nil {
+					if info.IsDir() {
+						watcher.Add(event.Name)
+					} else if strings.HasSuffix(event.Name, ".md") {
+						relPath, _ := filepath.Rel(dir, event.Name)
+						clog.Infof("Created file: %s", relPath)
+						handleFileChange(relPath, event)
+					}
 				}
 			}
 		case err, ok := <-watcher.Errors:
@@ -105,17 +117,23 @@ func handleFileChange(filePath string, event fsnotify.Event) {
 	debounceMutex.Lock()
 	defer debounceMutex.Unlock()
 
-	if !slices.Contains(pendingFiles, filePath) {
-		pendingFiles = append(pendingFiles, filePath)
-		clog.Infof("Modified file: %s (%s)", filePath, event.Op.String())
+	isNew := event.Has(fsnotify.Create)
+	for i, f := range pendingFiles {
+		if f.path == filePath {
+			if isNew {
+				pendingFiles[i].isNew = true
+			}
+			return
+		}
 	}
+	pendingFiles = append(pendingFiles, fileChange{path: filePath, isNew: isNew})
 
 	if debounceTimer != nil {
 		debounceTimer.Stop()
 	}
 	debounceTimer = time.AfterFunc(2*time.Second, func() {
 		debounceMutex.Lock()
-		files := make([]string, len(pendingFiles))
+		files := make([]fileChange, len(pendingFiles))
 		copy(files, pendingFiles)
 		pendingFiles = nil
 		debounceMutex.Unlock()
@@ -126,10 +144,22 @@ func handleFileChange(filePath string, event fsnotify.Event) {
 	})
 }
 
-func broadcastJSON(files []string) {
+func broadcastJSON(files []fileChange) {
+	hasCreate := false
+	paths := make([]string, len(files))
+	for i, f := range files {
+		paths[i] = f.path
+		if f.isNew {
+			hasCreate = true
+		}
+	}
+
 	msg := ReloadMessage{
 		Type:  "reload",
-		Files: files,
+		Files: paths,
+	}
+	if hasCreate {
+		msg.Action = "create"
 	}
 	data, err := json.Marshal(msg)
 	if err != nil {
