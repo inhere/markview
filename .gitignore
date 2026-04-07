@@ -6,4 +6,4 @@ dist/
 .agents/
 .claude/
 .tmp/
-.env
+.env.worktrees/
