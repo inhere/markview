@@ -364,11 +364,12 @@ func HandleFileTreeAPI(w http.ResponseWriter, r *http.Request) {
 
 func sortFileTreeNodes(nodes []FileTreeNode) {
 	sort.Slice(nodes, func(i, j int) bool {
-		left := strings.ToLower(nodes[i].Name)
-		right := strings.ToLower(nodes[j].Name)
-		if left == right {
-			return nodes[i].Name < nodes[j].Name
+		nameI, nameJ := nodes[i].Name, nodes[j].Name
+		// 使用 EqualFold 进行大小写不敏感比较
+		if strings.EqualFold(nameI, nameJ) {
+			return nameI < nameJ
 		}
-		return left < right
+		// 按小写比较实现大小写不敏感排序
+		return strings.ToLower(nameI) < strings.ToLower(nameJ)
 	})
 }

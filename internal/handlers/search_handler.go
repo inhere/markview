@@ -109,8 +109,10 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 // SearchTerms 解析后的搜索条件
 type SearchTerms struct {
-	Include []string
-	Exclude []string
+	Include      []string // 原始包含关键词
+	Exclude      []string // 原始排除关键词
+	IncludeLower []string // 预计算的 lowercase 版本，避免在搜索循环中重复转换
+	ExcludeLower []string // 预计算的 lowercase 版本
 }
 
 // SearchMatch 匹配的行
@@ -138,18 +140,24 @@ type SearchResponse struct {
 
 // parseSearchTerms 解析查询字符串
 // 空格 = AND，! 前缀 = 排除
+// 预计算 IncludeLower 和 ExcludeLower 以减少搜索循环中的字符串分配
 func parseSearchTerms(query string) SearchTerms {
 	terms := SearchTerms{
-		Include: []string{},
-		Exclude: []string{},
+		Include:      []string{},
+		Exclude:      []string{},
+		IncludeLower: []string{},
+		ExcludeLower: []string{},
 	}
 
 	words := strings.Fields(query)
 	for _, word := range words {
 		if strings.HasPrefix(word, "!") {
-			terms.Exclude = append(terms.Exclude, strings.TrimPrefix(word, "!"))
+			cleanWord := strings.TrimPrefix(word, "!")
+			terms.Exclude = append(terms.Exclude, cleanWord)
+			terms.ExcludeLower = append(terms.ExcludeLower, strings.ToLower(cleanWord))
 		} else {
 			terms.Include = append(terms.Include, word)
+			terms.IncludeLower = append(terms.IncludeLower, strings.ToLower(word))
 		}
 	}
 
@@ -157,12 +165,13 @@ func parseSearchTerms(query string) SearchTerms {
 }
 
 // lineMatchesMatch 检查行是否匹配搜索条件
+// 使用预计算的 ExcludeLower 和 IncludeLower 避免重复的 ToLower 调用
 func lineMatchesMatch(line string, terms SearchTerms) bool {
 	lineLower := strings.ToLower(line)
 
 	// Check exclude terms first
-	for _, ex := range terms.Exclude {
-		if strings.Contains(lineLower, strings.ToLower(ex)) {
+	for _, ex := range terms.ExcludeLower {
+		if strings.Contains(lineLower, ex) {
 			return false
 		}
 	}
@@ -173,8 +182,8 @@ func lineMatchesMatch(line string, terms SearchTerms) bool {
 	}
 
 	// Check include terms (AND logic)
-	for _, inc := range terms.Include {
-		if !strings.Contains(lineLower, strings.ToLower(inc)) {
+	for _, inc := range terms.IncludeLower {
+		if !strings.Contains(lineLower, inc) {
 			return false
 		}
 	}
