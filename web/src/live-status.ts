@@ -23,6 +23,38 @@ interface ReloadMessage {
     files: string[];
 }
 
+const CURRENT_FILE_PATH_DATA_ID = 'current-file-path-data';
+
+function getCurrentFilePath(): string | null {
+    const script = document.getElementById(CURRENT_FILE_PATH_DATA_ID);
+    if (!(script instanceof HTMLScriptElement) || !script.textContent) {
+        return null;
+    }
+    try {
+        return JSON.parse(script.textContent) as string;
+    } catch {
+        return null;
+    }
+}
+
+function shouldRefreshCurrentPage(changedFiles: string[]): boolean {
+    if (changedFiles.length === 0) {
+        return true;
+    }
+    
+    const currentPath = getCurrentFilePath();
+    if (!currentPath) {
+        return true;
+    }
+    
+    const normalizedCurrentPath = currentPath.replace(/\\/g, '/');
+    
+    return changedFiles.some(file => {
+        const normalizedFile = file.replace(/\\/g, '/');
+        return normalizedFile === normalizedCurrentPath;
+    });
+}
+
 // Toast notification container and state
 let toastContainer: HTMLElement | null = null;
 let activeToast: HTMLElement | null = null;
@@ -153,9 +185,12 @@ export function setupLiveReloadStatus(
             return;
         }
 
-        // Show toast notification if files are provided
         if (msg.files.length > 0) {
             showFileChangeToast(msg.files);
+        }
+
+        if (!shouldRefreshCurrentPage(msg.files)) {
+            return;
         }
 
         if (liveDot) {
