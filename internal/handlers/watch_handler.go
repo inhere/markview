@@ -22,14 +22,9 @@ var watcher *fsnotify.Watcher
 var (
 	debounceTimer *time.Timer
 	debounceMutex sync.Mutex
-	pendingFiles  []fileChange
+	pendingFiles  = make(map[string]bool) // key: path, value: isNew
 	watchedDir    string
 )
-
-type fileChange struct {
-	path  string
-	isNew bool
-}
 
 // ReloadMessage for JSON notification format
 type ReloadMessage struct {
@@ -99,7 +94,6 @@ func WatchDirectory(dir string) {
 						watcher.Add(event.Name)
 					} else if strings.HasSuffix(event.Name, ".md") {
 						relPath, _ := filepath.Rel(dir, event.Name)
-						clog.Infof("Created file: %s", relPath)
 						handleFileChange(relPath, event)
 					}
 				}
@@ -118,24 +112,24 @@ func handleFileChange(filePath string, event fsnotify.Event) {
 	defer debounceMutex.Unlock()
 
 	isNew := event.Has(fsnotify.Create)
-	for i, f := range pendingFiles {
-		if f.path == filePath {
-			if isNew {
-				pendingFiles[i].isNew = true
-			}
-			return
-		}
+	if pendingFiles == nil {
+		pendingFiles = make(map[string]bool)
 	}
-	pendingFiles = append(pendingFiles, fileChange{path: filePath, isNew: isNew})
+
+	if existingIsNew, exists := pendingFiles[filePath]; !exists {
+		pendingFiles[filePath] = isNew
+		clog.Infof("Modified file: %s (%s)", filePath, event.Op.String())
+	} else if isNew && !existingIsNew {
+		pendingFiles[filePath] = true
+	}
 
 	if debounceTimer != nil {
 		debounceTimer.Stop()
 	}
 	debounceTimer = time.AfterFunc(2*time.Second, func() {
 		debounceMutex.Lock()
-		files := make([]fileChange, len(pendingFiles))
-		copy(files, pendingFiles)
-		pendingFiles = nil
+		files := pendingFiles
+		pendingFiles = make(map[string]bool)
 		debounceMutex.Unlock()
 
 		if len(files) > 0 {
@@ -144,12 +138,12 @@ func handleFileChange(filePath string, event fsnotify.Event) {
 	})
 }
 
-func broadcastJSON(files []fileChange) {
+func broadcastJSON(files map[string]bool) {
 	hasCreate := false
-	paths := make([]string, len(files))
-	for i, f := range files {
-		paths[i] = f.path
-		if f.isNew {
+	paths := make([]string, 0, len(files))
+	for path, isNew := range files {
+		paths = append(paths, path)
+		if isNew {
 			hasCreate = true
 		}
 	}
