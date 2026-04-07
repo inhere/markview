@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/inhere/markview/internal/config"
 	"github.com/inhere/markview/internal/utils"
@@ -20,6 +21,30 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
 )
+
+// 全局 goldmark Markdown 解析器单例 (线程安全)
+var mdParser goldmark.Markdown
+var initMdParserOnce sync.Once
+
+// initMdParser 初始化全局 markdown 解析器 (只执行一次)
+func initMdParser() {
+	initMdParserOnce.Do(func() {
+		mdParser = goldmark.New(
+			// GFM 扩展支持表格、删除线、链接化和任务列表
+			goldmark.WithExtensions(extension.GFM, emoji.Emoji, meta.New(meta.WithTable())),
+			goldmark.WithParserOptions(
+			// parser.WithAutoHeadingID(),
+			),
+			goldmark.WithRendererOptions(
+				html.WithHardWraps(),
+				html.WithUnsafe(), // Allow raw HTML
+				renderer.WithNodeRenderers(
+					util.Prioritized(extension.NewTableHTMLRenderer(), 500),
+				),
+			),
+		)
+	})
+}
 
 type PageData struct {
 	Title               string
@@ -174,24 +199,9 @@ func renderMarkdownContent(filePath string) (string, error) {
 		return "", err
 	}
 
-	// Configure goldmark
-	md := goldmark.New(
-		// GFM 扩展支持表格、删除线、链接化和任务列表
-		goldmark.WithExtensions(extension.GFM, emoji.Emoji, meta.New(meta.WithTable())),
-		goldmark.WithParserOptions(
-		// parser.WithAutoHeadingID(),
-		),
-		goldmark.WithRendererOptions(
-			html.WithHardWraps(),
-			html.WithUnsafe(), // Allow raw HTML
-			renderer.WithNodeRenderers(
-				util.Prioritized(extension.NewTableHTMLRenderer(), 500),
-			),
-		),
-	)
-
+	initMdParser()
 	var buf bytes.Buffer
-	if err = md.Convert(mdData, &buf); err != nil {
+	if err = mdParser.Convert(mdData, &buf); err != nil {
 		return "", err
 	}
 
