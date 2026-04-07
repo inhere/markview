@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"os"
@@ -120,27 +121,11 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderMarkdown(w http.ResponseWriter, filePath string) {
-	info, err := os.Stat(filePath)
-	if err != nil {
-		http.Error(w, "Failed to stat file", 500)
-		return
-	}
-
 	targetDir := config.Cfg.TargetDir
-	contentHTML, err := renderMarkdownContent(filePath)
-	if err != nil {
-		http.Error(w, "Failed to render markdown", 500)
-		return
-	}
 
-	fileName := filepath.Base(filePath)
-	createdAt := "Unavailable"
-	if created := utils.FileCreatedTime(info); !created.IsZero() {
-		createdAt = utils.FormatTimestamp(created)
-	}
-	currentRelativePath, err := filepath.Rel(targetDir, filePath)
+	mainData, err := buildPageData(filePath)
 	if err != nil {
-		http.Error(w, "Failed to resolve current file path", 500)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 
@@ -148,17 +133,6 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 	if err != nil {
 		http.Error(w, "Failed to build file tree", 500)
 		return
-	}
-
-	mainData := PageData{
-		Title:               fileName,
-		Content:             template.HTML(contentHTML),
-		FileName:            fileName,
-		FilePath:            filePath,
-		FileSize:            utils.FormatFileSize(info.Size()),
-		CreatedAt:           createdAt,
-		ModifiedAt:          utils.FormatTimestamp(info.ModTime()),
-		CurrentFilePathJSON: utils.MustMarshalJSON(utils.NormalizeRelativePath(currentRelativePath)),
 	}
 
 	mainTmplData, err := IfsReader("web/template-main.html")
@@ -181,10 +155,9 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 	t := template.Must(template.New("index").Parse(string(tmplData)))
 
 	data := PageData{
-		Title:        fileName,
+		Title:        mainData.FileName,
 		MainContent:  template.HTML(mainContentBuf.String()),
 		FileTreeJSON: utils.MustMarshalJSON(fileTree),
-		// CurrentFilePathJSON: utils.MustMarshalJSON(normalizeRelativePath(currentRelativePath)),
 	}
 
 	setPageCacheHeaders(w)
@@ -209,38 +182,10 @@ func renderMarkdownContent(filePath string) (string, error) {
 }
 
 func renderMainContent(w http.ResponseWriter, filePath string) {
-	info, err := os.Stat(filePath)
+	mainData, err := buildPageData(filePath)
 	if err != nil {
-		http.Error(w, "Failed to stat file", 500)
+		http.Error(w, err.Error(), 500)
 		return
-	}
-
-	contentHTML, err := renderMarkdownContent(filePath)
-	if err != nil {
-		http.Error(w, "Failed to render markdown", 500)
-		return
-	}
-
-	fileName := filepath.Base(filePath)
-	createdAt := "Unavailable"
-	if created := utils.FileCreatedTime(info); !created.IsZero() {
-		createdAt = utils.FormatTimestamp(created)
-	}
-	currentRelativePath, err := filepath.Rel(config.Cfg.TargetDir, filePath)
-	if err != nil {
-		http.Error(w, "Failed to resolve current file path", 500)
-		return
-	}
-
-	mainData := PageData{
-		Title:               fileName,
-		Content:             template.HTML(contentHTML),
-		FileName:            fileName,
-		FilePath:            filePath,
-		FileSize:            utils.FormatFileSize(info.Size()),
-		CreatedAt:           createdAt,
-		ModifiedAt:          utils.FormatTimestamp(info.ModTime()),
-		CurrentFilePathJSON: utils.MustMarshalJSON(utils.NormalizeRelativePath(currentRelativePath)),
 	}
 
 	mainTmplData, err := IfsReader("web/template-main.html")
@@ -258,6 +203,43 @@ func renderMainContent(w http.ResponseWriter, filePath string) {
 	setPageCacheHeaders(w)
 	w.Header().Set("Content-Type", "text/html")
 	w.Write(mainContentBuf.Bytes())
+}
+
+// buildPageData 提取公共的页面数据构建逻辑
+func buildPageData(filePath string) (*PageData, error) {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to stat file: %v", err)
+	}
+
+	contentHTML, err := renderMarkdownContent(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to render markdown: %v", err)
+	}
+
+	fileName := filepath.Base(filePath)
+
+	createdAt := "Unavailable"
+	if created := utils.FileCreatedTime(info); !created.IsZero() {
+		createdAt = utils.FormatTimestamp(created)
+	}
+
+	targetDir := config.Cfg.TargetDir
+	currentRelativePath, err := filepath.Rel(targetDir, filePath)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to resolve current file path: %v", err)
+	}
+
+	return &PageData{
+		Title:               fileName,
+		Content:             template.HTML(contentHTML),
+		FileName:            fileName,
+		FilePath:            filePath,
+		FileSize:            utils.FormatFileSize(info.Size()),
+		CreatedAt:           createdAt,
+		ModifiedAt:          utils.FormatTimestamp(info.ModTime()),
+		CurrentFilePathJSON: utils.MustMarshalJSON(utils.NormalizeRelativePath(currentRelativePath)),
+	}, nil
 }
 
 type FileTreeNode struct {
