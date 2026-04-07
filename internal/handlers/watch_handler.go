@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -19,11 +18,13 @@ import (
 
 var watcher *fsnotify.Watcher
 
+// channel-based debounce architecture
+// 使用 channel 架构替代全局 mutex + timer
 var (
-	debounceTimer *time.Timer
-	debounceMutex sync.Mutex
-	pendingFiles  = make(map[string]bool) // key: path, value: isNew
-	watchedDir    string
+	watchedDir  string
+	eventChan   = make(chan string, 100) // buffered channel for file change events
+	stopChan    = make(chan struct{})
+	debounceDur = 200 * time.Millisecond // 200ms for faster live reloads
 )
 
 // ReloadMessage for JSON notification format
@@ -36,6 +37,9 @@ type ReloadMessage struct {
 // WatchDirectory watches the directory and its subdirectories for changes.
 func WatchDirectory(dir string) {
 	watchedDir = dir
+
+	// 启动防抖处理 goroutine
+	go debounceProcessor()
 
 	var err error
 	watcher, err = fsnotify.NewWatcher()
@@ -74,8 +78,11 @@ func WatchDirectory(dir string) {
 		clog.Error("Error walking directory:", err)
 	}
 
+	// 等待 stop 信号
 	for {
 		select {
+		case <-stopChan:
+			return
 		case event, ok := <-watcher.Events:
 			if !ok {
 				return
@@ -84,7 +91,7 @@ func WatchDirectory(dir string) {
 				// event.Name is full path
 				if strings.HasSuffix(event.Name, ".md") {
 					relPath, _ := filepath.Rel(dir, event.Name)
-					handleFileChange(relPath, event)
+					handleFileChange(relPath)
 				}
 			}
 			if event.Has(fsnotify.Create) {
@@ -94,7 +101,7 @@ func WatchDirectory(dir string) {
 						watcher.Add(event.Name)
 					} else if strings.HasSuffix(event.Name, ".md") {
 						relPath, _ := filepath.Rel(dir, event.Name)
-						handleFileChange(relPath, event)
+						handleFileChange(relPath)
 					}
 				}
 			}
@@ -107,35 +114,61 @@ func WatchDirectory(dir string) {
 	}
 }
 
-func handleFileChange(filePath string, event fsnotify.Event) {
-	debounceMutex.Lock()
-	defer debounceMutex.Unlock()
-
-	isNew := event.Has(fsnotify.Create)
-	if pendingFiles == nil {
-		pendingFiles = make(map[string]bool)
+// handleFileChange 简化为只向 channel 发送事件，不涉及任何锁操作
+// 线程安全：所有状态管理都在 debounceProcessor goroutine 中处理
+func handleFileChange(filePath string) {
+	select {
+	case eventChan <- filePath:
+		clog.Debugf("File change queued: %s", filePath)
+	default:
+		// channel 满了说明事件堆积，跳过这次
+		clog.Warnf("Event channel full, dropping: %s", filePath)
 	}
+}
 
-	if existingIsNew, exists := pendingFiles[filePath]; !exists {
-		pendingFiles[filePath] = isNew
-		clog.Infof("Modified file: %s (%s)", filePath, event.Op.String())
-	} else if isNew && !existingIsNew {
-		pendingFiles[filePath] = true
-	}
+// debounceProcessor 使用 timer 进行防抖处理
+// 这是一个独立的 goroutine，集中管理所有状态，保证线程安全
+func debounceProcessor() {
+	var timer *time.Timer
+	files := make(map[string]bool) // 收集待处理文件
 
-	if debounceTimer != nil {
-		debounceTimer.Stop()
-	}
-	debounceTimer = time.AfterFunc(2*time.Second, func() {
-		debounceMutex.Lock()
-		files := pendingFiles
-		pendingFiles = make(map[string]bool)
-		debounceMutex.Unlock()
+	for {
+		select {
+		case <-stopChan:
+			// 清理 timer
+			if timer != nil {
+				timer.Stop()
+			}
+			return
 
-		if len(files) > 0 {
-			broadcastJSON(files)
+		case filePath := <-eventChan:
+			// 收集文件变更
+			files[filePath] = true
+			clog.Debugf("File event received: %s (pending: %d)", filePath, len(files))
+
+			// 重置 timer
+			if timer != nil {
+				timer.Stop()
+			}
+			timer = time.NewTimer(debounceDur)
+
+		case <-func() <-chan time.Time {
+			if timer != nil {
+				return timer.C
+			}
+			return nil
+		}():
+			// Timer 触发时，在这个主 goroutine 中读取 files
+			if len(files) > 0 {
+				pendingFiles := files
+				files = make(map[string]bool)
+
+				clog.Infof("Broadcasting %d file changes", len(pendingFiles))
+				// broadcastJSON 执行较快且内部有锁，直接调用即可
+				broadcastJSON(pendingFiles)
+			}
 		}
-	})
+	}
 }
 
 func broadcastJSON(files map[string]bool) {
