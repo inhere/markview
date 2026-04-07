@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/gookit/goutil/cflag"
 	"github.com/gookit/goutil/envutil"
@@ -70,7 +71,15 @@ func run(c *cflag.CFlags) error {
 		go handlers.WatchDirectory(config.Cfg.TargetDir)
 	}
 
-	log.Fatal(http.ListenAndServe(":"+config.Cfg.PortStr(), newServerMux()))
+	// 显式配置 http.Server，添加超时防止慢连接攻击
+	server := &http.Server{
+		Addr:         ":" + config.Cfg.PortStr(),
+		Handler:      newServerMux(),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+	log.Fatal(server.ListenAndServe())
 	return nil
 }
 
