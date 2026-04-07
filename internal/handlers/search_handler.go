@@ -34,7 +34,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	terms := parseSearchTerms(query)
 	results := []SearchResult{}
 	maxFiles := 15
-	maxMatchesPerFile := 50
+	maxMatchesPerFile := 30
 	filesScanned := 0
 	targetDir := config.Cfg.TargetDir
 

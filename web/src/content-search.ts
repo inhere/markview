@@ -23,20 +23,30 @@ interface SearchResponse {
     filesScanned?: number;
 }
 
+/** 转义 HTML 特殊字符 */
+function escapeHtml(text: string): string {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 /** 高亮关键词 */
 function highlightKeywords(snippet: string, query: string): string {
-    // 解析查询词（支持 !前缀过滤词）
+    const escaped = escapeHtml(snippet);
     const keywords = query
         .split(/\s+/)
         .filter(word => word.length >= 2 && !word.startsWith('!'))
-        .map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); // 转义正则特殊字符
+        .map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 
     if (keywords.length === 0) {
-        return snippet;
+        return escaped;
     }
 
     const regex = new RegExp(`(${keywords.join('|')})`, 'gi');
-    return snippet.replace(regex, '<mark>$1</mark>');
+    return escaped.replace(regex, '<mark>$1</mark>');
 }
 
 /** 渲染搜索结果 */
@@ -58,7 +68,7 @@ function renderResults(response: SearchResponse, container: HTMLElement): void {
                     const lineNum = match.lines ? match.lines[idx] : match.line;
                     const isMatchLine = lineNum === match.line;
                     const cls = isMatchLine ? 'context-line match-line' : 'context-line';
-                    const content = isMatchLine ? highlightedSnippet : line;
+                    const content = isMatchLine ? highlightedSnippet : escapeHtml(line);
                     return `<div class="${cls}" data-line="${lineNum}"><span class="line-num">${lineNum}</span>${content}</div>`;
                 }).join('')
                 : `<div class="context-line match-line" data-line="${match.line}"><span class="line-num">${match.line}</span>${highlightedSnippet}</div>`;
