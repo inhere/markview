@@ -109,10 +109,11 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 // SearchTerms 解析后的搜索条件
 type SearchTerms struct {
-	Include      []string // 原始包含关键词
-	Exclude      []string // 原始排除关键词
-	IncludeLower []string // 预计算的 lowercase 版本，避免在搜索循环中重复转换
-	ExcludeLower []string // 预计算的 lowercase 版本
+	Include []string // 原始包含关键词
+	Exclude []string // 原始排除关键词
+	// 预计算的 lowercase 版本，避免在搜索循环中重复转换
+	includeLower []string
+	excludeLower []string // 预计算的 lowercase 版本
 }
 
 // SearchMatch 匹配的行
@@ -140,13 +141,13 @@ type SearchResponse struct {
 
 // parseSearchTerms 解析查询字符串
 // 空格 = AND，! 前缀 = 排除
-// 预计算 IncludeLower 和 ExcludeLower 以减少搜索循环中的字符串分配
+// 预计算 includeLower 和 excludeLower 以减少搜索循环中的字符串分配
 func parseSearchTerms(query string) SearchTerms {
 	terms := SearchTerms{
 		Include:      []string{},
 		Exclude:      []string{},
-		IncludeLower: []string{},
-		ExcludeLower: []string{},
+		includeLower: []string{},
+		excludeLower: []string{},
 	}
 
 	words := strings.Fields(query)
@@ -154,10 +155,10 @@ func parseSearchTerms(query string) SearchTerms {
 		if strings.HasPrefix(word, "!") {
 			cleanWord := strings.TrimPrefix(word, "!")
 			terms.Exclude = append(terms.Exclude, cleanWord)
-			terms.ExcludeLower = append(terms.ExcludeLower, strings.ToLower(cleanWord))
+			terms.excludeLower = append(terms.excludeLower, strings.ToLower(cleanWord))
 		} else {
 			terms.Include = append(terms.Include, word)
-			terms.IncludeLower = append(terms.IncludeLower, strings.ToLower(word))
+			terms.includeLower = append(terms.includeLower, strings.ToLower(word))
 		}
 	}
 
@@ -165,12 +166,12 @@ func parseSearchTerms(query string) SearchTerms {
 }
 
 // lineMatchesMatch 检查行是否匹配搜索条件
-// 使用预计算的 ExcludeLower 和 IncludeLower 避免重复的 ToLower 调用
+// 使用预计算的 excludeLower 和 includeLower 避免重复的 ToLower 调用
 func lineMatchesMatch(line string, terms SearchTerms) bool {
 	lineLower := strings.ToLower(line)
 
 	// Check exclude terms first
-	for _, ex := range terms.ExcludeLower {
+	for _, ex := range terms.excludeLower {
 		if strings.Contains(lineLower, ex) {
 			return false
 		}
@@ -182,7 +183,7 @@ func lineMatchesMatch(line string, terms SearchTerms) bool {
 	}
 
 	// Check include terms (AND logic)
-	for _, inc := range terms.IncludeLower {
+	for _, inc := range terms.includeLower {
 		if !strings.Contains(lineLower, inc) {
 			return false
 		}
