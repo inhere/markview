@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"encoding/json"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gookit/goutil/x/clog"
@@ -16,8 +19,23 @@ import (
 
 var watcher *fsnotify.Watcher
 
+var (
+	debounceTimer *time.Timer
+	debounceMutex sync.Mutex
+	pendingFiles  []string
+	watchedDir    string
+)
+
+// ReloadMessage for JSON notification format
+type ReloadMessage struct {
+	Type  string   `json:"type"`
+	Files []string `json:"files"`
+}
+
 // WatchDirectory watches the directory and its subdirectories for changes.
 func WatchDirectory(dir string) {
+	watchedDir = dir
+
 	var err error
 	watcher, err = fsnotify.NewWatcher()
 	if err != nil {
@@ -62,10 +80,10 @@ func WatchDirectory(dir string) {
 				return
 			}
 			if event.Has(fsnotify.Write) {
+				// event.Name is full path
 				if strings.HasSuffix(event.Name, ".md") {
 					relPath, _ := filepath.Rel(dir, event.Name)
-					clog.Warnf("Modified file: %s(event: %s)", relPath, event.String())
-					broadcast("reload")
+					handleFileChange(relPath, event)
 				}
 			}
 			if event.Has(fsnotify.Create) {
@@ -83,14 +101,48 @@ func WatchDirectory(dir string) {
 	}
 }
 
-func broadcast(msg string) {
+func handleFileChange(filePath string, event fsnotify.Event) {
+	debounceMutex.Lock()
+	defer debounceMutex.Unlock()
+
+	if !slices.Contains(pendingFiles, filePath) {
+		pendingFiles = append(pendingFiles, filePath)
+		clog.Infof("Modified file: %s (%s)", filePath, event.Op.String())
+	}
+
+	if debounceTimer != nil {
+		debounceTimer.Stop()
+	}
+	debounceTimer = time.AfterFunc(2*time.Second, func() {
+		debounceMutex.Lock()
+		files := make([]string, len(pendingFiles))
+		copy(files, pendingFiles)
+		pendingFiles = nil
+		debounceMutex.Unlock()
+
+		if len(files) > 0 {
+			broadcastJSON(files)
+		}
+	})
+}
+
+func broadcastJSON(files []string) {
+	msg := ReloadMessage{
+		Type:  "reload",
+		Files: files,
+	}
+	data, err := json.Marshal(msg)
+	if err != nil {
+		clog.Errorf("Failed to marshal reload message: %v", err)
+		return
+	}
+
 	clientsMu.Lock()
 	defer clientsMu.Unlock()
 	for client := range clients {
 		select {
-		case client <- msg:
+		case client <- string(data):
 		default:
-			// Client blocked, ignore
 		}
 	}
 }

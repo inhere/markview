@@ -19,6 +19,9 @@ It focuses on local documentation reading: fast startup, live updates, clear sid
 - **🚀 Zero Config**: run it in any directory and open `README.md` by default
 - **⚡ Single-binary delivery**: the Go binary embeds `web/dist` and the HTML template, so no separate static deployment is required
 - **🔄 Live Reload**: watches Markdown changes and updates the page through SSE
+- **🔍 Full-text search**: search the document content, including headers, code blocks, etc.
+  - `Files` tree file name search
+  - Support for searching the document content
 - **🧭 Dual sidebar navigation**:
   - `Files` tree with expandable directories and current-file highlighting
   - `On This Page` table of contents with scroll spy
