@@ -86,6 +86,16 @@ func TestBuildFileTree(t *testing.T) {
 }
 
 func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {
+	IfsReader = func(path string) ([]byte, error) {
+		if path == "web/template-main.html" {
+			return []byte(`{{.Content}}`), nil
+		}
+		if path == "web/template.html" {
+			return []byte(`<html>{{.MainContent}}</html>`), nil
+		}
+		return nil, os.ErrNotExist
+	}
+
 	root := t.TempDir()
 	config.Cfg.TargetDir = root
 	config.Cfg.EntryFile = "README.md"
@@ -110,4 +120,3 @@ func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {
 		t.Fatalf("expected html content-type, got %q", contentType)
 	}
 }
-
