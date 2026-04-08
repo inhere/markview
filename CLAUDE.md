@@ -6,9 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 优先使用中文回复和响应
 - 关键方法或逻辑的注释要保留
 
-# development
+## Development
 
 - 项目依赖 Go 1.20+ 和 Bun 1.0+。
+- **不要** 使用 npm 安装依赖。
 
 ## Build and run
 
