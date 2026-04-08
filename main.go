@@ -71,24 +71,53 @@ func run(c *cflag.CFlags) error {
 		go handlers.WatchDirectory(config.Cfg.TargetDir)
 	}
 
-	// 显式配置 http.Server，添加超时防止慢连接攻击
-	server := &http.Server{
-		Addr:         ":" + config.Cfg.PortStr(),
-		Handler:      newServerMux(),
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
+	// 创建 SSE 端点 URL，供前端使用
+	sseURL := "/sse"
+
+	// 主 server：处理静态页面、API 等
+	// 问题根因：原全局 WriteTimeout: 10s 与 SSE keepalive(9s) 冲突，导致 18s 时断连
+	// 修复方案：
+	//   1. 移除 server 级 WriteTimeout
+	//   2. API 路由通过 http.TimeoutHandler 在 handler 级别控制超时
+	//   3. SSE 路由不受超时限制，保持长连接
+	mainServer := &http.Server{
+		Addr:        ":" + config.Cfg.PortStr(),
+		Handler:     newServerMux(sseURL),
+		ReadTimeout: 5 * time.Second,
+		IdleTimeout: 120 * time.Second,
+		// 注意：不设置 WriteTimeout，让 SSE 长连接不受限制
+		// API 超时通过 http.TimeoutHandler 在路由级别处理
 	}
-	log.Fatal(server.ListenAndServe())
+
+	log.Fatal(mainServer.ListenAndServe())
 	return nil
 }
 
-func newServerMux() *http.ServeMux {
+// newServerMux 创建路由 mux，SSE 路由单独处理
+func newServerMux(ssePath string) *http.ServeMux {
 	mux := http.NewServeMux()
+
+	// 静态文件处理
 	mux.Handle("/static/", newStaticHandler())
-	mux.HandleFunc("/sse", handlers.HandleSSE)
-	mux.HandleFunc("/api/search", handlers.HandleSearch)
-	mux.HandleFunc("/api/file-tree", handlers.HandleFileTreeAPI)
+
+	// SSE 路由：不走超时限制，支持长连接
+	mux.HandleFunc(ssePath, handlers.HandleSSE)
+
+	// API 路由：使用 TimeoutHandler 限制最大处理时间（10秒），防止慢连接攻击
+	// 与原来的 WriteTimeout: 10s 效果相同，但只在 handler 级别生效
+	apiHandler := http.TimeoutHandler(
+		http.HandlerFunc(handlers.HandleSearch),
+		10*time.Second, "request timeout",
+	)
+	mux.HandleFunc("/api/search", apiHandler.ServeHTTP)
+
+	fileTreeHandler := http.TimeoutHandler(
+		http.HandlerFunc(handlers.HandleFileTreeAPI),
+		10*time.Second, "request timeout",
+	)
+	mux.HandleFunc("/api/file-tree", fileTreeHandler.ServeHTTP)
+
+	// 主页面处理
 	mux.HandleFunc("/", handlers.HandleRequest)
 	return mux
 }
