@@ -12,6 +12,7 @@
     "highlight.js": "^11.9.0"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "jsdom": "^29.0.2"
   }
 }
