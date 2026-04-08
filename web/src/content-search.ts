@@ -3,19 +3,19 @@
  * 提供内容区域的搜索功能，在 article.paper 之前显示搜索框和结果面板
  */
 
-interface SearchMatch {
+export interface SearchMatch {
     line: number;
     snippet: string;
     lines?: number[];
     context?: string[];
 }
 
-interface SearchResult {
+export interface SearchResult {
     file: string;
     matches: SearchMatch[];
 }
 
-interface SearchResponse {
+export interface SearchResponse {
     query: string;
     results: SearchResult[];
     total: number;
@@ -50,7 +50,7 @@ function highlightKeywords(snippet: string, query: string): string {
 }
 
 /** 渲染搜索结果 */
-function renderResults(response: SearchResponse, container: HTMLElement): void {
+export function renderResults(response: SearchResponse, container: HTMLElement): void {
     if (response.total === 0) {
         container.innerHTML = `
             <div class="content-search-empty">
@@ -85,7 +85,8 @@ function renderResults(response: SearchResponse, container: HTMLElement): void {
                 <div class="content-search-file" data-file="${result.file}">
                     <span class="file-icon">📄</span>
                     <span class="file-name">${result.file}</span>
-                    <span class="match-count">${result.matches.length}</span>
+                    <!-- 空 matches（纯 exclude 查询）显示 "file match"，否则显示匹配数量 -->
+                    <span class="match-count">${result.matches.length === 0 ? 'file match' : result.matches.length}</span>
                 </div>
                 <div class="content-search-matches">${matchesHtml}</div>
             </div>

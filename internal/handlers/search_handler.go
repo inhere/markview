@@ -76,7 +76,20 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 		}
 
 		matches := searchInContent(string(content), terms, maxMatchesPerFile)
+
+		// 结果聚合逻辑：
+		// 1. 有 matches 时正常添加（include 查询的匹配行）
+		// 2. 纯 exclude 查询命中时，searchInContent 返回空切片 []SearchMatch{}，
+		//    但文件已通过文件级过滤（未被排除），仍需进入 results
+		// 注意：searchInContent 返回 nil 表示文件被排除，此时 len(nil)==0 但不应添加
+		//       返回 []SearchMatch{} 表示纯 exclude 查询命中文件，应添加
 		if len(matches) > 0 {
+			results = append(results, SearchResult{
+				File:    relPath,
+				Matches: matches,
+			})
+		} else if matches != nil && len(terms.Include) == 0 {
+			// 纯 exclude 查询命中文件（未被排除），matches 为空切片但非 nil
 			results = append(results, SearchResult{
 				File:    relPath,
 				Matches: matches,
@@ -165,35 +178,72 @@ func parseSearchTerms(query string) SearchTerms {
 	return terms
 }
 
-// lineMatchesMatch 检查行是否匹配搜索条件
-// 使用预计算的 excludeLower 和 includeLower 避免重复的 ToLower 调用
-func lineMatchesMatch(line string, terms SearchTerms) bool {
-	lineLower := strings.ToLower(line)
+// fileMatchesContent 检查整个文件是否匹配搜索条件（文件级 AND + NOT）
+// 返回 true 如果文件应该被包含在搜索结果中
+func fileMatchesContent(content string, terms SearchTerms) bool {
+	contentLower := strings.ToLower(content)
 
-	// Check exclude terms first
+	// 文件级 NOT：任一 exclude 词在文件任意位置出现则排除整个文件
 	for _, ex := range terms.excludeLower {
-		if strings.Contains(lineLower, ex) {
+		if strings.Contains(contentLower, ex) {
 			return false
 		}
 	}
 
-	// If no include terms, match all (for exclude-only queries)
+	// 文件级 AND：所有 include 词必须在文件任意位置出现
+	for _, inc := range terms.includeLower {
+		if !strings.Contains(contentLower, inc) {
+			return false
+		}
+	}
+
+	// 纯 exclude 查询：文件未被排除，返回 true
+	return true
+}
+
+// lineMatchesMatch 检查行是否匹配搜索条件（行级匹配：任一 include 即匹配）
+// 可选参数 fileContent 用于文件级 AND + NOT 检查（当直接调用此函数时需要）
+func lineMatchesMatch(line string, terms SearchTerms, fileContent ...string) bool {
+	// 文件级检查：如果提供了文件内容，检查文件级 AND + NOT
+	if len(fileContent) > 0 && fileContent[0] != "" {
+		// 使用 fileMatchesContent 进行完整的文件级检查
+		if !fileMatchesContent(fileContent[0], terms) {
+			return false
+		}
+	}
+
+	lineLower := strings.ToLower(line)
+
+	// 纯 exclude 查询：所有行都匹配（文件级已通过）
 	if len(terms.Include) == 0 {
 		return true
 	}
 
-	// Check include terms (AND logic)
+	// 行级 OR：任一 include 词出现即匹配
 	for _, inc := range terms.includeLower {
-		if !strings.Contains(lineLower, inc) {
-			return false
+		if strings.Contains(lineLower, inc) {
+			return true
 		}
 	}
 
-	return true
+	return false
 }
 
 // searchInContent 在内容中搜索匹配行，收集上下文
+// 第一步：文件级过滤（AND + NOT），第二步：行级匹配（任一 include 即匹配）
+// 特殊情况：纯 exclude 查询（只有 !xxx 无 include）时，文件级过滤完成后返回空 matches
 func searchInContent(content string, terms SearchTerms, limit int) []SearchMatch {
+	// 文件级过滤：先检查整个文件是否匹配
+	if !fileMatchesContent(content, terms) {
+		return nil
+	}
+
+	// 纯 exclude 查询（只有 !xxx 无 include）：文件级过滤已完成，
+	// 新语义：只返回文件命中，不返回行级 matches
+	if len(terms.Include) == 0 {
+		return []SearchMatch{}
+	}
+
 	lines := strings.Split(content, "\n")
 	matches := []SearchMatch{}
 	skipUntil := -1 // 跳过到的行号
@@ -204,6 +254,8 @@ func searchInContent(content string, terms SearchTerms, limit int) []SearchMatch
 			continue
 		}
 
+		// 由于文件级过滤已在前面的 fileMatchesContent 调用中完成，
+		// 此处只需进行行级匹配检查
 		if lineMatchesMatch(line, terms) {
 			// 收集上下文：上一行 + current + 后两行
 			startLine := max(0, i-1)
