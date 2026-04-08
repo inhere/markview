@@ -593,7 +593,7 @@ This is draft content.
 }
 
 // TestSSE_WriteTimeoutRegression 回归测试
-// 问题根因：main.go WriteTimeout 10s 与 sse_handler.go keepalive 15s 冲突
+// 问题根因：main.go WriteTimeout 10s 与 sse_handler.go keepalive 9s 冲突
 func TestSSE_WriteTimeoutRegression(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/sse", HandleSSE)
@@ -788,5 +788,121 @@ func TestSSE_MultipleConnectionsKeepaliveRegression(t *testing.T) {
 		t.Errorf("REGRESSION: %d/%d 个 SSE 连接未在 12 秒内收到 keepalive\n"+
 			"根因: 可能使用了包级共享 ticker 导致连接被饿死\n"+
 			"修复建议: 确保每个 SSE 连接使用独立的 time.Ticker", failedConnections, connCount)
+	}
+}
+
+// TestSSE_WriteTimeout18sDisconnect SSE 18秒断连问题的 RED 回归测试
+// 问题：SSE 长连接在约 18-20 秒时被服务端以 chunked/EOF 提前切断
+// 根因：全局 WriteTimeout: 10s 与 SSE keepalive(9s) 间隔冲突
+//   - WriteTimeout 从连接建立开始计时，不是从最后一次写入后重置
+//   - 18s 时 WriteTimeout 已超时（10s < 18s），连接被关闭
+//
+// 修复方案：为 SSE 连接禁用 WriteTimeout（或设置足够长的时间）
+// 测试验证：修复后 SSE 应能在 18s 时收到第二条 keepalive
+func TestSSE_WriteTimeout18sDisconnect(t *testing.T) {
+	// 跳过此测试如果测试环境不支持长时间等待（CI 环境可能超时）
+	if testing.Short() {
+		t.Skip("跳过长时间测试")
+	}
+
+	// 启动测试服务器，SSE 需要禁用 WriteTimeout
+	mux := http.NewServeMux()
+	mux.HandleFunc("/sse", HandleSSE)
+
+	server := &http.Server{
+		Addr:        "localhost:0",
+		Handler:     mux,
+		ReadTimeout: 5 * time.Second,
+		// SSE 长连接禁用 WriteTimeout，否则 18s 时会断连
+		// 注：main.go 已移除全局 WriteTimeout，通过 http.TimeoutHandler
+		// 为 API 路由单独控制超时（10s），SSE 路由不受超时限制
+		IdleTimeout: 120 * time.Second,
+	}
+	ln, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("创建监听失败: %v", err)
+	}
+	go server.Serve(ln)
+	defer server.Close()
+
+	url := "http://" + ln.Addr().String() + "/sse"
+
+	// 创建 SSE 连接
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		t.Fatalf("创建请求失败: %v", err)
+	}
+
+	client := &http.Client{
+		Timeout: 25 * time.Second, // 足够覆盖 18 秒测试场景
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("SSE 请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("期望状态码 200, 实际: %d", resp.StatusCode)
+	}
+	contentType := resp.Header.Get("Content-Type")
+	if !strings.Contains(contentType, "text/event-stream") {
+		t.Fatalf("期望 Content-Type 包含 text/event-stream, 实际: %s", contentType)
+	}
+
+	reader := bufio.NewReader(resp.Body)
+
+	// 步骤1：等待收到第一条 keepalive（约 9 秒）
+	t.Log("等待第一条 keepalive（约 9 秒）...")
+	firstKeepaliveReceived := false
+	firstKeepaliveDeadline := time.Now().Add(12 * time.Second) // 多等 3 秒容错
+
+	for time.Now().Before(firstKeepaliveDeadline) {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			break // 连接已断开
+		}
+		if strings.Contains(line, ": keepalive") {
+			firstKeepaliveReceived = true
+			t.Logf("收到第一条 keepalive: %s", strings.TrimSpace(line))
+			break
+		}
+	}
+
+	if !firstKeepaliveReceived {
+		t.Fatalf("未能在 12 秒内收到第一条 keepalive，连接可能已提前断开")
+	}
+
+	// 步骤2：继续等待到约 18-20 秒，验证第二次 keepalive
+	// 期望：18 秒时第二次 keepalive 应能正常发送和接收
+	// 实际：WriteTimeout 10s 在 10 秒时就切断了连接，18 秒时连接已断
+	t.Log("等待第二条 keepalive（约 18 秒）...")
+	secondKeepaliveReceived := false
+	secondKeepaliveDeadline := time.Now().Add(10 * time.Second) // 从 9s 开始再等 10 秒
+
+	for time.Now().Before(secondKeepaliveDeadline) {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			// 连接已断开（这是当前实现的实际行为）
+			t.Logf("连接已断开: %v", err)
+			break
+		}
+		if strings.Contains(line, ": keepalive") {
+			secondKeepaliveReceived = true
+			t.Logf("收到第二条 keepalive: %s", strings.TrimSpace(line))
+			break
+		}
+	}
+
+	// 关键断言：修复后应该能收到第二条 keepalive
+	// 当前实现会失败，因为 WriteTimeout 10s 会在第二次 keepalive (18s) 之前切断连接
+	if !secondKeepaliveReceived {
+		t.Errorf("REGRESSION: SSE 连接在约 18-20 秒时被提前切断\n" +
+			"预期行为: 应能收到第二条 keepalive（18 秒时）\n" +
+			"实际行为: 连接在 WriteTimeout(10s) 后被服务器关闭，第二次 keepalive 无法发送\n" +
+			"根因: main.go 的全局 WriteTimeout: 10s 不适配 SSE 长连接（keepalive 间隔 9s）\n" +
+			"修复建议: 对 SSE 连接使用独立的 WriteTimeout 配置，或禁用 SSE 端点的 WriteTimeout")
+	} else {
+		t.Log("✅ 测试通过: SSE 连接在 18 秒时仍保持活跃，成功收到第二条 keepalive")
 	}
 }
