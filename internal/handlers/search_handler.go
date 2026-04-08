@@ -18,6 +18,7 @@ import (
 // HandleSearch 搜索 API handler
 func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
+	utils.Debugf("Request: %s handle search. query: %s", r.URL.Path, query)
 	if query == "" {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(SearchResponse{

@@ -87,6 +87,7 @@ func newServerMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/static/", newStaticHandler())
 	mux.HandleFunc("/sse", handlers.HandleSSE)
+	mux.HandleFunc("/api/search", handlers.HandleSearch)
 	mux.HandleFunc("/api/file-tree", handlers.HandleFileTreeAPI)
 	mux.HandleFunc("/", handlers.HandleRequest)
 	return mux
@@ -103,6 +104,7 @@ func newStaticHandler() http.Handler {
 	distHandler := http.StripPrefix("/static/", http.FileServer(http.FS(distFS)))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		utils.Debugf("Request: %s handle static file", r.URL.Path)
 		w.Header().Set("Cache-Control", "public, max-age=0, must-revalidate")
 		distHandler.ServeHTTP(w, r)
 	})

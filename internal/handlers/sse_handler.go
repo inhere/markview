@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/inhere/markview/internal/utils"
 )
 
 var (
@@ -19,6 +21,7 @@ func HandleSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+	utils.Debugf("Request: %s handle SSE", r.URL.Path)
 	clientChan := make(chan string)
 
 	clientsMu.Lock()

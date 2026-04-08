@@ -327,6 +327,7 @@ func buildFileTreeDir(absDir, relativeDir string) ([]FileTreeNode, error) {
 
 // HandleFileTreeAPI returns file tree JSON for dynamic refresh
 func HandleFileTreeAPI(w http.ResponseWriter, r *http.Request) {
+	utils.Debugf("Request: %s handle file tree", r.URL.Path)
 	targetDir := config.Cfg.TargetDir
 	fileTree, err := buildFileTree(targetDir)
 	if err != nil {
