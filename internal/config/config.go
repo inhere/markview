@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/envutil"
-	"github.com/inhere/markview/internal/utils"
+	"github.com/gookit/goutil/x/clog"
 )
 
 var (
@@ -49,7 +49,7 @@ func (c *Config) Init(targetDir, entryFile string) error {
 	// Environment variables
 	// EnableDebug = envutil.GetBool(EnvDebug, false)
 	c.EnableWatch = envutil.GetBool(EnvWatch, true)
-	utils.Debugf("Config: Debug=%v, Watch=%v", EnableDebug, c.EnableWatch)
+	clog.Debugf("Config: Debug=%v, Watch=%v", EnableDebug, c.EnableWatch)
 
 	// port value
 	if c.PortInt > 0 {
@@ -60,7 +60,7 @@ func (c *Config) Init(targetDir, entryFile string) error {
 
 	// Watch directory. multi use comma split
 	if dirstr := envutil.Getenv(EnvWatchDir, ""); dirstr != "" {
-		utils.Debugf("Config: Watch directory=%s", dirstr)
+		clog.Debugf("Config: Watch directory=%s", dirstr)
 		c.WatchDirs = strings.Split(dirstr, ",")
 	}
 
@@ -77,6 +77,6 @@ func (c *Config) Init(targetDir, entryFile string) error {
 		}
 	}
 
-	utils.Debugf("Config: Watch skip directory=%s", strings.Join(c.WatchSkipDirs, ","))
+	clog.Debugf("Config: Watch skip directory=%s", strings.Join(c.WatchSkipDirs, ","))
 	return nil
 }

@@ -19,7 +19,7 @@ func Debugf(format string, args ...any) {
 	if !EnableDebug {
 		return
 	}
-	clog.Debugf(format, args...)
+	clog.Debugf("[DEBUG] "+format, args...)
 }
 
 func FormatTimestamp(t time.Time) string {

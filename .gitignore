@@ -1,6 +1,7 @@
 node_modules/
 web/dist/
 dist/
+*~
 *.exe
 .omc/
 .agents/
@@ -8,3 +9,4 @@ dist/
 .tmp/
 .env
 .worktrees/
+markview
