@@ -1,13 +1,17 @@
 package handlers
 
 import (
+	"bufio"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/inhere/markview/internal/config"
 )
@@ -586,6 +590,203 @@ This is draft content.
 		t.Errorf("FAIL: total 应为 0（纯 exclude 只有文件命中，无行级匹配）\n期望：total = 0\n实际：total = %d", resp.Total)
 	}
 
-	t.Logf("PASS: 纯 exclude 查询语义正确\nresults count: %d\nclean-doc.md matches: %v\ntotal: %d",
-		len(resp.Results), cleanResult.Matches, resp.Total)
+}
+
+// TestSSE_WriteTimeoutRegression 回归测试
+// 问题根因：main.go WriteTimeout 10s 与 sse_handler.go keepalive 15s 冲突
+func TestSSE_WriteTimeoutRegression(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/sse", HandleSSE)
+
+	server := &http.Server{
+		Addr:         "localhost:0",
+		Handler:      mux,
+		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+	ln, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("创建监听失败: %v", err)
+	}
+	go server.Serve(ln)
+	defer server.Close()
+
+	url := "http://" + ln.Addr().String() + "/sse"
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		t.Fatalf("创建请求失败: %v", err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("SSE 请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("期望状态码 200, 实际: %d", resp.StatusCode)
+	}
+	contentType := resp.Header.Get("Content-Type")
+	if !strings.Contains(contentType, "text/event-stream") {
+		t.Fatalf("期望 Content-Type 包含 text/event-stream, 实际: %s", contentType)
+	}
+
+	t.Logf("等待 12 秒（WriteTimeout=10s，keepalive=15s）...")
+	waitTime := 12 * time.Second
+	time.Sleep(waitTime)
+
+	reader := bufio.NewReader(resp.Body)
+	readErr := make(chan error, 1)
+	var readBytes []byte
+	var gotData bool
+
+	go func() {
+		b, err := reader.ReadByte()
+		if err == nil {
+			readBytes = []byte{b}
+			gotData = true
+		}
+		readErr <- err
+	}()
+
+	select {
+	case err := <-readErr:
+		if err != nil {
+			t.Logf("读取错误（预期，因为 WriteTimeout 已过期）: %v", err)
+		} else if len(readBytes) > 0 {
+			t.Logf("读取到数据: %s", string(readBytes))
+		}
+	case <-time.After(3 * time.Second):
+		t.Log("读取超时（3秒），连接可能已被 WriteTimeout 切断")
+	}
+
+	// 关键断言：修复后应该在 WriteTimeout 过期前成功读取到 keepalive 数据
+	if !gotData {
+		t.Errorf("REGRESSION: SSE 连接在 WriteTimeout(10s) 后被服务器切断，" +
+			"客户端无法获取后续的 keepalive 数据\n" +
+			"根因: main.go 的 WriteTimeout: 10s 与 keepalive 间隔冲突\n" +
+			"修复建议: keepalive 间隔应小于 WriteTimeout")
+	} else {
+		t.Log("✅ 测试通过: SSE 连接在 WriteTimeout 过期前成功发送 keepalive")
+	}
+}
+
+// TestSSE_MultipleConnectionsKeepaliveRegression 回归测试
+// 问题：之前错误实现使用包级共享 ticker，导致多个 SSE 连接竞争同一 channel，
+// 部分连接可能长时间收不到 keepalive（被饿死）
+// 修复：每个连接独立创建 ticker，确保每 9 秒收到一次 keepalive
+func TestSSE_MultipleConnectionsKeepaliveRegression(t *testing.T) {
+	// 启动测试服务器
+	mux := http.NewServeMux()
+	mux.HandleFunc("/sse", HandleSSE)
+
+	server := &http.Server{
+		Addr:         "localhost:0",
+		Handler:      mux,
+		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+	ln, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("创建监听失败: %v", err)
+	}
+	go server.Serve(ln)
+	defer server.Close()
+
+	url := "http://" + ln.Addr().String() + "/sse"
+
+	// 并发创建 3 个 SSE 连接
+	const connCount = 3
+	results := make(chan struct {
+		connIndex         int
+		keepaliveReceived bool
+		err               error
+	}, connCount)
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < connCount; i++ {
+		wg.Add(1)
+		go func(connIdx int) {
+			defer wg.Done()
+
+			req, err := http.NewRequest(http.MethodGet, url, nil)
+			if err != nil {
+				results <- struct {
+					connIndex         int
+					keepaliveReceived bool
+					err               error
+				}{connIdx, false, err}
+				return
+			}
+
+			// 使用带 12 秒超时的 client，确保在 keepalive 间隔内读取
+			client := &http.Client{
+				Timeout: 12 * time.Second,
+				// 禁用自动重定向，避免干扰
+				CheckRedirect: func(req *http.Request, via []*http.Request) error {
+					return http.ErrUseLastResponse
+				},
+			}
+			resp, err := client.Do(req)
+			if err != nil {
+				results <- struct {
+					connIndex         int
+					keepaliveReceived bool
+					err               error
+				}{connIdx, false, err}
+				return
+			}
+			defer resp.Body.Close()
+
+			// 读取响应，检查是否收到 keepalive
+			reader := bufio.NewReader(resp.Body)
+			keepaliveReceived := false
+
+			// 持续读取直到超时或收到 keepalive
+			for {
+				line, err := reader.ReadString('\n')
+				if err != nil {
+					break
+				}
+				// 检查是否包含 keepalive 标记
+				if strings.Contains(line, ": keepalive") {
+					keepaliveReceived = true
+					t.Logf("连接 %d 收到 keepalive: %s", connIdx, line)
+					break
+				}
+			}
+
+			results <- struct {
+				connIndex         int
+				keepaliveReceived bool
+				err               error
+			}{connIdx, keepaliveReceived, nil}
+		}(i)
+	}
+
+	// 收集结果
+	failedConnections := 0
+	for i := 0; i < connCount; i++ {
+		result := <-results
+		if !result.keepaliveReceived || result.err != nil {
+			t.Logf("连接 %d: keepalive=%v, err=%v", result.connIndex, result.keepaliveReceived, result.err)
+			failedConnections++
+		} else {
+			t.Logf("连接 %d: ✅ 成功收到 keepalive", result.connIndex)
+		}
+	}
+
+	wg.Wait()
+	close(results)
+	// 关键断言：所有连接都应收到 keepalive
+	// 如果错误实现为共享 ticker，部分连接可能长时间收不到
+	if failedConnections > 0 {
+		t.Errorf("REGRESSION: %d/%d 个 SSE 连接未在 12 秒内收到 keepalive\n"+
+			"根因: 可能使用了包级共享 ticker 导致连接被饿死\n"+
+			"修复建议: 确保每个 SSE 连接使用独立的 time.Ticker", failedConnections, connCount)
+	}
 }
