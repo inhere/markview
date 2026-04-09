@@ -159,7 +159,7 @@ func debounceProcessor() {
 
 			// 收集文件变更
 			files[ev.Path] = ev.EventType
-			clog.Debugf("File event received: %s (%s) (pending: %d)", ev.Path, ev.EventType, len(files))
+			clog.Debugf("File event: %s (%s, pending: %d)", ev.Path, ev.EventType, len(files))
 
 			// 重置 timer
 			if timer != nil {
@@ -177,8 +177,6 @@ func debounceProcessor() {
 			if len(files) > 0 {
 				pendingFiles := files
 				files = make(map[string]string)
-
-				clog.Infof("Broadcasting %d file changes", len(pendingFiles))
 				// broadcastJSON 执行较快且内部有锁，直接调用即可
 				broadcastJSON(pendingFiles)
 			}
@@ -198,10 +196,11 @@ func broadcastJSON(files map[string]string) {
 		}
 	}
 
+	utils.Debugf("Broadcasting %d file changes, action: %s", len(files), action)
 	msg := ReloadMessage{
-		Type:  "reload",
-		Files: paths,
-		Action: action,	// 设置事件类型
+		Type:   "reload",
+		Files:  paths,
+		Action: action, // 设置事件类型
 	}
 	data, err := json.Marshal(msg)
 	if err != nil {
