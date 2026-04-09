@@ -58,6 +58,7 @@ type PageData struct {
 	ModifiedAt          string
 	FileTreeJSON        template.JS
 	CurrentFilePathJSON template.JS
+	CurrentFilePath     string
 }
 
 // IfsReader 从 embed.FS 读取文件内容
@@ -110,6 +111,9 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 		queryParam := r.URL.Query().Get("q")
 		if queryParam == "main" {
 			renderMainContent(w, filePath)
+		} else if queryParam == "raw" {
+			// 直接返回原始 markdown 内容
+			renderRawMarkdown(w, filePath)
 		} else {
 			renderMarkdown(w, filePath)
 		}
@@ -181,6 +185,18 @@ func renderMarkdownContent(filePath string) (string, error) {
 	return buf.String(), nil
 }
 
+func renderRawMarkdown(w http.ResponseWriter, filePath string) {
+	mdData, err := os.ReadFile(filePath)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	setPageCacheHeaders(w)
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write(mdData)
+}
+
 func renderMainContent(w http.ResponseWriter, filePath string) {
 	mainData, err := buildPageData(filePath)
 	if err != nil {
@@ -239,6 +255,7 @@ func buildPageData(filePath string) (*PageData, error) {
 		CreatedAt:           createdAt,
 		ModifiedAt:          utils.FormatTimestamp(info.ModTime()),
 		CurrentFilePathJSON: utils.MustMarshalJSON(utils.NormalizeRelativePath(currentRelativePath)),
+		CurrentFilePath:     utils.ToURLPath(currentRelativePath),
 	}, nil
 }
 

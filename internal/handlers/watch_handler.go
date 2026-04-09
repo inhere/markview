@@ -24,7 +24,7 @@ var (
 	watchedDir  string
 	eventChan   = make(chan FileEvent, 100) // buffered channel for file change events
 	stopChan    = make(chan struct{})
-	debounceDur = 200 * time.Millisecond // 200ms for faster live reloads
+	debounceDur = 500 * time.Millisecond // 500ms for faster live reloads
 )
 
 const (
@@ -80,7 +80,7 @@ func WatchDirectory(dir string) {
 				return filepath.SkipDir
 			}
 
-			utils.Debugf("Watch directory: %s", path)
+			utils.Debugf("Watching %s", path)
 			return watcher.Add(path)
 		}
 		return nil
@@ -99,6 +99,8 @@ func WatchDirectory(dir string) {
 			if !ok {
 				return
 			}
+			utils.Debugf("fsnotify event: %s", event.String())
+
 			if event.Has(fsnotify.Create) {
 				info, err := os.Stat(event.Name)
 				if err == nil {

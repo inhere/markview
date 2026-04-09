@@ -1,6 +1,9 @@
-<article class="paper" id="content">
-    {{ .Content }}
-</article>
+<div class="paper-wrapper">
+    <a href="{{ .CurrentFilePath }}?q=raw" class="view-raw-btn" target="_blank" title="在新标签页查看原始 Markdown">查看原始内容</a>
+    <article class="paper" id="content">
+        {{ .Content }}
+    </article>
+</div>
 
 <div class="file-meta" id="file-meta">
     <div class="file-meta-line">
