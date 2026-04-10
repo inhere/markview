@@ -195,6 +195,7 @@ export function setupLiveReloadStatus(
     };
 
     evtSource.onmessage = event => {
+        console.log('Received message:', event.data);
         const msg = parseReloadMessage(event.data);
         if (!msg) {
             return;

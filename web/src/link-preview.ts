@@ -137,7 +137,6 @@ function openPreviewPanel(url: string, triggerButton: HTMLElement): void {
     // 重置面板状态
     resetPanelState();
 
-    console.log('[link-preview] loading:', url);
     loadInternalContent(url);
 }
 
@@ -177,6 +176,7 @@ async function loadInternalContent(url: string): Promise<void> {
         const targetUrl = new URL(url, window.location.href);
         targetUrl.searchParams.set('q', 'main');
 
+        console.log('[link-preview] loading:', targetUrl.toString());
         const response = await fetch(targetUrl.toString(), {
             headers: { 'X-MarkView-Navigation': 'inline' },
         });

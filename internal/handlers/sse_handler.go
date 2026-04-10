@@ -21,7 +21,7 @@ func HandleSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	utils.Debugf("Request: %s handle SSE", r.URL.Path)
+	utils.Debugf("Request: %s handle SSE, clientIp: %s, clientNum: %d", r.URL.Path, r.RemoteAddr, len(clients))
 	clientChan := make(chan string)
 
 	clientsMu.Lock()

@@ -24,7 +24,7 @@ var (
 	watchedDir  string
 	eventChan   = make(chan FileEvent, 100) // buffered channel for file change events
 	stopChan    = make(chan struct{})
-	debounceDur = 500 * time.Millisecond // 500ms for faster live reloads
+	debounceDur = 1500 * time.Millisecond // time for faster live reloads
 )
 
 const (

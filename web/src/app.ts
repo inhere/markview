@@ -138,7 +138,7 @@ async function enhancePageContent() {
         }
         hljs.highlightElement(block);
     });
-    
+
     enhanceCodeBlocks(contentRoot);
     await enhanceMermaidContent(contentRoot);
     enhanceImagesInContent(contentRoot);
@@ -271,6 +271,7 @@ async function fetchPageSnapshot(url: URL): Promise<PageSnapshot> {
     const fetchUrl = new URL(url.toString());
     fetchUrl.searchParams.set('q', 'main');
 
+    console.log('[page-content] loading:', fetchUrl.toString());
     const response = await fetch(fetchUrl.toString(), {
         cache: 'no-store',
         headers: {
