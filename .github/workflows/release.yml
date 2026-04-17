@@ -53,7 +53,7 @@ jobs:
       # https://github.com/softprops/action-gh-release
       # 注意：需要在 仓库的设置中配置 Actions Workflow 权限，否则会报错
       - name: Create release and upload assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
