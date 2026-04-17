@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -70,7 +71,6 @@ func run(c *cflag.CFlags) error {
 
 	fmt.Printf("Serving directory: %s\n", config.Cfg.TargetDir)
 	fmt.Printf("Default entry file: %s\n", config.Cfg.EntryFile)
-	fmt.Printf("🚀 Server running at http://localhost:%s\n", config.Cfg.PortStr())
 
 	// - Watcher
 	if config.Cfg.EnableWatch {
@@ -95,7 +95,26 @@ func run(c *cflag.CFlags) error {
 		// API 超时通过 http.TimeoutHandler 在路由级别处理
 	}
 
-	log.Fatal(mainServer.ListenAndServe())
+	// 启动服务器并获取实际端口（支持随机端口）
+	isRandomPort := config.Cfg.PortInt < 0
+	if isRandomPort {
+		// 随机端口模式：创建监听器获取实际端口
+		listener, err := net.Listen("tcp", mainServer.Addr)
+		if err != nil {
+			log.Fatal("Failed to create listener:", err)
+		}
+
+		// 更新配置中的端口
+		actualPort := listener.Addr().(*net.TCPAddr).Port
+		config.Cfg.SetPort(actualPort)
+		fmt.Printf("🚀 Server running at http://localhost:%d\n", actualPort)
+
+		// 使用获取到的监听器启动服务
+		log.Fatal(mainServer.Serve(listener))
+	} else {
+		fmt.Printf("🚀 Server running at http://localhost:%s\n", config.Cfg.PortStr())
+		log.Fatal(mainServer.ListenAndServe())
+	}
 	return nil
 }
 
@@ -163,8 +182,8 @@ func prepare(args []string) error {
 		absPath, err := filepath.Abs(firstArg)
 		if err == nil {
 			// up: 如果第一个参数是 md 文件，作为入口文件
-			if strings.HasSuffix(absPath, ".md") && fsutil.IsFile(absPath) {
-				entryFile = absPath
+			if strings.HasSuffix(firstArg, ".md") && fsutil.IsFile(firstArg) {
+				entryFile = firstArg
 			} else {
 				targetDir = absPath
 			}

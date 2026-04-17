@@ -42,6 +42,12 @@ func (c *Config) PortStr() string {
 	return c.portStr
 }
 
+// SetPort sets the port integer.
+func (c *Config) SetPort(port int) {
+	c.PortInt = port
+	c.portStr = fmt.Sprintf("%d", port)
+}
+
 // Init initializes the configuration.
 func (c *Config) Init(targetDir, entryFile string) error {
 	c.TargetDir = targetDir
