@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gookit/goutil/cflag"
 	"github.com/gookit/goutil/envutil"
+	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/x/clog"
 	"github.com/inhere/markview/internal/config"
 	"github.com/inhere/markview/internal/handlers"
@@ -61,8 +63,10 @@ func main() {
 func run(c *cflag.CFlags) error {
 	args := c.RemainArgs()
 
-	// - Prepare arguments
-	prepare(args)
+	// Prepare arguments
+	if err := prepare(args); err != nil {
+		return err
+	}
 
 	fmt.Printf("Serving directory: %s\n", config.Cfg.TargetDir)
 	fmt.Printf("Default entry file: %s\n", config.Cfg.EntryFile)
@@ -141,7 +145,7 @@ func newStaticHandler() http.Handler {
 	})
 }
 
-func prepare(args []string) {
+func prepare(args []string) error {
 	err := envutil.DotenvLoad(func(cfg *envutil.Dotenv) {
 		cfg.IgnoreNotExist = true
 	})
@@ -149,27 +153,39 @@ func prepare(args []string) {
 		clog.Warnf("Failed to load dotenv: %v", err)
 	}
 
+	var entryFile string
 	cwd, _ := os.Getwd()
 	targetDir := cwd
+
+	// Check target directory
 	if len(args) > 0 {
-		absPath, err := filepath.Abs(args[0])
+		firstArg := args[0]
+		absPath, err := filepath.Abs(firstArg)
 		if err == nil {
-			targetDir = absPath
+			// up: 如果第一个参数是 md 文件，作为入口文件
+			if strings.HasSuffix(absPath, ".md") && fsutil.IsFile(absPath) {
+				entryFile = absPath
+			} else {
+				targetDir = absPath
+			}
 		} else {
-			clog.Warnf("Failed to resolve absolute path: %s, err: %v", args[0], err)
+			clog.Warnf("Failed to resolve absolute path: %s, err: %v", firstArg, err)
 		}
 	}
 
-	var entryFile string
-	if len(args) > 1 && args[1] != "" {
+	// Check entry file
+	if len(args) > 1 && args[1] != "" && entryFile == "" {
 		entryFile = args[1]
 	}
 
 	utils.EnableDebug = envutil.GetBool(config.EnvDebug, false)
 	config.EnableDebug = utils.EnableDebug
-	config.Cfg.Init(targetDir, entryFile)
+	if err := config.Cfg.Init(targetDir, entryFile); err != nil {
+		return err
+	}
 
 	handlers.IfsReader = func(path string) ([]byte, error) {
 		return content.ReadFile(path)
 	}
+	return nil
 }

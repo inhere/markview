@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/envutil"
+	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/x/clog"
 )
 
@@ -46,6 +47,13 @@ func (c *Config) Init(targetDir, entryFile string) error {
 	c.EntryFile = entryFile
 	if entryFile == "" {
 		c.EntryFile = envutil.Getenv(EnvEntry, DefaultEntry)
+	}
+
+	if !fsutil.IsDir(c.TargetDir) {
+		return fmt.Errorf("target %q is not a directory", c.TargetDir)
+	}
+	if !fsutil.IsFile(c.EntryFile) {
+		return fmt.Errorf("entry file %q is not exist", c.EntryFile)
 	}
 
 	// Environment variables
