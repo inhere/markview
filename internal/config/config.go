@@ -23,7 +23,7 @@ type Config struct {
 	TargetDir     string
 	EntryFile     string
 	PortInt       int
-	portStr          string
+	portStr       string
 	EnableWatch   bool
 	WatchDirs     []string
 	WatchSkipDirs []string
@@ -31,14 +31,16 @@ type Config struct {
 
 // Cfg is the configuration struct instance.
 var Cfg = Config{
-	EnableWatch: true,
+	EnableWatch:   true,
 	WatchSkipDirs: DefaultSkipDirs,
 }
 
+// PortStr returns the port string.
 func (c *Config) PortStr() string {
 	return c.portStr
 }
 
+// Init initializes the configuration.
 func (c *Config) Init(targetDir, entryFile string) error {
 	c.TargetDir = targetDir
 	c.EntryFile = entryFile
@@ -54,6 +56,8 @@ func (c *Config) Init(targetDir, entryFile string) error {
 	// port value
 	if c.PortInt > 0 {
 		c.portStr = fmt.Sprintf("%d", c.PortInt)
+	} else if c.PortInt < 0 {
+		c.portStr = "0" // 0 表示随机端口
 	} else {
 		c.portStr = envutil.Getenv(EnvPort, DefaultPort)
 	}

@@ -51,7 +51,9 @@ func main() {
 		config.DefaultEntry, config.DefaultPort, config.DefaultEntry,
 	)
 
-	cmd.IntVar(&config.Cfg.PortInt, "port", 0, "HTTP port to listen on;;p")
+	cmd.IntVar(&config.Cfg.PortInt, "port", 0,
+		"HTTP port to listen on, if < 0, use random port;;p",
+	)
 	cmd.Func = run
 	cmd.QuickRun()
 }

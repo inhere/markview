@@ -21,12 +21,13 @@ func HandleSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	utils.Debugf("Request: %s handle SSE, clientIp: %s, clientNum: %d", r.URL.Path, r.RemoteAddr, len(clients))
 	clientChan := make(chan string)
 
+	// add client to map
 	clientsMu.Lock()
 	clients[clientChan] = true
 	clientsMu.Unlock()
+	utils.Debugf("Request: %s handle SSE, clientIp: %s, clientNum: %d", r.URL.Path, r.RemoteAddr, len(clients))
 
 	// 每连接独立创建 ticker，确保不被其他连接共享
 	// 间隔 9s < WriteTimeout 10s，保持连接活跃
@@ -38,6 +39,7 @@ func HandleSSE(w http.ResponseWriter, r *http.Request) {
 		delete(clients, clientChan)
 		clientsMu.Unlock()
 		close(clientChan)
+		utils.Debugf("SSE client offline, clientIp: %s, clientNum: %d", r.RemoteAddr, len(clients))
 	}()
 
 	notify := r.Context().Done()
