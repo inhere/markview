@@ -10,7 +10,7 @@ export const FILES_COLLAPSED_STORAGE_KEY = 'markview:files-collapsed';
 
 export const DEFAULT_SIDEBAR_WIDTH = 280;
 export const MIN_SIDEBAR_WIDTH = 200;
-export const MAX_SIDEBAR_WIDTH = 400;
+export const MAX_SIDEBAR_WIDTH = 800;
 
 export const LAYOUT_WIDTH_OPTIONS = ['768px', '960px', '1200px', '100%'] as const;
 export type LayoutWidth = (typeof LAYOUT_WIDTH_OPTIONS)[number];
