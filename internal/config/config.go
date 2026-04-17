@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/gookit/goutil/envutil"
@@ -52,8 +53,9 @@ func (c *Config) Init(targetDir, entryFile string) error {
 	if !fsutil.IsDir(c.TargetDir) {
 		return fmt.Errorf("target %q is not a directory", c.TargetDir)
 	}
-	if !fsutil.IsFile(c.EntryFile) {
-		return fmt.Errorf("entry file %q is not exist", c.EntryFile)
+	entryPath := filepath.Join(c.TargetDir, c.EntryFile)
+	if !fsutil.IsFile(entryPath) {
+		return fmt.Errorf("entry file %q is not exist", entryPath)
 	}
 
 	// Environment variables
