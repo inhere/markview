@@ -1,8 +1,9 @@
 ## MarkView — Makefile
 
 APP     := markview
-VERSION ?= 0.1.0
-BINARY  := $(APP).exe
+GOEXE = $(shell go env GOEXE)
+BINARY  := $(APP)$(GOEXE)
+VERSION ?= $(shell echo "$$(git for-each-ref refs/tags/ --count=1 --sort=-version:refname --format='%(refname:short)' | echo 'dev' 2>/dev/null)-$(REV)" | sed 's/^v//')
 
 # Build metadata
 GIT_HASH  := $(shell git rev-parse --short=8 HEAD 2>/dev/null || echo "unknown")

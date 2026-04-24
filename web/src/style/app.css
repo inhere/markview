@@ -1783,7 +1783,7 @@ div.mermaid {
     background: rgba(255, 255, 255, 0.98);
     z-index: 1000;
     flex-direction: column;
-    padding: 40px;
+    padding: 0 40px 40px;
     overflow: hidden;
 }
 .mermaid-modal.active {
@@ -1845,7 +1845,7 @@ div.mermaid {
 
 .mermaid-modal-controls {
     position: fixed;
-    bottom: 30px;
+    bottom: 15px;
     left: 50%;
     transform: translateX(-50%);
     background: var(--bg-paper);
@@ -1944,7 +1944,7 @@ div.mermaid {
     align-items: flex-start;
     justify-content: flex-start;
     overflow: auto;
-    padding: 24px 24px 96px;
+    padding: 24px 24px 56px;
     scroll-padding-top: 24px;
     cursor: grab;
     user-select: none;
