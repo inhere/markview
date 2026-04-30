@@ -1,9 +1,32 @@
 // web/src/link-preview.ts
 
+import { hljs, ensureHighlightLanguages } from './highlight';
+import { enhanceMermaidContent } from './mermaid';
+import { enhanceCodeBlocks } from './code-copy';
 import {
     parsePageSnapshot,
     type PageSnapshot,
 } from './page';
+
+async function enhancePreviewContent(contentRoot: HTMLElement) {
+    ensureHighlightLanguages();
+
+    contentRoot.querySelectorAll('pre code').forEach(block => {
+        if (!(block instanceof HTMLElement)) {
+            return;
+        }
+        if (block.classList.contains('language-mermaid')) {
+            return;
+        }
+        if (block.dataset.highlighted === 'yes') {
+            return;
+        }
+        hljs.highlightElement(block);
+    });
+
+    enhanceCodeBlocks(contentRoot);
+    await enhanceMermaidContent(contentRoot);
+}
 
 // 静态资源扩展名
 const STATIC_RESOURCE_EXTENSIONS = [
@@ -224,6 +247,7 @@ async function loadInternalContent(url: string): Promise<void> {
         if (bodyEl) {
             bodyEl.innerHTML = contentHTML;
             bodyEl.style.padding = '20px';
+            await enhancePreviewContent(bodyEl);
         }
         if (loadingEl) loadingEl.style.display = 'none';
 
