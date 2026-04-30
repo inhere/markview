@@ -3,7 +3,7 @@ module github.com/inhere/markview
 go 1.25
 
 require (
-	github.com/fsnotify/fsnotify v1.9.0
+	github.com/fsnotify/fsnotify v1.10.0
 	github.com/gookit/goutil v0.7.4
 	github.com/yuin/goldmark v1.8.2
 	github.com/yuin/goldmark-emoji v1.0.6
