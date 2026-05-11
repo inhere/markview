@@ -96,7 +96,7 @@ func WatchDirectory(dir string) {
 		case <-stopChan:
 			return
 		case event, ok := <-watcher.Events:
-			if !ok {
+			if !ok || !strings.HasSuffix(event.Name, ".md") {
 				return
 			}
 			utils.Debugf("fsnotify event: %s", event.String())

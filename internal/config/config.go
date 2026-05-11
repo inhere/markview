@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/gookit/goutil/envutil"
@@ -63,7 +64,7 @@ func (c *Config) ListenAddr() string {
 }
 
 // Init initializes the configuration.
-func (c *Config) Init(targetDir, entryFile string) error {
+func (c *Config) Init(targetDir, entryFile string) (err error) {
 	c.TargetDir = targetDir
 	c.EntryFile = entryFile
 	if entryFile == "" {
@@ -87,9 +88,13 @@ func (c *Config) Init(targetDir, entryFile string) error {
 	if c.PortInt > 0 {
 		c.portStr = fmt.Sprintf("%d", c.PortInt)
 	} else if c.PortInt < 0 {
-		c.portStr = "0" // 0 表示随机端口
+		c.portStr = "0" // 0 表示随机端口, 后续会根据随机端口更新
 	} else {
 		c.portStr = envutil.Getenv(EnvPort, DefaultPort)
+		c.PortInt, err = strconv.Atoi(c.portStr)
+		if err != nil {
+			return fmt.Errorf("ENV MKVIEW_PORT %q is not a valid integer", c.portStr)
+		}
 	}
 
 	// Watch directory. multi use comma split
