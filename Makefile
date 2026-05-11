@@ -7,7 +7,7 @@ BINARY  := $(APP)$(GOEXE)
 # Build metadata
 BUILD_TIME := $(shell date +%Y/%m/%d-%H:%M:%S)
 GIT_HASH  := $(shell git rev-parse --short=8 HEAD 2>/dev/null || echo "unknown")
-VERSION ?= $(shell echo "$$(git for-each-ref refs/tags/ --count=1 --sort=-version:refname --format='%(refname:short)' | echo 'dev' 2>/dev/null)-$(GIT_HASH)" | sed 's/^v//')
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null | sed 's/^v//' || echo "dev-$(GIT_HASH)")
 
 LDFLAGS := -s -w \
 	-X main.Version=$(VERSION) \
@@ -33,12 +33,12 @@ web:
 ## backend: compile Go binary for current platform
 backend:
 	@echo "🐹 Building Go binary ($(VERSION) @ $(GIT_HASH))..."
-	@go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
+	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
 	@echo "✅ Binary: $(BINARY) ($$(du -sh $(BINARY) | cut -f1))"
 
 ## install: install Go binary to $GOPATH/bin
 install: web
-	@go install -ldflags "$(LDFLAGS)" .
+	go install -ldflags "$(LDFLAGS)" .
 	@echo "✅ Installed to GOPATH/bin"
 
 ## run: build and run with current directory
