@@ -39,6 +39,9 @@ var Cfg = Config{
 
 // PortStr returns the port string.
 func (c *Config) PortStr() string {
+	if c.portStr == "" {
+		c.portStr = fmt.Sprintf("%d", c.PortInt)
+	}
 	return c.portStr
 }
 

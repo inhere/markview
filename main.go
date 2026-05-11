@@ -87,7 +87,7 @@ func run(c *cflag.CFlags) error {
 	//   2. API 路由通过 http.TimeoutHandler 在 handler 级别控制超时
 	//   3. SSE 路由不受超时限制，保持长连接
 	mainServer := &http.Server{
-		Addr:        ":" + config.Cfg.PortStr(),
+		Addr:        ":" + config.Cfg.PortStr(), // 默认公开，内网可以访问
 		Handler:     newServerMux(sseURL),
 		ReadTimeout: 5 * time.Second,
 		IdleTimeout: 120 * time.Second,
@@ -107,15 +107,19 @@ func run(c *cflag.CFlags) error {
 		// 更新配置中的端口
 		actualPort := listener.Addr().(*net.TCPAddr).Port
 		config.Cfg.SetPort(actualPort)
-		fmt.Printf("🚀 Server running at http://localhost:%d\n", actualPort)
+		beforeServerRun(actualPort)
 
 		// 使用获取到的监听器启动服务
 		log.Fatal(mainServer.Serve(listener))
 	} else {
-		fmt.Printf("🚀 Server running at http://localhost:%s\n", config.Cfg.PortStr())
+		beforeServerRun(config.Cfg.PortInt)
 		log.Fatal(mainServer.ListenAndServe())
 	}
 	return nil
+}
+
+func beforeServerRun(port int) {
+	fmt.Printf("🚀 Live server running at http://localhost:%d\n", port)
 }
 
 // newServerMux 创建路由 mux，SSE 路由单独处理
