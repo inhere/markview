@@ -29,6 +29,7 @@ type Config struct {
 	EnableWatch   bool
 	WatchDirs     []string
 	WatchSkipDirs []string
+	Private       bool
 }
 
 // Cfg is the configuration struct instance.
@@ -49,6 +50,16 @@ func (c *Config) PortStr() string {
 func (c *Config) SetPort(port int) {
 	c.PortInt = port
 	c.portStr = fmt.Sprintf("%d", port)
+}
+
+// ListenAddr returns the address to listen on.
+// If Private is true, only listens on localhost (127.0.0.1).
+// Otherwise, listens on all interfaces (0.0.0.0).
+func (c *Config) ListenAddr() string {
+	if c.Private {
+		return "127.0.0.1:" + c.PortStr()
+	}
+	return ":" + c.PortStr()
 }
 
 // Init initializes the configuration.
