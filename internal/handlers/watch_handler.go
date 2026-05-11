@@ -46,6 +46,8 @@ type ReloadMessage struct {
 	Action string   `json:"action,omitempty"`
 }
 
+const mdExt = ".md"
+
 // WatchDirectory watches the directory and its subdirectories for changes.
 func WatchDirectory(dir string) {
 	watchedDir = dir
@@ -96,9 +98,16 @@ func WatchDirectory(dir string) {
 		case <-stopChan:
 			return
 		case event, ok := <-watcher.Events:
-			if !ok || !strings.HasSuffix(event.Name, ".md") {
+			if !ok {
 				return
 			}
+
+			ext := filepath.Ext(event.Name)
+			if ext != "" && ext != mdExt { // 排除非 Markdown 文件, 减少干扰
+				continue
+			}
+
+			var shouldNotify bool
 			utils.Debugf("fsnotify event: %s", event.String())
 
 			if event.Has(fsnotify.Create) {
@@ -106,17 +115,20 @@ func WatchDirectory(dir string) {
 				if err == nil {
 					if info.IsDir() && !shouldSkipDir(info.Name()) {
 						watcher.Add(event.Name)
-					} else if strings.HasSuffix(event.Name, ".md") {
-						relPath, _ := filepath.Rel(dir, event.Name)
-						handleFileChange(relPath, EventTypeCreate)
+					} else if strings.HasSuffix(event.Name, mdExt) {
+						shouldNotify = true
 					}
 				}
 			} else if event.Has(fsnotify.Write) {
 				// event.Name is full path
-				if strings.HasSuffix(event.Name, ".md") {
-					relPath, _ := filepath.Rel(dir, event.Name)
-					handleFileChange(relPath, EventTypeUpdate)
+				if strings.HasSuffix(event.Name, mdExt) {
+					shouldNotify = true
 				}
+			}
+
+			if shouldNotify {
+				relPath, _ := filepath.Rel(dir, event.Name)
+				handleFileChange(relPath, EventTypeUpdate)
 			}
 		case err, ok := <-watcher.Errors:
 			if !ok {
