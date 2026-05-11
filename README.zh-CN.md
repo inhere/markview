@@ -47,32 +47,52 @@ MarkView 是一个零配置的 Markdown 预览服务器，使用 Go 提供后端
 go install github.com/inhere/markview@latest
 ```
 
+Install by [Eget](https://github.com/inherelab/eget):
+
+```bash
+eget install inhere/markview
+```
+
 ## 使用
 
 ### 运行可执行文件
 
 下载并运行 `markview`：
 
-```powershell
-# 预览当前目录(可选指定port)
+```bash
+# 预览当前目录(可选指定port, 默认 6100)
 markview [-p PORT]
 
-# 预览指定目录
+# 预览指定目录（默认为当前目录）
 markview "path/to/docs"
 
-# 预览指定目录，并设置默认入口文件
+# 预览指定目录，并设置默认入口文件（默认入口 `README.md`）
 markview "path/to/docs" "intro.md"
 ```
 
 默认会启动在 `http://localhost:6100`。
 
-示例文档见 [example/](example/)。
+> 示例文档见 [example/](example/)。
 
 ### 配置
 
-可通过环境变量/选项调整端口和默认入口：
+可通过 `.env`/环境变量/选项 调整端口和默认入口：
+
+使用环境变量：
+
+```bash
+MKVIEW_PORT=8080 markview
+MKVIEW_ENTRY=guide.md markview
+```
 
 ```powershell
+$env:MKVIEW_PORT = "8080"; markview
+$env:MKVIEW_ENTRY = "guide.md"; markview
+```
+
+使用CLI选项：
+
+```bash
 markview -p 6543
 markview . "guide.md"
 ```
@@ -81,7 +101,7 @@ markview . "guide.md"
 
 ### 前提
 
-- **Go** 1.22+
+- **Go** 1.25+
 - **Bun** 1.0+
 
 ### 项目结构

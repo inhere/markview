@@ -19,9 +19,9 @@ It focuses on local documentation reading: fast startup, live updates, clear sid
 - **🚀 Zero Config**: run it in any directory and open `README.md` by default
 - **⚡ Single-binary delivery**: the Go binary embeds `web/dist` and the HTML template, so no separate static deployment is required
 - **🔄 Live Reload**: watches Markdown changes and updates the page through SSE
-- **🔍 Full-text search**: search the document content, including headers, code blocks, etc.
+- **🔍 Full-text search**:
   - `Files` tree file name search
-  - Support for searching the document content
+  - Support for searching document content, including headers, code blocks, etc.
 - **🧭 Dual sidebar navigation**:
   - `Files` tree with expandable directories and current-file highlighting
   - `On This Page` table of contents with scroll spy
@@ -53,35 +53,49 @@ go install github.com/inhere/markview@latest
 
 Download and run `markview`:
 
-```powershell
-# Preview the current directory
+```bash
+# Preview the current directory (optional port, default 6100)
 markview [-p PORT]
 
-# Preview a specific directory
+# Preview a specific directory (default is current directory)
 markview "path/to/docs"
 
-# Preview a specific directory and set the default entry file
+# Preview a specific directory and set the default entry file (default entry is `README.md`)
 markview "path/to/docs" "intro.md"
 ```
 
 By default, the server starts at `http://localhost:6100`.
 
-Example documents are available in [example/](example/).
+> Example documents are available in [example/](example/).
 
 ### Configuration
 
-You can override the port and default entry with environment variables:
+You can adjust the port and default entry via `.env` / environment variables / options:
+
+Using environment variables:
+
+```bash
+MKVIEW_PORT=8080 markview
+MKVIEW_ENTRY=guide.md markview
+```
 
 ```powershell
-$env:MKVIEW_PORT = "8080"; .\markview
-$env:MKVIEW_ENTRY = "guide.md"; .\markview
+$env:MKVIEW_PORT = "8080"; markview
+$env:MKVIEW_ENTRY = "guide.md"; markview
+```
+
+Using CLI options:
+
+```bash
+markview -p 6543
+markview . "guide.md"
 ```
 
 ## Development
 
 ### Prerequisites
 
-- **Go** 1.22+
+- **Go** 1.25+
 - **Bun** 1.0+
 
 ### Project structure
@@ -124,7 +138,7 @@ This generates `web/dist/` and also copies:
 
 ```bash
 cd ..
-go build --ldflags "-w -s" -o markview
+go build --ldflags "-w -s" -o markview.exe
 
 # Or install to GOPATH/bin
 go install -ldflags "-s -w" .
