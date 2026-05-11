@@ -19,9 +19,9 @@
     --status-live: #10b981;
     --status-warn: #f59e0b;
 
-    --font-ui: 'Inter', system-ui, sans-serif;
-    --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
-    --font-mono: 'Fira Code', monospace;
+    --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-mono: 'SF Mono', 'Consolas', 'Fira Code', 'Liberation Mono', Menlo, Courier, 'Courier New', monospace;
 
     --layout-max-width: 960px;
     --sidebar-width: 280px;

@@ -47,6 +47,12 @@ It focuses on local documentation reading: fast startup, live updates, clear sid
 go install github.com/inhere/markview@latest
 ```
 
+Install by [Eget](https://github.com/inherelab/eget):
+
+```bash
+eget install inhere/markview
+```
+
 ## Usage
 
 ### Run the executable
