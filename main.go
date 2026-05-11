@@ -15,6 +15,7 @@ import (
 	"github.com/gookit/goutil/cflag"
 	"github.com/gookit/goutil/envutil"
 	"github.com/gookit/goutil/fsutil"
+	"github.com/gookit/goutil/netutil"
 	"github.com/gookit/goutil/x/clog"
 	"github.com/inhere/markview/internal/config"
 	"github.com/inhere/markview/internal/handlers"
@@ -122,12 +123,29 @@ func run(c *cflag.CFlags) error {
 }
 
 func beforeServerRun(port int, private bool) {
+	localUrl := fmt.Sprintf("http://127.0.0.1:%d", port)
 	if private {
-		fmt.Printf("🚀 Live server running at http://127.0.0.1:%d (private mode)\n", port)
-	} else {
-		fmt.Printf("🚀 Live server running at http://127.0.0.1:%d\n", port)
-
+		fmt.Printf("🚀 Live server running at %s (PRIVATE MODE)\n", localUrl)
+		return
 	}
+
+	fmt.Printf("🚀 Live server running at %s\n", localUrl)
+	// sysutil.OpenBrowser(localUrl)
+	ips, err := netutil.AllLocalIPv4()
+	if err != nil {
+		clog.Info("Failed to get local IPs:", err)
+		return
+	}
+	if len(ips) == 0 {
+		return
+	}
+
+	// 打印所有 IP 地址的访问 URL
+	urls := []string{}
+	for _, ip := range ips {
+		urls = append(urls, fmt.Sprintf("http://%s:%d", ip, port))
+	}
+	fmt.Printf(" - Can also access by %s\n", strings.Join(urls, ", "))
 }
 
 // newServerMux 创建路由 mux，SSE 路由单独处理
