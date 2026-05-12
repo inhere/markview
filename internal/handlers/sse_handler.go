@@ -44,6 +44,12 @@ func HandleSSE(w http.ResponseWriter, r *http.Request) {
 
 	notify := r.Context().Done()
 
+	// 建连后立即发送首包，避免浏览器等待首个 keepalive/reload 才确认 SSE 可用。
+	fmt.Fprintf(w, "data: connected\n\n")
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+
 	for {
 		select {
 		case <-notify:

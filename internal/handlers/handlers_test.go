@@ -136,12 +136,12 @@ func TestHandleRequestRendersDirectoryListingWithoutEntryFile(t *testing.T) {
 
 	assert.Eq(t, http.StatusOK, rec.Code)
 	body := rec.Body.String()
-	assert.StrContains(t, body, "<h1>plain</h1>")
+	assert.StrContains(t, body, "<h1>📇 plain</h1>")
 	assert.StrContains(t, body, `href="/plain/deep"`)
 	assert.StrContains(t, body, `href="/plain/child.md"`)
 	assert.StrNotContains(t, body, "notes.txt")
 	assert.StrNotContains(t, body, "logo.png")
-	assert.StrContains(t, body, `>plain<`)
+	assert.StrContains(t, body, `plain<`)
 }
 
 func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {
@@ -644,6 +644,32 @@ This is draft content.
 		t.Errorf("FAIL: total 应为 0（纯 exclude 只有文件命中，无行级匹配）\n期望：total = 0\n实际：total = %d", resp.Total)
 	}
 
+}
+
+func TestSSEImmediatelySendsConnectedEvent(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/sse", HandleSSE)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(server.URL + "/sse")
+	if err != nil {
+		t.Fatalf("SSE 请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assert.Eq(t, http.StatusOK, resp.StatusCode)
+	assert.StrContains(t, resp.Header.Get("Content-Type"), "text/event-stream")
+
+	reader := bufio.NewReader(resp.Body)
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		t.Fatalf("expected immediate connected event, read failed: %v", err)
+	}
+
+	assert.Eq(t, "data: connected\n", line)
 }
 
 // TestSSE_WriteTimeoutRegression 回归测试
