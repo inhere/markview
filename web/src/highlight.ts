@@ -11,6 +11,7 @@ import yaml from 'highlight.js/lib/languages/yaml';
 import sql from 'highlight.js/lib/languages/sql';
 import python from 'highlight.js/lib/languages/python';
 import rust from 'highlight.js/lib/languages/rust';
+import dart from 'highlight.js/lib/languages/dart';
 import plaintext from 'highlight.js/lib/languages/plaintext';
 import powershell from 'highlight.js/lib/languages/powershell';
 
@@ -30,9 +31,11 @@ export function ensureHighlightLanguages() {
     hljs.registerLanguage('go', go);
     hljs.registerLanguage('markdown', markdown);
     hljs.registerLanguage('yaml', yaml);
+    // hljs.registerLanguage('toml', toml);
     hljs.registerLanguage('sql', sql);
     hljs.registerLanguage('python', python);
     hljs.registerLanguage('rust', rust);
+    hljs.registerLanguage('dart', dart);
     hljs.registerLanguage('plaintext', plaintext);
     hljs.registerLanguage('powershell', powershell);
 
