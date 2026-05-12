@@ -78,14 +78,17 @@ function createToastContainer(): HTMLElement {
 
 function hideToast(): void {
     if (activeToast) {
-        activeToast.classList.remove('toast-visible');
-        activeToast.classList.add('toast-hiding');
+        // 保存对当前 toast 的引用，避免被后续创建的 toast 覆盖
+        const toastToRemove = activeToast;
+        activeToast = null;
+
+        toastToRemove.classList.remove('toast-visible');
+        toastToRemove.classList.add('toast-hiding');
 
         setTimeout(() => {
-            if (activeToast && activeToast.parentNode) {
-                activeToast.parentNode.removeChild(activeToast);
+            if (toastToRemove.parentNode) {
+                toastToRemove.parentNode.removeChild(toastToRemove);
             }
-            activeToast = null;
         }, 300);
     }
 
