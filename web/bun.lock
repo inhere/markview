@@ -5,6 +5,8 @@
     "": {
       "name": "markview-web",
       "dependencies": {
+        "d3-selection": "^3.0.0",
+        "d3-transition": "^3.0.1",
         "highlight.js": "^11.9.0",
         "mermaid": "^10.9.0",
       },

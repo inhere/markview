@@ -4,6 +4,16 @@ interface SVGGraphicsElement extends SVGElement {
     getBBox(): DOMRect;
 }
 
+interface D3EventListener {
+    type: string;
+    listener: EventListener;
+    options?: AddEventListenerOptions | boolean;
+}
+
+interface D3ListenerElement extends SVGElement {
+    __on?: D3EventListener[];
+}
+
 declare global {
     interface Window {
         openMermaidModal: (index: number) => void;
@@ -13,12 +23,14 @@ declare global {
 
 let mermaidInitialized = false;
 let mermaidModulePromise: Promise<typeof import('mermaid').default> | null = null;
+let d3TransitionPromise: Promise<void> | null = null;
 let mermaidCounter = 0;
 let modalSetupCompleted = false;
 let currentZoom = 1.0;
 
 const minZoom = 0.3;
 const maxZoom = 2.0;
+const mermaidTooltipEventTypes = new Set(['mouseover', 'mouseout']);
 
 export function buildMermaidContainerId(index: number) {
     return `mermaid-${index}`;
@@ -29,14 +41,109 @@ export function parseMermaidContainerIndex(containerId: string) {
     return Number.isFinite(numericIndex) ? numericIndex : null;
 }
 
+export function ensureD3TransitionSupport() {
+    if (!d3TransitionPromise) {
+        // Mermaid 的部分图形会在 hover 时调用 d3 selection.transition()，
+        // 这里显式加载副作用模块，确保打包后 selection 原型已完成注入。
+        d3TransitionPromise = import('d3-transition').then(() => undefined);
+    }
+
+    return d3TransitionPromise;
+}
+
+export function setupMermaidTooltipGuard(container: HTMLElement) {
+    if (container.dataset.tooltipGuard === 'true') {
+        return;
+    }
+
+    container.addEventListener('mouseover', event => {
+        const node = findMermaidNode(event.target);
+        if (!node || isMovingWithinNode(node, event.relatedTarget)) {
+            return;
+        }
+
+        const title = node.getAttribute('title');
+        if (title === null) {
+            return;
+        }
+
+        // Flowchart 内部 tooltip 依赖 d3 transition；这里接管 tooltip，
+        // 并阻止 Mermaid 自带 handler 继续调用缺失的 transition()。
+        event.stopPropagation();
+        if (title) {
+            showMermaidTooltip(node, title);
+        } else {
+            hideMermaidTooltip(node);
+        }
+    }, true);
+
+    container.addEventListener('mouseout', event => {
+        const node = findMermaidNode(event.target);
+        if (!node || isMovingWithinNode(node, event.relatedTarget)) {
+            return;
+        }
+
+        event.stopPropagation();
+        hideMermaidTooltip(node);
+    }, true);
+
+    container.dataset.tooltipGuard = 'true';
+}
+
+export function removeMermaidTooltipListeners(container: HTMLElement) {
+    container.querySelectorAll('g.node').forEach(node => {
+        if (!(node instanceof SVGElement)) {
+            return;
+        }
+
+        const d3Listeners = readD3Listeners(node);
+        if (!d3Listeners.length) {
+            return;
+        }
+
+        // Mermaid Flowchart 的 tooltip handler 直接调用 selection.transition()。
+        // 清掉 mouseover/mouseout 后由 setupMermaidTooltipGuard 接管 tooltip。
+        for (const listener of d3Listeners) {
+            if (mermaidTooltipEventTypes.has(listener.type)) {
+                node.removeEventListener(listener.type, listener.listener, listener.options);
+            }
+        }
+
+        node.__on = d3Listeners.filter(listener => !mermaidTooltipEventTypes.has(listener.type));
+    });
+}
+
 async function getMermaidModule() {
+    await ensureD3TransitionSupport();
+
     if (!mermaidModulePromise) {
         mermaidModulePromise = import('mermaid').then(module => module.default);
     }
 
     const mermaid = await mermaidModulePromise;
     if (!mermaidInitialized) {
-        mermaid.initialize({ startOnLoad: false });
+        // 禁用交互功能以避免 d3 transition 错误
+        // 当鼠标滑过图表时，mermaid 内部的 d3 会尝试调用 transition 方法
+        // 但由于打包问题，transition 可能未正确注入到 selection.prototype
+        mermaid.initialize({
+            startOnLoad: false,
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+            },
+            sequence: {
+                useMaxWidth: true,
+                wrap: true,
+            },
+            gantt: {
+                useMaxWidth: true,
+            },
+            // 在这里关闭动画
+            themeVariables: {
+                'transitionDuration': '0'
+            }
+        });
         mermaidInitialized = true;
     }
 
@@ -110,6 +217,13 @@ export async function enhanceMermaidContent(contentRoot: HTMLElement) {
     }
 
     await mermaid.run();
+
+    contentRoot.querySelectorAll('.mermaid-container').forEach(container => {
+        if (container instanceof HTMLElement) {
+            removeMermaidTooltipListeners(container);
+            setupMermaidTooltipGuard(container);
+        }
+    });
 }
 
 export function setupMermaidModal() {
@@ -304,4 +418,53 @@ function updateZoomLevel(svg: SVGElement, zoom: number) {
         svg.style.maxHeight = 'none';
         svg.style.height = 'auto';
     }
+}
+
+function findMermaidNode(target: EventTarget | null) {
+    if (!(target instanceof Element)) {
+        return null;
+    }
+
+    const node = target.closest('g.node');
+    return node instanceof SVGElement ? node : null;
+}
+
+function isMovingWithinNode(node: SVGElement, relatedTarget: EventTarget | null) {
+    return relatedTarget instanceof Node && node.contains(relatedTarget);
+}
+
+function getMermaidTooltipElement() {
+    let tooltip = document.querySelector('.mermaidTooltip');
+    if (!(tooltip instanceof HTMLElement)) {
+        tooltip = document.createElement('div');
+        tooltip.className = 'mermaidTooltip';
+        tooltip.style.opacity = '0';
+        document.body.appendChild(tooltip);
+    }
+
+    return tooltip;
+}
+
+function showMermaidTooltip(node: SVGElement, title: string) {
+    const tooltip = getMermaidTooltipElement();
+    const rect = node.getBoundingClientRect();
+
+    tooltip.textContent = title;
+    tooltip.style.left = `${window.scrollX + rect.left + (rect.right - rect.left) / 2}px`;
+    tooltip.style.top = `${window.scrollY + rect.bottom}px`;
+    tooltip.style.opacity = '.9';
+    tooltip.innerHTML = tooltip.innerHTML.replace(/&lt;br\/&gt;/g, '<br/>');
+    node.classList.add('hover');
+}
+
+function hideMermaidTooltip(node: SVGElement) {
+    const tooltip = getMermaidTooltipElement();
+
+    tooltip.style.opacity = '0';
+    node.classList.remove('hover');
+}
+
+function readD3Listeners(node: SVGElement) {
+    const d3Node = node as D3ListenerElement;
+    return Array.isArray(d3Node.__on) ? d3Node.__on : [];
 }

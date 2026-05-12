@@ -8,8 +8,10 @@
     "dev": "WATCH=true bash build.sh"
   },
   "dependencies": {
-    "mermaid": "^10.9.0",
-    "highlight.js": "^11.9.0"
+    "d3-selection": "^3.0.0",
+    "d3-transition": "^3.0.1",
+    "highlight.js": "^11.9.0",
+    "mermaid": "^10.9.0"
   },
   "devDependencies": {
     "bun-types": "latest",
