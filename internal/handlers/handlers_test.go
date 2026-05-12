@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gookit/goutil/testutil/assert"
 	"github.com/inhere/markview/internal/config"
 )
 
@@ -75,9 +76,9 @@ func TestBuildFileTree(t *testing.T) {
 	if tree[1].Kind != "directory" || tree[1].Name != "plain" {
 		t.Fatalf("expected second node to be plain directory, got %+v", tree[1])
 	}
-	if tree[1].Navigable {
-		t.Fatalf("expected plain directory to be non-navigable without index.md")
-	}
+	assert.True(t, tree[1].Navigable, "expected plain directory to be navigable for directory listing")
+	assert.Eq(t, "/plain", tree[1].Href)
+	assert.Eq(t, "plain", tree[1].MatchPath)
 	if len(tree[1].Children) != 1 || tree[1].Children[0].Name != "child.md" {
 		t.Fatalf("expected plain to contain child.md, got %+v", tree[1].Children)
 	}
@@ -88,6 +89,59 @@ func TestBuildFileTree(t *testing.T) {
 	if tree[3].Kind != "file" || tree[3].Name != "z-last.md" {
 		t.Fatalf("expected fourth node to be z-last.md, got %+v", tree[3])
 	}
+}
+
+func TestHandleRequestRendersDirectoryListingWithoutEntryFile(t *testing.T) {
+	origTargetDir := config.Cfg.TargetDir
+	origEntryFile := config.Cfg.EntryFile
+	origIfsReader := IfsReader
+	defer func() {
+		config.Cfg.TargetDir = origTargetDir
+		config.Cfg.EntryFile = origEntryFile
+		IfsReader = origIfsReader
+	}()
+
+	IfsReader = func(path string) ([]byte, error) {
+		if path == "web/template-main.html" {
+			return []byte(`{{.Content}}<script id="current-file-path-data" type="application/json">{{ .CurrentFilePathJSON }}</script>`), nil
+		}
+		return nil, os.ErrNotExist
+	}
+
+	root := t.TempDir()
+	files := []string{
+		"README.md",
+		"plain/child.md",
+		"plain/notes.txt",
+		"plain/deep/topic.md",
+		"plain/assets/logo.png",
+	}
+	for _, relativePath := range files {
+		fullPath := filepath.Join(root, filepath.FromSlash(relativePath))
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", relativePath, err)
+		}
+		if err := os.WriteFile(fullPath, []byte("# test"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", relativePath, err)
+		}
+	}
+
+	config.Cfg.TargetDir = root
+	config.Cfg.EntryFile = "README.md"
+
+	req := httptest.NewRequest(http.MethodGet, "/plain?q=main", nil)
+	rec := httptest.NewRecorder()
+
+	HandleRequest(rec, req)
+
+	assert.Eq(t, http.StatusOK, rec.Code)
+	body := rec.Body.String()
+	assert.StrContains(t, body, "<h1>plain</h1>")
+	assert.StrContains(t, body, `href="/plain/deep"`)
+	assert.StrContains(t, body, `href="/plain/child.md"`)
+	assert.StrNotContains(t, body, "notes.txt")
+	assert.StrNotContains(t, body, "logo.png")
+	assert.StrContains(t, body, `>plain<`)
 }
 
 func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {

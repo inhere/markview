@@ -98,8 +98,7 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 		if _, err := os.Stat(indexPath); err == nil {
 			filePath = indexPath
 		} else {
-			// List directory? For now just 404
-			http.Error(w, "Directory listing not supported", 404)
+			renderDirectoryListing(w, r, filePath)
 			return
 		}
 	}
@@ -125,13 +124,17 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderMarkdown(w http.ResponseWriter, filePath string) {
-	targetDir := config.Cfg.TargetDir
-
 	mainData, err := buildPageData(filePath)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+
+	renderFullPage(w, mainData)
+}
+
+func renderFullPage(w http.ResponseWriter, mainData *PageData) {
+	targetDir := config.Cfg.TargetDir
 
 	fileTree, err := buildFileTree(targetDir)
 	if err != nil {
@@ -169,6 +172,28 @@ func renderMarkdown(w http.ResponseWriter, filePath string) {
 	t.Execute(w, data)
 }
 
+func renderDirectoryListing(w http.ResponseWriter, r *http.Request, dirPath string) {
+	mainData, rawMarkdown, err := buildDirectoryListingPageData(dirPath)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	queryParam := r.URL.Query().Get("q")
+	if queryParam == "main" {
+		renderPageMainContent(w, mainData)
+		return
+	}
+	if queryParam == "raw" {
+		setPageCacheHeaders(w)
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write([]byte(rawMarkdown))
+		return
+	}
+
+	renderFullPage(w, mainData)
+}
+
 // renderMarkdownContent renders just the markdown content (shared function)
 func renderMarkdownContent(filePath string) (string, error) {
 	mdData, err := os.ReadFile(filePath)
@@ -176,9 +201,13 @@ func renderMarkdownContent(filePath string) (string, error) {
 		return "", err
 	}
 
+	return renderMarkdownSource(mdData)
+}
+
+func renderMarkdownSource(mdData []byte) (string, error) {
 	initMdParser()
 	var buf bytes.Buffer
-	if err = mdParser.Convert(mdData, &buf); err != nil {
+	if err := mdParser.Convert(mdData, &buf); err != nil {
 		return "", err
 	}
 
@@ -204,6 +233,10 @@ func renderMainContent(w http.ResponseWriter, filePath string) {
 		return
 	}
 
+	renderPageMainContent(w, mainData)
+}
+
+func renderPageMainContent(w http.ResponseWriter, mainData *PageData) {
 	mainTmplData, err := IfsReader("web/template-main.html")
 	if err != nil {
 		http.Error(w, "Template-main not found", 500)
@@ -259,6 +292,94 @@ func buildPageData(filePath string) (*PageData, error) {
 	}, nil
 }
 
+func buildDirectoryListingPageData(dirPath string) (*PageData, string, error) {
+	info, err := os.Stat(dirPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("Failed to stat directory: %v", err)
+	}
+
+	targetDir := config.Cfg.TargetDir
+	currentRelativePath, err := filepath.Rel(targetDir, dirPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("Failed to resolve current directory path: %v", err)
+	}
+	currentRelativePath = utils.NormalizeRelativePath(currentRelativePath)
+	if currentRelativePath == "." {
+		currentRelativePath = ""
+	}
+
+	rawMarkdown, err := buildDirectoryListingMarkdown(dirPath, currentRelativePath)
+	if err != nil {
+		return nil, "", err
+	}
+	contentHTML, err := renderMarkdownSource([]byte(rawMarkdown))
+	if err != nil {
+		return nil, "", fmt.Errorf("Failed to render directory listing: %v", err)
+	}
+
+	fileName := filepath.Base(dirPath)
+	if currentRelativePath == "" {
+		fileName = filepath.Base(targetDir)
+	}
+	createdAt := "Unavailable"
+	if created := utils.FileCreatedTime(info); !created.IsZero() {
+		createdAt = utils.FormatTimestamp(created)
+	}
+
+	return &PageData{
+		Title:               fileName,
+		Content:             template.HTML(contentHTML),
+		FileName:            fileName,
+		FilePath:            dirPath,
+		FileSize:            "Directory",
+		CreatedAt:           createdAt,
+		ModifiedAt:          utils.FormatTimestamp(info.ModTime()),
+		CurrentFilePathJSON: utils.MustMarshalJSON(currentRelativePath),
+		CurrentFilePath:     utils.ToURLPath(currentRelativePath),
+	}, rawMarkdown, nil
+}
+
+func buildDirectoryListingMarkdown(dirPath, relativeDir string) (string, error) {
+	nodes, err := buildFileTreeDir(dirPath, relativeDir)
+	if err != nil {
+		return "", fmt.Errorf("Failed to build directory listing: %v", err)
+	}
+
+	title := filepath.Base(dirPath)
+	var builder strings.Builder
+	builder.WriteString("# ")
+	builder.WriteString(escapeMarkdownText(title))
+	builder.WriteString("\n\n")
+
+	if len(nodes) == 0 {
+		builder.WriteString("No related files.\n")
+		return builder.String(), nil
+	}
+
+	for _, node := range nodes {
+		label := node.Name
+		if node.Kind == "directory" {
+			label += "/"
+		}
+		// 使用绝对站内链接，避免前端按当前目录再次重写相对路径。
+		builder.WriteString("- [")
+		builder.WriteString(escapeMarkdownLinkText(label))
+		builder.WriteString("](")
+		builder.WriteString(node.Href)
+		builder.WriteString(")\n")
+	}
+
+	return builder.String(), nil
+}
+
+func escapeMarkdownText(text string) string {
+	return strings.NewReplacer(`\`, `\\`, `#`, `\#`).Replace(text)
+}
+
+func escapeMarkdownLinkText(text string) string {
+	return strings.NewReplacer(`\`, `\\`, `[`, `\[`, `]`, `\]`).Replace(text)
+}
+
 type FileTreeNode struct {
 	Name      string         `json:"name"`
 	Href      string         `json:"href,omitempty"`
@@ -307,12 +428,14 @@ func buildFileTreeDir(absDir, relativeDir string) ([]FileTreeNode, error) {
 			node := FileTreeNode{
 				Name:      entry.Name(),
 				Kind:      "directory",
-				Navigable: hasIndex,
+				Navigable: true,
+				Href:      utils.ToURLPath(entryRelativePath),
 				Children:  children,
 			}
 			if hasIndex {
-				node.Href = utils.ToURLPath(entryRelativePath)
 				node.MatchPath = utils.NormalizeRelativePath(filepath.Join(entryRelativePath, "index.md"))
+			} else {
+				node.MatchPath = utils.NormalizeRelativePath(entryRelativePath)
 			}
 
 			directories = append(directories, node)
