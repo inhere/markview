@@ -2,6 +2,7 @@ export interface PageSnapshot {
     title: string;
     contentHTML: string;
     fileMetaHTML: string;
+    viewRawHTML?: string;
     fileTreeJSON?: string;
     currentFilePathJSON: string;
 }
@@ -19,6 +20,7 @@ export function parsePageSnapshot(html: string, selectors: PageMountSelectors): 
 
     const content = nextDocument.querySelector(selectors.contentSelector);
     const fileMeta = nextDocument.querySelector(selectors.fileMetaSelector);
+    const viewRawLink = nextDocument.querySelector('.view-raw-btn');
     const fileTreeScript = nextDocument.getElementById(selectors.fileTreeDataId);
     const currentFilePathScript = nextDocument.getElementById(selectors.currentFilePathDataId);
 
@@ -45,6 +47,7 @@ export function parsePageSnapshot(html: string, selectors: PageMountSelectors): 
         title: docTitle,
         contentHTML: content.innerHTML,
         fileMetaHTML: fileMeta.innerHTML,
+        viewRawHTML: viewRawLink instanceof HTMLElement ? viewRawLink.outerHTML : undefined,
         fileTreeJSON: fileTreeScript?.textContent,
         currentFilePathJSON: currentFilePathScript.textContent,
     };
@@ -53,6 +56,7 @@ export function parsePageSnapshot(html: string, selectors: PageMountSelectors): 
 export function applyPageSnapshot(snapshot: PageSnapshot, selectors: PageMountSelectors) {
     const content = document.querySelector(selectors.contentSelector);
     const fileMeta = document.querySelector(selectors.fileMetaSelector);
+    const viewRawLink = document.querySelector('.view-raw-btn');
     const fileTreeScript = document.getElementById(selectors.fileTreeDataId);
     const currentFilePathScript = document.getElementById(selectors.currentFilePathDataId);
 
@@ -63,6 +67,10 @@ export function applyPageSnapshot(snapshot: PageSnapshot, selectors: PageMountSe
     document.title = snapshot.title;
     content.innerHTML = snapshot.contentHTML;
     fileMeta.innerHTML = snapshot.fileMetaHTML;
+    if (snapshot.viewRawHTML && viewRawLink instanceof HTMLElement) {
+        // 查看 Markdown 按钮在 #content 外层，inline navigation 需要单独同步它。
+        viewRawLink.outerHTML = snapshot.viewRawHTML;
+    }
     if (snapshot.fileTreeJSON) {
         fileTreeScript.textContent = snapshot.fileTreeJSON;
     }
