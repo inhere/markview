@@ -34,11 +34,14 @@ web:
 backend:
 	@echo "🐹 Building Go binary ($(VERSION) @ $(GIT_HASH))..."
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
+	@echo "📦 Compressing binary..."
+	@upx -6 --no-progress $(BINARY)
 	@echo "✅ Binary: $(BINARY) ($$(du -sh $(BINARY) | cut -f1))"
 
 ## install: install Go binary to $GOPATH/bin
 install: web
 	go install -ldflags "$(LDFLAGS)" .
+	upx -6 --no-progress $(GOPATH)/bin/$(BINARY)
 	@echo "✅ Installed to GOPATH/bin"
 
 ## run: build and run with current directory
@@ -57,6 +60,8 @@ build-linux:
 	@echo "🐧 linux/amd64..."
 	@mkdir -p $(DIST_DIR)
 	@GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(APP)-linux-amd64 .
+	upx -6 --no-progress $(DIST_DIR)/$(APP)-linux-amd64
+	chmod +x $(DIST_DIR)/$(APP)-linux-amd64
 	@echo "   → $(DIST_DIR)/$(APP)-linux-amd64"
 
 ## build-linux-arm64: compile for Linux arm64
@@ -64,6 +69,8 @@ build-linux-arm64:
 	@echo "🐧 linux/arm64..."
 	@mkdir -p $(DIST_DIR)
 	@GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(APP)-linux-arm64 .
+	upx -6 --no-progress $(DIST_DIR)/$(APP)-linux-arm64
+	chmod +x $(DIST_DIR)/$(APP)-linux-arm64
 	@echo "   → $(DIST_DIR)/$(APP)-linux-arm64"
 
 ## build-darwin: compile for macOS amd64
@@ -71,6 +78,8 @@ build-darwin:
 	@echo "🍎 darwin/amd64..."
 	@mkdir -p $(DIST_DIR)
 	@GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(APP)-darwin-amd64 .
+	# upx -6 --no-progress $(DIST_DIR)/$(APP)-darwin-amd64 # macOS 12+ upx 后会报错
+	chmod +x $(DIST_DIR)/$(APP)-darwin-amd64
 	@echo "   → $(DIST_DIR)/$(APP)-darwin-amd64"
 
 ## build-darwin-arm64: compile for macOS Apple Silicon
@@ -78,6 +87,8 @@ build-darwin-arm64:
 	@echo "🍎 darwin/arm64..."
 	@mkdir -p $(DIST_DIR)
 	@GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(APP)-darwin-arm64 .
+	# upx -6 --no-progress $(DIST_DIR)/$(APP)-darwin-arm64 # macOS 12+ upx 后会报错
+	chmod +x $(DIST_DIR)/$(APP)-darwin-arm64
 	@echo "   → $(DIST_DIR)/$(APP)-darwin-arm64"
 
 ## build-windows: compile for Windows amd64
@@ -85,6 +96,7 @@ build-windows:
 	@echo "🪟 windows/amd64..."
 	@mkdir -p $(DIST_DIR)
 	@GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(APP)-windows-amd64.exe .
+	upx -6 --no-progress $(DIST_DIR)/$(APP)-windows-amd64.exe
 	@echo "   → $(DIST_DIR)/$(APP)-windows-amd64.exe"
 
 ## clean: remove build artifacts
