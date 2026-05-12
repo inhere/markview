@@ -108,12 +108,12 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 	// Render markdown file
 	if strings.HasSuffix(strings.ToLower(filePath), ".md") {
 		queryParam := r.URL.Query().Get("q")
-		if queryParam == "main" {
+		switch queryParam {
+		case queryTypeMain:
 			renderMainContent(w, filePath)
-		} else if queryParam == "raw" {
-			// 直接返回原始 markdown 内容
+		case queryTypeRaw: // 直接返回原始 markdown 内容
 			renderRawMarkdown(w, filePath)
-		} else {
+		default:
 			renderMarkdown(w, filePath)
 		}
 		return
@@ -180,11 +180,11 @@ func renderDirectoryListing(w http.ResponseWriter, r *http.Request, dirPath stri
 	}
 
 	queryParam := r.URL.Query().Get("q")
-	if queryParam == "main" {
+	if queryParam == queryTypeMain {
 		renderPageMainContent(w, mainData)
 		return
 	}
-	if queryParam == "raw" {
+	if queryParam == queryTypeRaw {
 		setPageCacheHeaders(w)
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Write([]byte(rawMarkdown))
@@ -347,7 +347,7 @@ func buildDirectoryListingMarkdown(dirPath, relativeDir string) (string, error) 
 
 	title := filepath.Base(dirPath)
 	var builder strings.Builder
-	builder.WriteString("# ")
+	builder.WriteString("# 📇 ")
 	builder.WriteString(escapeMarkdownText(title))
 	builder.WriteString("\n\n")
 

@@ -46,8 +46,6 @@ type ReloadMessage struct {
 	Action string   `json:"action,omitempty"`
 }
 
-const mdExt = ".md"
-
 // WatchDirectory watches the directory and its subdirectories for changes.
 func WatchDirectory(dir string) {
 	watchedDir = dir
