@@ -16,6 +16,7 @@ import (
 	"github.com/gookit/goutil/envutil"
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/netutil"
+	"github.com/gookit/goutil/sysutil"
 	"github.com/gookit/goutil/x/clog"
 	"github.com/inhere/markview/internal/config"
 	"github.com/inhere/markview/internal/handlers"
@@ -31,6 +32,8 @@ var (
 	GitHash   = "unknown"
 	BuildTime = "unknown"
 )
+
+var openBrowser = sysutil.OpenBrowser
 
 func main() {
 	// 1. Configuration
@@ -60,6 +63,9 @@ func main() {
 	)
 	cmd.BoolVar(&config.Cfg.Private, "private", false,
 		"Only listen on localhost (127.0.0.1), not publicly accessible",
+	)
+	cmd.BoolVar(&config.Cfg.NoBrowser, "no-browser", false,
+		"Do not open the local preview URL in browser after server starts",
 	)
 	cmd.Func = run
 	cmd.QuickRun()
@@ -126,11 +132,12 @@ func beforeServerRun(port int, private bool) {
 	localUrl := fmt.Sprintf("http://127.0.0.1:%d", port)
 	if private {
 		fmt.Printf("🚀 Live server running at %s (PRIVATE MODE)\n", localUrl)
+		openLocalPreview(localUrl)
 		return
 	}
 
 	fmt.Printf("🚀 Live server running at %s\n", localUrl)
-	// sysutil.OpenBrowser(localUrl)
+	openLocalPreview(localUrl)
 	ips, err := netutil.AllLocalIPv4()
 	if err != nil {
 		clog.Info("Failed to get local IPs:", err)
@@ -146,6 +153,17 @@ func beforeServerRun(port int, private bool) {
 		urls = append(urls, fmt.Sprintf("http://%s:%d", ip, port))
 	}
 	fmt.Printf(" - Can also access by %s\n", strings.Join(urls, ", "))
+}
+
+func openLocalPreview(localUrl string) {
+	if config.Cfg.NoBrowser {
+		return
+	}
+
+	// 打开浏览器失败不应影响服务启动，只记录告警方便排查本机环境问题。
+	if err := openBrowser(localUrl); err != nil {
+		clog.Warnf("Failed to open browser: %v", err)
+	}
 }
 
 // newServerMux 创建路由 mux，SSE 路由单独处理

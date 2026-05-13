@@ -31,6 +31,7 @@ type Config struct {
 	WatchDirs     []string
 	WatchSkipDirs []string
 	Private       bool
+	NoBrowser     bool
 }
 
 // Cfg is the configuration struct instance.
