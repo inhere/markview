@@ -36,7 +36,7 @@
 - 修改：`main.go`
 - 修改：`main_test.go`
 
-- [ ] **Step 1: 编写失败的 flag parse 测试**
+- [x] **Step 1: 编写失败的 flag parse 测试**
 
 新增测试解析：
 
@@ -60,7 +60,7 @@ go test .
 
 预期：失败，因为 flag 尚不存在。
 
-- [ ] **Step 2: 注册 flag**
+- [x] **Step 2: 注册 flag**
 
 新增：
 
@@ -83,7 +83,7 @@ go test .
 - 修改：`main.go`
 - 修改：`main_test.go`
 
-- [ ] **Step 1: 编写失败的解析测试**
+- [x] **Step 1: 编写失败的解析测试**
 
 新增测试覆盖：
 
@@ -102,7 +102,7 @@ go test .
 
 预期：失败，因为 startup 尚未解析 `selectedProject`。
 
-- [ ] **Step 2: 实现 selected project 解析**
+- [x] **Step 2: 实现 selected project 解析**
 
 新增 helper：
 
@@ -137,7 +137,7 @@ go test .
 - 修改：`main.go`
 - 修改：`main_test.go`
 
-- [ ] **Step 1: 编写失败的 entry 优先级测试**
+- [x] **Step 1: 编写失败的 entry 优先级测试**
 
 测试：
 
@@ -153,7 +153,7 @@ go test .
 
 预期：如果当前参数合并逻辑存在歧义，则失败。
 
-- [ ] **Step 2: 实现保守的参数合并**
+- [x] **Step 2: 实现保守的参数合并**
 
 推荐规则：
 
@@ -177,7 +177,7 @@ go test .
 - 修改：`main_test.go`
 - 如有必要，修改：`main.go`
 
-- [ ] **Step 1: 编写端口行为测试**
+- [x] **Step 1: 编写端口行为测试**
 
 验证：
 
@@ -200,7 +200,7 @@ go test .
 - 修改：`docs/TODO.md`
 - 所有修改的 Go 文件
 
-- [ ] **Step 1: 标记 TODO 完成**
+- [x] **Step 1: 标记 TODO 完成**
 
 更新：
 
@@ -208,13 +208,13 @@ go test .
 - [x] 新增 --projects 选项，支持多项目管理和快速启动（详细说明见下面的章节）
 ```
 
-- [ ] **Step 2: 格式化 Go 代码**
+- [x] **Step 2: 格式化 Go 代码**
 
 ```bash
 gofmt -w main.go main_test.go projects_cli.go projects_cli_test.go
 ```
 
-- [ ] **Step 3: 运行全量 Go 测试**
+- [x] **Step 3: 运行全量 Go 测试**
 
 ```bash
 go test ./...
@@ -222,7 +222,7 @@ go test ./...
 
 预期：通过。
 
-- [ ] **Step 4: 检查 diff**
+- [x] **Step 4: 检查 diff**
 
 ```bash
 git diff --stat

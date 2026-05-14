@@ -86,6 +86,101 @@ func TestMarkPortFlagVisited(t *testing.T) {
 	assert.Eq(t, config.PortSourceCLI, config.Cfg.PortSource)
 }
 
+func TestProjectFlagParse(t *testing.T) {
+	origSelectedProject := selectedProject
+	t.Cleanup(func() {
+		selectedProject = origSelectedProject
+	})
+
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "short project flag", args: []string{"-P", "markview"}},
+		{name: "long project flag", args: []string{"--project", "markview"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			selectedProject = ""
+			cmd := newCommand()
+			cmd.Func = nil
+
+			err := cmd.Parse(tt.args)
+
+			assert.NoErr(t, err)
+			assert.Eq(t, "markview", selectedProject)
+		})
+	}
+}
+
+func TestResolveSelectedProjectTarget(t *testing.T) {
+	t.Run("resolves project by name", func(t *testing.T) {
+		projectDir := t.TempDir()
+		withTempProjectRegistry(t, registryForTest(t, projectDir, "markview", 6100), func(_ string) {
+			targetDir, err := resolveSelectedProjectTarget("markview")
+
+			assert.NoErr(t, err)
+			assert.Eq(t, projectDir, targetDir)
+		})
+	})
+
+	t.Run("resolves project by full path", func(t *testing.T) {
+		projectDir := t.TempDir()
+		withTempProjectRegistry(t, registryForTest(t, projectDir, "markview", 6100), func(_ string) {
+			targetDir, err := resolveSelectedProjectTarget(projectDir)
+
+			assert.NoErr(t, err)
+			assert.Eq(t, projectDir, targetDir)
+		})
+	})
+
+	t.Run("returns error for unknown project", func(t *testing.T) {
+		withTempProjectRegistry(t, projects.Registry{}, func(_ string) {
+			_, err := resolveSelectedProjectTarget("missing")
+
+			assert.Err(t, err)
+		})
+	})
+
+	t.Run("returns error for ambiguous project", func(t *testing.T) {
+		registry := projects.Registry{
+			"/projects/a/docs": {Name: "docs", Port: 6100, Added: "2026-05-14T15:00:00+08:00"},
+			"/projects/b/docs": {Name: "docs", Port: 6101, Added: "2026-05-14T15:00:00+08:00"},
+		}
+		withTempProjectRegistry(t, registry, func(_ string) {
+			_, err := resolveSelectedProjectTarget("docs")
+
+			assert.Err(t, err)
+		})
+	})
+}
+
+func TestBuildPrepareArgsForSelectedProject(t *testing.T) {
+	t.Run("uses selected project path with default entry", func(t *testing.T) {
+		projectDir := t.TempDir()
+		args, err := buildPrepareArgsForSelectedProject(projectDir, nil)
+
+		assert.NoErr(t, err)
+		assert.Eq(t, []string{projectDir}, args)
+	})
+
+	t.Run("uses one positional argument as entry file", func(t *testing.T) {
+		projectDir := t.TempDir()
+		args, err := buildPrepareArgsForSelectedProject(projectDir, []string{"guide.md"})
+
+		assert.NoErr(t, err)
+		assert.Eq(t, []string{projectDir, "guide.md"}, args)
+	})
+
+	t.Run("rejects multiple positional arguments", func(t *testing.T) {
+		projectDir := t.TempDir()
+		_, err := buildPrepareArgsForSelectedProject(projectDir, []string{"docs", "guide.md"})
+
+		assert.Err(t, err)
+	})
+}
+
 func TestShouldUseProjectPortRegistry(t *testing.T) {
 	origPortSource := config.Cfg.PortSource
 	origPortInt := config.Cfg.PortInt
@@ -111,6 +206,49 @@ func TestShouldUseProjectPortRegistry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config.Cfg.PortSource = tt.source
 			config.Cfg.PortInt = tt.port
+
+			assert.Eq(t, tt.shouldUse, shouldUseProjectPortRegistry())
+		})
+	}
+}
+
+func TestProjectFlagKeepsPortRegistryRules(t *testing.T) {
+	origSelectedProject := selectedProject
+	origPortSource := config.Cfg.PortSource
+	origPortInt := config.Cfg.PortInt
+	t.Cleanup(func() {
+		selectedProject = origSelectedProject
+		config.Cfg.PortSource = origPortSource
+		config.Cfg.PortInt = origPortInt
+	})
+
+	tests := []struct {
+		name      string
+		args      []string
+		envPort   string
+		shouldUse bool
+	}{
+		{name: "project without explicit port uses registry", args: []string{"-P", "docs"}, shouldUse: true},
+		{name: "project with CLI random uses registry", args: []string{"-P", "docs", "-p", "-1"}, shouldUse: true},
+		{name: "project with CLI fixed port skips registry", args: []string{"-P", "docs", "-p", "8080"}, shouldUse: false},
+		{name: "project with ENV fixed port skips registry", args: []string{"-P", "docs"}, envPort: "8080", shouldUse: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			selectedProject = ""
+			config.Cfg.PortSource = config.PortSourceUnset
+			config.Cfg.PortInt = 0
+			t.Setenv(config.EnvPort, tt.envPort)
+			cmd := newCommand()
+			cmd.Func = nil
+
+			err := cmd.Parse(tt.args)
+			assert.NoErr(t, err)
+			markPortFlagVisited(cmd)
+			if tt.envPort != "" && config.Cfg.PortSource != config.PortSourceCLI {
+				config.Cfg.PortSource = config.PortSourceEnv
+			}
 
 			assert.Eq(t, tt.shouldUse, shouldUseProjectPortRegistry())
 		})

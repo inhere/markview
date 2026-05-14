@@ -78,6 +78,9 @@ func newCommand() *cflag.CFlags {
 	cmd.StringVar(&projectsAction, "projects", "",
 		"Manage saved projects: list, show, remove, prune",
 	)
+	cmd.StringVar(&selectedProject, "project", "",
+		"Start a saved project by name or path;;P",
+	)
 	cmd.Func = run
 	return cmd
 }
@@ -87,6 +90,16 @@ func run(c *cflag.CFlags) error {
 	args := c.RemainArgs()
 	if projectsAction != "" {
 		return runProjectsAction(projectsAction, args, os.Stdout)
+	}
+	if selectedProject != "" {
+		targetDir, err := resolveSelectedProjectTarget(selectedProject)
+		if err != nil {
+			return err
+		}
+		args, err = buildPrepareArgsForSelectedProject(targetDir, args)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Prepare arguments
@@ -151,6 +164,16 @@ func run(c *cflag.CFlags) error {
 	beforeServerRun(config.Cfg.PortInt, config.Cfg.Private)
 	log.Fatal(mainServer.ListenAndServe())
 	return nil
+}
+
+func buildPrepareArgsForSelectedProject(targetDir string, args []string) ([]string, error) {
+	if len(args) > 1 {
+		return nil, fmt.Errorf("--project accepts at most one entry file argument")
+	}
+	if len(args) == 1 && args[0] != "" {
+		return []string{targetDir, args[0]}, nil
+	}
+	return []string{targetDir}, nil
 }
 
 func markPortFlagVisited(c *cflag.CFlags) {

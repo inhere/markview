@@ -11,15 +11,12 @@ import (
 
 var (
 	projectsAction      string
+	selectedProject     string
 	projectRegistryPath = projects.RegistryPath
 )
 
 func runProjectsAction(action string, args []string, out io.Writer) error {
-	registryPath, err := projectRegistryPath()
-	if err != nil {
-		return err
-	}
-	registry, err := projects.Load(registryPath)
+	registryPath, registry, err := loadProjectRegistry()
 	if err != nil {
 		return err
 	}
@@ -67,6 +64,30 @@ func runProjectsAction(action string, args []string, out io.Writer) error {
 	default:
 		return fmt.Errorf("unknown projects action: %s", action)
 	}
+}
+
+func resolveSelectedProjectTarget(selector string) (string, error) {
+	_, registry, err := loadProjectRegistry()
+	if err != nil {
+		return "", err
+	}
+	entry, err := projects.Resolve(registry, selector)
+	if err != nil {
+		return "", err
+	}
+	return entry.Path, nil
+}
+
+func loadProjectRegistry() (string, projects.Registry, error) {
+	registryPath, err := projectRegistryPath()
+	if err != nil {
+		return "", nil, err
+	}
+	registry, err := projects.Load(registryPath)
+	if err != nil {
+		return "", nil, err
+	}
+	return registryPath, registry, nil
 }
 
 func requireProjectSelector(args []string) (string, error) {
