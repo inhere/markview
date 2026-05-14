@@ -40,6 +40,8 @@ func TestRunProjectsActionListUsesCliUITableFields(t *testing.T) {
 		assert.StrContains(t, output, "ADDED")
 		assert.StrContains(t, output, "PATH")
 		assert.StrContains(t, output, "markview")
+		assert.StrContains(t, output, "2026-05-14 15:00:00")
+		assert.False(t, strings.Contains(output, "2026-05-14T15:00:00+08:00"))
 		assert.StrContains(t, output, projectDir)
 	})
 }
@@ -71,6 +73,8 @@ func TestRunProjectsActionShow(t *testing.T) {
 		assert.StrContains(t, output, projectDir)
 		assert.StrContains(t, output, "port")
 		assert.StrContains(t, output, "6100")
+		assert.StrContains(t, output, "2026-05-14 15:00:00")
+		assert.False(t, strings.Contains(output, "2026-05-14T15:00:00+08:00"))
 		assert.StrContains(t, output, "Exists")
 		assert.StrContains(t, output, "true")
 	})

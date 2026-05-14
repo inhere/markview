@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/gookit/cliui/show"
 	"github.com/gookit/cliui/show/table"
@@ -108,7 +109,7 @@ func renderProjectsList(out io.Writer, entries []projects.ProjectEntry) {
 	tb := table.New("<info>Saved projects</>")
 	tb.SetHeads("NAME", "PORT", "ADDED", "PATH")
 	for _, entry := range entries {
-		tb.AddRow(entry.Record.Name, entry.Record.Port, entry.Record.Added, entry.Path)
+		tb.AddRow(entry.Record.Name, entry.Record.Port, formatProjectAdded(entry.Record.Added), entry.Path)
 	}
 	ccolor.Fprint(out, tb.Render())
 }
@@ -121,7 +122,18 @@ func renderProjectInfo(out io.Writer, entry projects.ProjectEntry) {
 
 	ccolor.Fprintf(out, "<info>Path</>  : %s\n", entry.Path)
 	ccolor.Fprintf(out, "<info>Exists</>: %v\n", exists)
-	ls := show.NewList("Information", entry.Record)
+	record := entry.Record
+	record.Added = formatProjectAdded(record.Added)
+	ls := show.NewList("Information", record)
 	ls.SetOutput(out)
 	ls.Println()
+}
+
+func formatProjectAdded(added string) string {
+	// registry 内仍保存 RFC3339；CLI 展示去掉时区 offset，便于 project list/show 扫读。
+	parsed, err := time.Parse(time.RFC3339, added)
+	if err != nil {
+		return added
+	}
+	return parsed.Format("2006-01-02 15:04:05")
 }
