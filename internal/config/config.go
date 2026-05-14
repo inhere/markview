@@ -26,6 +26,7 @@ type Config struct {
 	TargetDir     string
 	EntryFile     string
 	PortInt       int
+	PortSource    PortSource
 	portStr       string
 	EnableWatch   bool
 	WatchDirs     []string
@@ -34,8 +35,17 @@ type Config struct {
 	NoBrowser     bool
 }
 
+type PortSource string
+
+const (
+	PortSourceUnset PortSource = "unset"
+	PortSourceCLI   PortSource = "cli"
+	PortSourceEnv   PortSource = "env"
+)
+
 // Cfg is the configuration struct instance.
 var Cfg = Config{
+	PortSource:    PortSourceUnset,
 	EnableWatch:   true,
 	WatchSkipDirs: DefaultSkipDirs,
 }
@@ -91,10 +101,19 @@ func (c *Config) Init(targetDir, entryFile string) (err error) {
 	} else if c.PortInt < 0 {
 		c.portStr = "0" // 0 表示随机端口, 后续会根据随机端口更新
 	} else {
+		if c.PortSource == "" {
+			c.PortSource = PortSourceUnset
+		}
 		c.portStr = envutil.Getenv(EnvPort, DefaultPort)
+		if envutil.Getenv(EnvPort, "") != "" {
+			c.PortSource = PortSourceEnv
+		}
 		c.PortInt, err = strconv.Atoi(c.portStr)
 		if err != nil {
 			return fmt.Errorf("ENV MKVIEW_PORT %q is not a valid integer", c.portStr)
+		}
+		if c.PortInt < 0 {
+			c.portStr = "0"
 		}
 	}
 

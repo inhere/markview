@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"flag"
 	"fmt"
 	"io/fs"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,6 +22,7 @@ import (
 	"github.com/gookit/goutil/x/clog"
 	"github.com/inhere/markview/internal/config"
 	"github.com/inhere/markview/internal/handlers"
+	"github.com/inhere/markview/internal/projects"
 	"github.com/inhere/markview/internal/utils"
 )
 
@@ -36,6 +39,11 @@ var (
 var openBrowser = sysutil.OpenBrowser
 
 func main() {
+	cmd := newCommand()
+	cmd.QuickRun()
+}
+
+func newCommand() *cflag.CFlags {
 	// 1. Configuration
 	clog.Configure(func(p *clog.Printer) {
 		p.TimeFormat = "15:04:05"
@@ -68,10 +76,11 @@ func main() {
 		"Do not open the local preview URL in browser after server starts",
 	)
 	cmd.Func = run
-	cmd.QuickRun()
+	return cmd
 }
 
 func run(c *cflag.CFlags) error {
+	markPortFlagVisited(c)
 	args := c.RemainArgs()
 
 	// Prepare arguments
@@ -105,6 +114,18 @@ func run(c *cflag.CFlags) error {
 		// API 超时通过 http.TimeoutHandler 在路由级别处理
 	}
 
+	if shouldUseProjectPortRegistry() {
+		listener, actualPort, err := listenAndRememberProjectPort(config.Cfg.TargetDir)
+		if err != nil {
+			log.Fatal("Failed to create listener:", err)
+		}
+
+		config.Cfg.SetPort(actualPort)
+		beforeServerRun(actualPort, config.Cfg.Private)
+		log.Fatal(mainServer.Serve(listener))
+		return nil
+	}
+
 	// 启动服务器并获取实际端口（支持随机端口）
 	isRandomPort := config.Cfg.PortInt < 0
 	if isRandomPort {
@@ -114,18 +135,112 @@ func run(c *cflag.CFlags) error {
 			log.Fatal("Failed to create listener:", err)
 		}
 
-		// 更新配置中的端口
 		actualPort := listener.Addr().(*net.TCPAddr).Port
 		config.Cfg.SetPort(actualPort)
 		beforeServerRun(actualPort, config.Cfg.Private)
-
-		// 使用获取到的监听器启动服务
 		log.Fatal(mainServer.Serve(listener))
-	} else {
-		beforeServerRun(config.Cfg.PortInt, config.Cfg.Private)
-		log.Fatal(mainServer.ListenAndServe())
+		return nil
 	}
+
+	beforeServerRun(config.Cfg.PortInt, config.Cfg.Private)
+	log.Fatal(mainServer.ListenAndServe())
 	return nil
+}
+
+func markPortFlagVisited(c *cflag.CFlags) {
+	c.Visit(func(flag *flag.Flag) {
+		if flag.Name == "port" {
+			config.Cfg.PortSource = config.PortSourceCLI
+		}
+	})
+}
+
+func shouldUseProjectPortRegistry() bool {
+	// 只有自动端口场景使用项目端口记忆，显式固定端口和 ENV 端口保持完全可预期。
+	return config.Cfg.PortSource == config.PortSourceUnset ||
+		(config.Cfg.PortSource == config.PortSourceCLI && config.Cfg.PortInt < 0)
+}
+
+func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
+	registryPath, err := projects.RegistryPath()
+	if err != nil {
+		clog.Warnf("Failed to resolve project registry path: %v", err)
+	}
+
+	registry := projects.Registry{}
+	if registryPath != "" {
+		loaded, err := projects.Load(registryPath)
+		if err != nil {
+			clog.Warnf("Failed to load project registry, starting with empty registry: %v", err)
+		} else {
+			registry = loaded
+		}
+	}
+
+	host := ""
+	if config.Cfg.Private {
+		host = "127.0.0.1"
+	}
+	preferDefault := config.Cfg.PortSource == config.PortSourceUnset
+	listener, actualPort, err := listenProjectPortFromRegistry(host, targetDir, registry, preferDefault)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if err := projects.Upsert(registry, targetDir, actualPort, time.Now()); err != nil {
+		clog.Warnf("Failed to update project registry: %v", err)
+		return listener, actualPort, nil
+	}
+	if registryPath != "" {
+		if err := projects.Save(registryPath, registry); err != nil {
+			clog.Warnf("Failed to save project registry: %v", err)
+		}
+	}
+
+	return listener, actualPort, nil
+}
+
+func listenProjectPortFromRegistry(host string, targetDir string, registry projects.Registry, preferDefault bool) (net.Listener, int, error) {
+	if savedPort, ok := projects.LookupPort(registry, targetDir); ok {
+		// 已保存端口优先；若被占用，从该端口继续向后找可用端口并保存新结果。
+		if listener, port, err := listenNextAvailable(host, savedPort, 100); err == nil {
+			return listener, port, nil
+		}
+	}
+
+	if preferDefault {
+		if defaultPort, err := strconv.Atoi(config.DefaultPort); err == nil {
+			// 未设置端口的默认启动仍优先使用 6100，保证老用户的默认 URL 不变化。
+			if listener, port, err := listenNextAvailable(host, defaultPort, 100); err == nil {
+				return listener, port, nil
+			}
+		}
+	}
+
+	// 兜底交给系统随机端口，避免缓存文件或连续端口占用阻止服务启动。
+	listener, err := net.Listen("tcp", net.JoinHostPort(normalizeListenHost(host), "0"))
+	if err != nil {
+		return nil, 0, err
+	}
+	return listener, listener.Addr().(*net.TCPAddr).Port, nil
+}
+
+func listenNextAvailable(host string, startPort int, limit int) (net.Listener, int, error) {
+	host = normalizeListenHost(host)
+	for port := startPort; port < startPort+limit; port++ {
+		listener, err := net.Listen("tcp", net.JoinHostPort(host, fmt.Sprintf("%d", port)))
+		if err == nil {
+			return listener, port, nil
+		}
+	}
+	return nil, 0, fmt.Errorf("no available port found from %d to %d", startPort, startPort+limit-1)
+}
+
+func normalizeListenHost(host string) string {
+	if host == "" {
+		return "0.0.0.0"
+	}
+	return host
 }
 
 func beforeServerRun(port int, private bool) {
