@@ -6,6 +6,8 @@ on:
       - '**.go'
       - '**.yml'
   push:
+    tags-ignore: # Ignore trigger on push tags
+      - '**'
     paths:
       - 'go.mod'
       - '**.go'

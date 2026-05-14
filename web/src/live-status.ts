@@ -1,4 +1,4 @@
-import { renderFileTree } from './sidebar';
+import { renderFileTree, type FileTreeNode } from './sidebar';
 
 interface ReloadEventSource {
     onopen: null | (() => void);
@@ -187,13 +187,55 @@ async function refreshFileTree(): Promise<void> {
     }
 }
 
+function fileTreeContainsPath(nodes: FileTreeNode[], targetPath: string): boolean {
+    const normalizedTargetPath = normalizeFilePath(targetPath);
+    return nodes.some(node => {
+        if (node.matchPath && normalizeFilePath(node.matchPath) === normalizedTargetPath) {
+            return true;
+        }
+        return node.children ? fileTreeContainsPath(node.children, normalizedTargetPath) : false;
+    });
+}
+
+function hasFilesMissingFromLocalTree(files: string[]): boolean {
+    if (files.length === 0) {
+        return false;
+    }
+
+    const scriptEl = document.getElementById(FILE_TREE_DATA_ID);
+    if (!(scriptEl instanceof HTMLScriptElement) || !scriptEl.textContent) {
+        return true;
+    }
+
+    try {
+        const fileTree = JSON.parse(scriptEl.textContent) as FileTreeNode[];
+        if (!Array.isArray(fileTree)) {
+            return true;
+        }
+        // 新建文件在本地树里通常还不存在，需要刷新树来补齐导航节点。
+        return files.some(file => !fileTreeContainsPath(fileTree, file));
+    } catch {
+        return true;
+    }
+}
+
+function normalizeFilePath(path: string): string {
+    return path.replace(/\\/g, '/').replace(/^\/+/, '');
+}
+
 export function setupLiveReloadStatus(
     evtSource: ReloadEventSource,
     liveDot: StatusDot | null,
     statusText: StatusText | null,
     refreshCurrentPage: () => Promise<void>,
 ) {
+    let hasOpened = false;
+
     evtSource.onopen = () => {
+        if (hasOpened) {
+            void refreshFileTree();
+        }
+        hasOpened = true;
         setLiveState(liveDot, statusText);
     };
 
@@ -209,6 +251,7 @@ export function setupLiveReloadStatus(
         }
 
         const needsPageRefresh = shouldRefreshCurrentPage(msg.files);
+        const needsFileTreeRefresh = hasFilesMissingFromLocalTree(msg.files);
 
         if (needsPageRefresh) {
             if (liveDot) {
@@ -224,7 +267,9 @@ export function setupLiveReloadStatus(
                 }
                 setLiveState(liveDot, statusText);
             });
-        } else if (msg.action === 'create') {
+        }
+
+        if (needsFileTreeRefresh || (!needsPageRefresh && msg.action === 'create')) {
             void refreshFileTree();
         }
     };
