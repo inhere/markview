@@ -1,4 +1,4 @@
-package main
+package bootstrap
 
 import (
 	"net"
@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
@@ -17,7 +18,7 @@ func TestStaticHandlerSetsRevalidateCacheHeaders(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/static/app.css", nil)
 	rec := httptest.NewRecorder()
 
-	newStaticHandler().ServeHTTP(rec, req)
+	newStaticHandler(testContentFS()).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", rec.Code)
@@ -76,7 +77,7 @@ func TestMarkPortFlagVisited(t *testing.T) {
 		config.Cfg.PortSource = origPortSource
 	})
 
-	cmd := newCommand()
+	cmd := newCommand(testOptions())
 	cmd.Func = nil
 	err := cmd.Parse([]string{"-p", "-1"})
 	assert.NoErr(t, err)
@@ -103,7 +104,7 @@ func TestProjectFlagParse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			selectedProject = ""
-			cmd := newCommand()
+			cmd := newCommand(testOptions())
 			cmd.Func = nil
 
 			err := cmd.Parse(tt.args)
@@ -240,7 +241,7 @@ func TestProjectFlagKeepsPortRegistryRules(t *testing.T) {
 			config.Cfg.PortSource = config.PortSourceUnset
 			config.Cfg.PortInt = 0
 			t.Setenv(config.EnvPort, tt.envPort)
-			cmd := newCommand()
+			cmd := newCommand(testOptions())
 			cmd.Func = nil
 
 			err := cmd.Parse(tt.args)
@@ -302,4 +303,19 @@ func TestListenProjectPortFromRegistryFallsThroughFromDefaultPort(t *testing.T) 
 
 func nowForTest() time.Time {
 	return time.Date(2026, 5, 14, 15, 0, 0, 0, time.FixedZone("CST", 8*60*60))
+}
+
+func testOptions() options {
+	return options{
+		Content:   testContentFS(),
+		Version:   "test",
+		GitHash:   "test",
+		BuildTime: "test",
+	}
+}
+
+func testContentFS() fstest.MapFS {
+	return fstest.MapFS{
+		"web/dist/app.css": {Data: []byte("body{}")},
+	}
 }

@@ -1,4 +1,4 @@
-package main
+package bootstrap
 
 import (
 	"bytes"
@@ -7,7 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gookit/color"
 	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inhere/markview/internal/projects"
 )
 
@@ -42,23 +44,35 @@ func TestRunProjectsActionListUsesCliUITableFields(t *testing.T) {
 	})
 }
 
+func disableColor() {
+	color.Disable()
+	ccolor.Disable()
+}
+
+func resetColor() {
+	// color.Reset()
+	ccolor.RevertColorSupport()
+}
+
 func TestRunProjectsActionShow(t *testing.T) {
 	projectDir := t.TempDir()
 	withTempProjectRegistry(t, registryForTest(t, projectDir, "markview", 6100), func(_ string) {
 		var out bytes.Buffer
+		disableColor()
+		defer resetColor()
 
 		err := runProjectsAction("show", []string{"markview"}, &out)
 
 		assert.NoErr(t, err)
 		output := out.String()
-		assert.StrContains(t, output, "Name")
+		assert.StrContains(t, output, "name")
 		assert.StrContains(t, output, "markview")
 		assert.StrContains(t, output, "Path")
 		assert.StrContains(t, output, projectDir)
-		assert.StrContains(t, output, "Port")
+		assert.StrContains(t, output, "port")
 		assert.StrContains(t, output, "6100")
 		assert.StrContains(t, output, "Exists")
-		assert.StrContains(t, output, "yes")
+		assert.StrContains(t, output, "true")
 	})
 }
 
@@ -66,6 +80,8 @@ func TestRunProjectsActionRemove(t *testing.T) {
 	projectDir := t.TempDir()
 	withTempProjectRegistry(t, registryForTest(t, projectDir, "markview", 6100), func(path string) {
 		var out bytes.Buffer
+		disableColor()
+		defer resetColor()
 
 		err := runProjectsAction("remove", []string{"markview"}, &out)
 
@@ -85,6 +101,8 @@ func TestRunProjectsActionPrune(t *testing.T) {
 
 	withTempProjectRegistry(t, registry, func(path string) {
 		var out bytes.Buffer
+		disableColor()
+		defer resetColor()
 
 		err := runProjectsAction("prune", nil, &out)
 
@@ -130,8 +148,7 @@ func TestRunDispatchesProjectsActionBeforeServerStartup(t *testing.T) {
 	projectsAction = "list"
 
 	withTempProjectRegistry(t, projects.Registry{}, func(_ string) {
-		cmd := newCommand()
-		cmd.Func = run
+		cmd := newCommand(testOptions())
 
 		err := cmd.Parse([]string{"--projects", "list"})
 

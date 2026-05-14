@@ -1,11 +1,13 @@
-package main
+package bootstrap
 
 import (
 	"fmt"
 	"io"
 	"os"
 
+	"github.com/gookit/cliui/show"
 	"github.com/gookit/cliui/show/table"
+	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inhere/markview/internal/projects"
 )
 
@@ -22,7 +24,7 @@ func runProjectsAction(action string, args []string, out io.Writer) error {
 	}
 
 	switch action {
-	case "list":
+	case "list", "ls":
 		renderProjectsList(out, projects.List(registry))
 		return nil
 	case "show":
@@ -36,7 +38,7 @@ func runProjectsAction(action string, args []string, out io.Writer) error {
 		}
 		renderProjectInfo(out, entry)
 		return nil
-	case "remove":
+	case "remove", "rm":
 		selector, err := requireProjectSelector(args)
 		if err != nil {
 			return err
@@ -48,7 +50,7 @@ func runProjectsAction(action string, args []string, out io.Writer) error {
 		if err := projects.Save(registryPath, registry); err != nil {
 			return err
 		}
-		_, _ = fmt.Fprintf(out, "Removed project: %s (%s)\n", entry.Record.Name, entry.Path)
+		ccolor.Fprintf(out, "<mga>Removed project: %s (%s)</>\n", entry.Record.Name, entry.Path)
 		return nil
 	case "prune":
 		removed := projects.PruneMissing(registry)
@@ -56,10 +58,10 @@ func runProjectsAction(action string, args []string, out io.Writer) error {
 			return err
 		}
 		if len(removed) == 0 {
-			_, _ = fmt.Fprintln(out, "No missing project records.")
+			ccolor.Fprintln(out, "<info>No missing project records.</>")
 			return nil
 		}
-		_, _ = fmt.Fprintf(out, "Removed %d missing project records.\n", len(removed))
+		ccolor.Fprintf(out, "<info>Removed %d missing project records.</>\n", len(removed))
 		return nil
 	default:
 		return fmt.Errorf("unknown projects action: %s", action)
@@ -99,30 +101,27 @@ func requireProjectSelector(args []string) (string, error) {
 
 func renderProjectsList(out io.Writer, entries []projects.ProjectEntry) {
 	if len(entries) == 0 {
-		_, _ = fmt.Fprintln(out, "No saved projects.")
+		ccolor.Fprintln(out, "<info>Warning:No saved projects.</>")
 		return
 	}
 
-	tb := table.New("Saved projects")
+	tb := table.New("<info>Saved projects</>")
 	tb.SetHeads("NAME", "PORT", "ADDED", "PATH")
 	for _, entry := range entries {
 		tb.AddRow(entry.Record.Name, entry.Record.Port, entry.Record.Added, entry.Path)
 	}
-	_, _ = fmt.Fprint(out, tb.Render())
+	ccolor.Fprint(out, tb.Render())
 }
 
 func renderProjectInfo(out io.Writer, entry projects.ProjectEntry) {
-	exists := "no"
+	var exists bool
 	if info, err := os.Stat(entry.Path); err == nil && info.IsDir() {
-		exists = "yes"
+		exists = true
 	}
 
-	tb := table.New("Project")
-	tb.SetHeads("Name", "Value")
-	tb.AddRow("Name", entry.Record.Name)
-	tb.AddRow("Path", entry.Path)
-	tb.AddRow("Port", entry.Record.Port)
-	tb.AddRow("Added", entry.Record.Added)
-	tb.AddRow("Exists", exists)
-	_, _ = fmt.Fprint(out, tb.Render())
+	ccolor.Fprintf(out, "<info>Path</>  : %s\n", entry.Path)
+	ccolor.Fprintf(out, "<info>Exists</>: %v\n", exists)
+	ls := show.NewList("Information", entry.Record)
+	ls.SetOutput(out)
+	ls.Println()
 }
