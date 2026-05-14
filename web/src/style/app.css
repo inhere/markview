@@ -1232,13 +1232,17 @@ blockquote {
 blockquote p { margin: 0; }
 
 table {
+    display: block;
     width: 100%;
-    border-collapse: collapse;
+    max-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
     margin: 24px 0;
     font-size: 0.875rem;
     border: 1px solid var(--border-light);
     border-radius: 6px;
-    overflow: hidden;
 }
 
 th {
