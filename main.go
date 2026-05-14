@@ -76,10 +76,10 @@ func newCommand() *cflag.CFlags {
 		"Do not open the local preview URL in browser after server starts",
 	)
 	cmd.StringVar(&projectsAction, "projects", "",
-		"Manage saved projects: list, show, remove, prune",
+		"Manage saved projects: list, show, remove, prune;;ps",
 	)
 	cmd.StringVar(&selectedProject, "project", "",
-		"Start a saved project by name or path;;P",
+		"Start a saved project by name or path;;proj,P",
 	)
 	cmd.Func = run
 	return cmd
