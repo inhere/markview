@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 )
 
@@ -21,6 +22,16 @@ type ProjectRecord struct {
 }
 
 type Registry map[string]ProjectRecord
+
+var (
+	ErrProjectNotFound  = errors.New("project not found")
+	ErrProjectAmbiguous = errors.New("project selector is ambiguous")
+)
+
+type ProjectEntry struct {
+	Path   string
+	Record ProjectRecord
+}
 
 func RegistryPath() (string, error) {
 	homeDir, err := os.UserHomeDir()
@@ -100,4 +111,63 @@ func Upsert(registry Registry, targetDir string, port int, now time.Time) error 
 		Added: now.Format(time.RFC3339),
 	}
 	return nil
+}
+
+func List(registry Registry) []ProjectEntry {
+	entries := make([]ProjectEntry, 0, len(registry))
+	for path, record := range registry {
+		entries = append(entries, ProjectEntry{Path: path, Record: record})
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].Record.Name == entries[j].Record.Name {
+			return entries[i].Path < entries[j].Path
+		}
+		return entries[i].Record.Name < entries[j].Record.Name
+	})
+	return entries
+}
+
+func Resolve(registry Registry, selector string) (ProjectEntry, error) {
+	matches := make([]ProjectEntry, 0, 1)
+	cleanSelector := filepath.Clean(selector)
+	if absSelector, err := filepath.Abs(selector); err == nil {
+		cleanSelector = filepath.Clean(absSelector)
+	}
+
+	for _, entry := range List(registry) {
+		if entry.Path == cleanSelector || entry.Record.Name == selector || filepath.Base(entry.Path) == selector {
+			matches = append(matches, entry)
+		}
+	}
+
+	if len(matches) == 0 {
+		return ProjectEntry{}, ErrProjectNotFound
+	}
+	if len(matches) > 1 {
+		return ProjectEntry{}, ErrProjectAmbiguous
+	}
+	return matches[0], nil
+}
+
+func Remove(registry Registry, selector string) (ProjectEntry, error) {
+	entry, err := Resolve(registry, selector)
+	if err != nil {
+		return ProjectEntry{}, err
+	}
+	delete(registry, entry.Path)
+	return entry, nil
+}
+
+func PruneMissing(registry Registry) []ProjectEntry {
+	removed := make([]ProjectEntry, 0)
+	for _, entry := range List(registry) {
+		info, err := os.Stat(entry.Path)
+		if err == nil && info.IsDir() {
+			continue
+		}
+		delete(registry, entry.Path)
+		removed = append(removed, entry)
+	}
+	return removed
 }

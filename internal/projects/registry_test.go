@@ -118,3 +118,131 @@ func TestSaveCreatesParentDirectoryAndWritesRegistry(t *testing.T) {
 	assert.NoErr(t, err)
 	assert.Eq(t, 6105, loaded["/repo"].Port)
 }
+
+func TestList(t *testing.T) {
+	registry := Registry{
+		"/projects/zeta":    {Port: 6102, Name: "zeta", Added: "2026-05-14T15:00:00+08:00"},
+		"/projects/alpha-b": {Port: 6103, Name: "alpha", Added: "2026-05-14T15:00:00+08:00"},
+		"/projects/alpha-a": {Port: 6101, Name: "alpha", Added: "2026-05-14T15:00:00+08:00"},
+	}
+
+	entries := List(registry)
+
+	assert.Eq(t, 3, len(entries))
+	assert.Eq(t, "/projects/alpha-a", entries[0].Path)
+	assert.Eq(t, "/projects/alpha-b", entries[1].Path)
+	assert.Eq(t, "/projects/zeta", entries[2].Path)
+}
+
+func TestResolve(t *testing.T) {
+	t.Run("finds project by name", func(t *testing.T) {
+		registry := Registry{
+			"/projects/markview": {Port: 6100, Name: "markview", Added: "2026-05-14T15:00:00+08:00"},
+		}
+
+		entry, err := Resolve(registry, "markview")
+
+		assert.NoErr(t, err)
+		assert.Eq(t, "/projects/markview", entry.Path)
+	})
+
+	t.Run("finds project by full path", func(t *testing.T) {
+		targetDir := t.TempDir()
+		key, err := ProjectKey(targetDir)
+		assert.NoErr(t, err)
+		registry := Registry{
+			key: {Port: 6100, Name: "docs", Added: "2026-05-14T15:00:00+08:00"},
+		}
+
+		entry, err := Resolve(registry, targetDir)
+
+		assert.NoErr(t, err)
+		assert.Eq(t, key, entry.Path)
+	})
+
+	t.Run("finds project by path base name", func(t *testing.T) {
+		registry := Registry{
+			"/projects/docs": {Port: 6100, Name: "custom-name", Added: "2026-05-14T15:00:00+08:00"},
+		}
+
+		entry, err := Resolve(registry, "docs")
+
+		assert.NoErr(t, err)
+		assert.Eq(t, "/projects/docs", entry.Path)
+	})
+
+	t.Run("returns not found for unknown selector", func(t *testing.T) {
+		_, err := Resolve(Registry{}, "missing")
+
+		assert.Err(t, err)
+		assert.Eq(t, ErrProjectNotFound, err)
+	})
+
+	t.Run("returns ambiguous when selector matches multiple projects", func(t *testing.T) {
+		registry := Registry{
+			"/projects/a/docs": {Port: 6100, Name: "docs", Added: "2026-05-14T15:00:00+08:00"},
+			"/projects/b/docs": {Port: 6101, Name: "docs", Added: "2026-05-14T15:00:00+08:00"},
+		}
+
+		_, err := Resolve(registry, "docs")
+
+		assert.Err(t, err)
+		assert.Eq(t, ErrProjectAmbiguous, err)
+	})
+}
+
+func TestRemove(t *testing.T) {
+	t.Run("deletes only matched project", func(t *testing.T) {
+		registry := Registry{
+			"/projects/docs":  {Port: 6100, Name: "docs", Added: "2026-05-14T15:00:00+08:00"},
+			"/projects/notes": {Port: 6101, Name: "notes", Added: "2026-05-14T15:00:00+08:00"},
+		}
+
+		removed, err := Remove(registry, "docs")
+
+		assert.NoErr(t, err)
+		assert.Eq(t, "/projects/docs", removed.Path)
+		_, exists := registry["/projects/docs"]
+		assert.False(t, exists)
+		_, exists = registry["/projects/notes"]
+		assert.True(t, exists)
+	})
+
+	t.Run("returns not found and ambiguous errors", func(t *testing.T) {
+		_, err := Remove(Registry{}, "missing")
+		assert.Eq(t, ErrProjectNotFound, err)
+
+		registry := Registry{
+			"/projects/a/docs": {Port: 6100, Name: "docs", Added: "2026-05-14T15:00:00+08:00"},
+			"/projects/b/docs": {Port: 6101, Name: "docs", Added: "2026-05-14T15:00:00+08:00"},
+		}
+
+		_, err = Remove(registry, "docs")
+		assert.Eq(t, ErrProjectAmbiguous, err)
+		assert.Eq(t, 2, len(registry))
+	})
+}
+
+func TestPruneMissing(t *testing.T) {
+	existingDir := t.TempDir()
+	filePath := filepath.Join(t.TempDir(), "not-dir")
+	err := os.WriteFile(filePath, []byte("x"), 0644)
+	assert.NoErr(t, err)
+	missingDir := filepath.Join(t.TempDir(), "missing")
+
+	registry := Registry{
+		existingDir: {Port: 6100, Name: "existing", Added: "2026-05-14T15:00:00+08:00"},
+		filePath:    {Port: 6101, Name: "file", Added: "2026-05-14T15:00:00+08:00"},
+		missingDir:  {Port: 6102, Name: "missing", Added: "2026-05-14T15:00:00+08:00"},
+	}
+
+	removed := PruneMissing(registry)
+
+	assert.Eq(t, 2, len(removed))
+	_, exists := registry[existingDir]
+	assert.True(t, exists)
+	_, exists = registry[filePath]
+	assert.False(t, exists)
+	_, exists = registry[missingDir]
+	assert.False(t, exists)
+}

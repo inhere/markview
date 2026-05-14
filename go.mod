@@ -4,6 +4,7 @@ go 1.25
 
 require (
 	github.com/fsnotify/fsnotify v1.10.1
+	github.com/gookit/cliui v0.3.0
 	github.com/gookit/goutil v0.7.5
 	github.com/yuin/goldmark v1.8.2
 	github.com/yuin/goldmark-emoji v1.0.6
@@ -11,6 +12,8 @@ require (
 )
 
 require (
+	github.com/gookit/color v1.6.1 // indirect
+	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/term v0.29.0 // indirect

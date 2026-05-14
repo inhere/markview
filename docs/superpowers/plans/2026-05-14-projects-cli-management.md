@@ -35,7 +35,7 @@
 - 修改：`internal/projects/registry.go`
 - 修改：`internal/projects/registry_test.go`
 
-- [ ] **Step 1: 编写失败测试**
+- [x] **Step 1: 编写失败测试**
 
 新增测试覆盖：
 
@@ -53,7 +53,7 @@ go test ./internal/projects
 
 预期：失败，因为 helpers 尚不存在。
 
-- [ ] **Step 2: 实现最小 helpers**
+- [x] **Step 2: 实现最小 helpers**
 
 新增：
 
@@ -88,7 +88,7 @@ go test ./internal/projects
 - 修改：`internal/projects/registry.go`
 - 修改：`internal/projects/registry_test.go`
 
-- [ ] **Step 1: 编写失败测试**
+- [x] **Step 1: 编写失败测试**
 
 新增测试覆盖：
 
@@ -105,7 +105,7 @@ go test ./internal/projects
 
 预期：失败，因为 helpers 尚不存在。
 
-- [ ] **Step 2: 实现最小 helpers**
+- [x] **Step 2: 实现最小 helpers**
 
 新增：
 
@@ -131,7 +131,7 @@ go test ./internal/projects
 - 修改：`go.mod`
 - 修改：`go.sum`
 
-- [ ] **Step 1: 编写失败 CLI 测试**
+- [x] **Step 1: 编写失败 CLI 测试**
 
 新增测试覆盖：
 
@@ -151,7 +151,7 @@ go test .
 
 预期：失败，因为 CLI 层尚不存在。
 
-- [ ] **Step 2: 添加 `cliui` 依赖**
+- [x] **Step 2: 添加 `cliui` 依赖**
 
 运行：
 
@@ -161,7 +161,7 @@ go get github.com/gookit/cliui
 
 预期：`go.mod` 和 `go.sum` 新增 `github.com/gookit/cliui` 相关记录。
 
-- [ ] **Step 3: 实现 CLI handler**
+- [x] **Step 3: 实现 CLI handler**
 
 新增 package-level option：
 
@@ -197,7 +197,7 @@ go test .
 - 修改：`projects_cli.go`
 - 修改：`projects_cli_test.go`
 
-- [ ] **Step 1: 添加输出格式测试**
+- [x] **Step 1: 添加输出格式测试**
 
 验证：
 
@@ -216,7 +216,7 @@ go test .
 
 预期：失败，直到格式化和错误处理实现完成。
 
-- [ ] **Step 2: 使用 `cliui` 实现输出格式和错误处理**
+- [x] **Step 2: 使用 `cliui` 实现输出格式和错误处理**
 
 `list` 和 `show` 使用 `github.com/gookit/cliui`；错误消息保持普通 `error` 返回，避免把业务错误绑定到终端展示库。
 
@@ -233,14 +233,14 @@ go test .
 **文件：**
 - 所有修改文件
 
-- [ ] **Step 1: 格式化 Go 代码**
+- [x] **Step 1: 格式化 Go 代码**
 
 ```bash
 gofmt -w internal/projects/registry.go internal/projects/registry_test.go projects_cli.go projects_cli_test.go main.go
 go mod tidy
 ```
 
-- [ ] **Step 2: 运行全量 Go 测试**
+- [x] **Step 2: 运行全量 Go 测试**
 
 ```bash
 go test ./...
@@ -248,7 +248,7 @@ go test ./...
 
 预期：通过。
 
-- [ ] **Step 3: 检查 diff**
+- [x] **Step 3: 检查 diff**
 
 ```bash
 git diff --stat

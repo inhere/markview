@@ -75,6 +75,9 @@ func newCommand() *cflag.CFlags {
 	cmd.BoolVar(&config.Cfg.NoBrowser, "no-browser", false,
 		"Do not open the local preview URL in browser after server starts",
 	)
+	cmd.StringVar(&projectsAction, "projects", "",
+		"Manage saved projects: list, show, remove, prune",
+	)
 	cmd.Func = run
 	return cmd
 }
@@ -82,6 +85,9 @@ func newCommand() *cflag.CFlags {
 func run(c *cflag.CFlags) error {
 	markPortFlagVisited(c)
 	args := c.RemainArgs()
+	if projectsAction != "" {
+		return runProjectsAction(projectsAction, args, os.Stdout)
+	}
 
 	// Prepare arguments
 	if err := prepare(args); err != nil {
