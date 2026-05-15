@@ -7,6 +7,7 @@ import {
     parsePageSnapshot,
     type PageSnapshot,
 } from './page';
+import { escapeHtml } from './util';
 
 async function enhancePreviewContent(contentRoot: HTMLElement) {
     ensureHighlightLanguages();
@@ -34,6 +35,31 @@ const STATIC_RESOURCE_EXTENSIONS = [
     '.mp4', '.webm', '.mp3', '.ogg', '.wav', '.pdf', '.zip', '.tar', '.gz'
 ];
 
+const PREVIEWABLE_CONTENT_EXTENSIONS = ['.json', '.jsonl', '.yaml', '.yml', '.toml'];
+
+export function isPreviewableContentPath(pathname: string): boolean {
+    const lowerPath = pathname.split(/[?#]/, 1)[0].toLowerCase();
+    return PREVIEWABLE_CONTENT_EXTENSIONS.some(ext => lowerPath.endsWith(ext));
+}
+
+export function detectPreviewFileLanguage(pathname: string): string | null {
+    const lowerPath = pathname.toLowerCase();
+    if (lowerPath.endsWith('.json') || lowerPath.endsWith('.jsonl')) {
+        return 'json';
+    }
+    if (lowerPath.endsWith('.yaml') || lowerPath.endsWith('.yml')) {
+        return 'yaml';
+    }
+    if (lowerPath.endsWith('.toml')) {
+        return 'toml';
+    }
+    return null;
+}
+
+export function buildHighlightedFilePreview(content: string, language: string): string {
+    return `<pre class="preview-file-code"><code class="language-${language}">${escapeHtml(content)}</code></pre>`;
+}
+
 function shouldShowPreviewButton(anchor: HTMLAnchorElement): boolean {
     const href = anchor.getAttribute('href');
     if (!href) return false;
@@ -41,23 +67,28 @@ function shouldShowPreviewButton(anchor: HTMLAnchorElement): boolean {
     // 排除锚点链接
     if (href.startsWith('#')) return false;
 
-    // 排除静态资源
-    const lowerHref = href.toLowerCase();
-    for (const ext of STATIC_RESOURCE_EXTENSIONS) {
-        if (lowerHref.endsWith(ext)) return false;
-    }
-
-    // 排除 download 属性
-    if (anchor.hasAttribute('download')) return false;
-
     const url = new URL(anchor.href, window.location.href);
     if (url.origin !== window.location.origin) {
         return false;
     }
 
-    // 站内路径：检查是否为 .md 或无扩展名
     const pathname = url.pathname;
+    const lowerPathname = pathname.toLowerCase();
+
+    // 排除静态资源
+    for (const ext of STATIC_RESOURCE_EXTENSIONS) {
+        if (lowerPathname.endsWith(ext)) return false;
+    }
+
+    // 排除 download 属性
+    if (anchor.hasAttribute('download')) return false;
+
+    // 站内路径：检查是否为 .md 或无扩展名
     const lastSegment = pathname.split('/').filter(Boolean).pop() || '';
+
+    if (isPreviewableContentPath(pathname)) {
+        return true;
+    }
 
     if (lastSegment.includes('.')) {
         return lastSegment.toLowerCase().endsWith('.md');
@@ -132,7 +163,7 @@ export function enhanceLinksInContent(root: HTMLElement): void {
     }
 }
 
-function openPreviewPanel(url: string, triggerButton: HTMLElement): void {
+export function openPreviewPanel(url: string, triggerButton?: HTMLElement | null): void {
     const panel = document.getElementById('preview-panel');
     if (!panel) return;
 
@@ -144,7 +175,7 @@ function openPreviewPanel(url: string, triggerButton: HTMLElement): void {
 
     // 更新状态
     currentPreviewUrl = url;
-    currentTriggerButton = triggerButton;
+    currentTriggerButton = triggerButton ?? null;
     previewPanelOpen = true;
 
     // 显示面板
@@ -197,7 +228,10 @@ async function loadInternalContent(url: string): Promise<void> {
 
     try {
         const targetUrl = new URL(url, window.location.href);
-        targetUrl.searchParams.set('q', 'main');
+        const isContentPreview = isPreviewableContentPath(targetUrl.pathname);
+        if (!isContentPreview) {
+            targetUrl.searchParams.set('q', 'main');
+        }
 
         console.log('[link-preview] loading:', targetUrl.toString());
         const response = await fetch(targetUrl.toString(), {
@@ -210,10 +244,12 @@ async function loadInternalContent(url: string): Promise<void> {
 
         const contentType = response.headers.get('Content-Type') || '';
         let contentHTML: string;
-        let docTitle = url;
+        let docTitle = decodeURIComponent(targetUrl.pathname.split('/').filter(Boolean).pop() || url);
 
-        // TODO remove 不会返回 JSON 格式的内容
-        if (contentType.includes('application/json')) {
+        if (isContentPreview) {
+            const language = detectPreviewFileLanguage(targetUrl.pathname) || 'plaintext';
+            contentHTML = buildHighlightedFilePreview(await response.text(), language);
+        } else if (contentType.includes('application/json')) {
             const data = await response.json();
             contentHTML = data.contentHTML;
             docTitle = data.title || url;

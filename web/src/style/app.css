@@ -1741,6 +1741,12 @@ img {
     /* 内容区域 */
 }
 
+.preview-file-code {
+    max-height: calc(100vh - 140px);
+    margin: 0;
+    white-space: pre;
+}
+
 .preview-body iframe {
     width: 100%;
     height: 100%;

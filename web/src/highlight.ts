@@ -14,6 +14,7 @@ import rust from 'highlight.js/lib/languages/rust';
 import dart from 'highlight.js/lib/languages/dart';
 import plaintext from 'highlight.js/lib/languages/plaintext';
 import powershell from 'highlight.js/lib/languages/powershell';
+import ini from 'highlight.js/lib/languages/ini';
 
 let highlightReady = false;
 
@@ -31,7 +32,7 @@ export function ensureHighlightLanguages() {
     hljs.registerLanguage('go', go);
     hljs.registerLanguage('markdown', markdown);
     hljs.registerLanguage('yaml', yaml);
-    // hljs.registerLanguage('toml', toml);
+    hljs.registerLanguage('toml', ini);
     hljs.registerLanguage('sql', sql);
     hljs.registerLanguage('python', python);
     hljs.registerLanguage('rust', rust);

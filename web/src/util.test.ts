@@ -34,6 +34,7 @@ describe('web util', () => {
         expect(isInlineNavigablePath('/')).toBe(true);
         expect(isInlineNavigablePath('/example')).toBe(true);
         expect(isInlineNavigablePath('/example/basics.md')).toBe(true);
+        expect(isInlineNavigablePath('/example/config.json')).toBe(false);
         expect(isInlineNavigablePath('/assets/logo.png')).toBe(false);
     });
 

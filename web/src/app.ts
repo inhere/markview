@@ -49,7 +49,12 @@ import {
     rewriteAttributeURLs,
     scrollToHash,
 } from './util';
-import { setupLinkPreview, enhanceLinksInContent } from './link-preview';
+import {
+    enhanceLinksInContent,
+    isPreviewableContentPath,
+    openPreviewPanel,
+    setupLinkPreview,
+} from './link-preview';
 import { enhanceCodeBlocks } from './code-copy';
 import { enhanceTablesInContent } from './table-overflow';
 
@@ -59,7 +64,7 @@ interface RenderPageOptions {
 }
 
 interface NavigationTarget {
-    kind: 'page' | 'hash';
+    kind: 'page' | 'hash' | 'preview';
     url: URL;
 }
 
@@ -316,6 +321,11 @@ function setupInlineNavigation() {
             return;
         }
 
+        if (navigation.kind === 'preview') {
+            openPreviewPanel(navigation.url.toString(), anchor);
+            return;
+        }
+
         void navigateTo(navigation.url, 'push');
     });
 
@@ -361,6 +371,10 @@ function resolveNavigationTarget(anchor: HTMLAnchorElement, event: MouseEvent): 
 
     if (url.pathname === currentUrl.pathname && url.search === currentUrl.search && url.hash) {
         return { kind: 'hash', url };
+    }
+
+    if (isPreviewableContentPath(url.pathname)) {
+        return { kind: 'preview', url };
     }
 
     if (!isInlineNavigablePath(url.pathname)) {
