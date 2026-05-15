@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -262,7 +263,7 @@ func TestListenNextAvailable(t *testing.T) {
 	defer occupied.Close()
 	occupiedPort := occupied.Addr().(*net.TCPAddr).Port
 
-	listener, actualPort, err := listenNextAvailable("127.0.0.1", occupiedPort, 3)
+	listener, actualPort, err := listenNextAvailable("127.0.0.1", occupiedPort, 3, nil)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
@@ -287,6 +288,23 @@ func TestListenProjectPortFromRegistryUsesSavedPort(t *testing.T) {
 	assert.Eq(t, savedPort, actualPort)
 }
 
+func TestListenProjectPortFromRegistrySkipsPortsSavedByOtherProjects(t *testing.T) {
+	ports, closePorts := reserveConsecutivePorts(t, 2)
+	closePorts()
+	targetDir := t.TempDir()
+	otherDir := t.TempDir()
+
+	registry := projects.Registry{}
+	assert.NoErr(t, projects.Upsert(registry, targetDir, ports[0], nowForTest()))
+	assert.NoErr(t, projects.Upsert(registry, otherDir, ports[0], nowForTest()))
+
+	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true)
+	assert.NoErr(t, err)
+	defer listener.Close()
+
+	assert.Eq(t, ports[1], actualPort)
+}
+
 func TestListenProjectPortFromRegistryFallsThroughFromDefaultPort(t *testing.T) {
 	occupied, err := net.Listen("tcp", "127.0.0.1:6100")
 	if err != nil {
@@ -299,6 +317,42 @@ func TestListenProjectPortFromRegistryFallsThroughFromDefaultPort(t *testing.T) 
 	defer listener.Close()
 
 	assert.Eq(t, 6101, actualPort)
+}
+
+func reserveConsecutivePorts(t *testing.T, count int) ([]int, func()) {
+	t.Helper()
+
+	for start := 20000; start < 65000-count; start++ {
+		listeners := make([]net.Listener, 0, count)
+		ok := true
+		for port := start; port < start+count; port++ {
+			listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+			if err != nil {
+				ok = false
+				break
+			}
+			listeners = append(listeners, listener)
+		}
+		if !ok {
+			for _, listener := range listeners {
+				assert.NoErr(t, listener.Close())
+			}
+			continue
+		}
+
+		ports := make([]int, 0, count)
+		for _, listener := range listeners {
+			ports = append(ports, listener.Addr().(*net.TCPAddr).Port)
+		}
+		return ports, func() {
+			for _, listener := range listeners {
+				assert.NoErr(t, listener.Close())
+			}
+		}
+	}
+
+	t.Fatal("failed to reserve consecutive ports for test")
+	return nil, nil
 }
 
 func nowForTest() time.Time {

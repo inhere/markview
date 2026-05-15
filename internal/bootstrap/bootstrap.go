@@ -222,9 +222,10 @@ func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
 }
 
 func listenProjectPortFromRegistry(host string, targetDir string, registry projects.Registry, preferDefault bool) (net.Listener, int, error) {
+	reservedPorts := reservedProjectPorts(registry, targetDir)
 	if savedPort, ok := projects.LookupPort(registry, targetDir); ok {
-		// 已保存端口优先；若被占用，从该端口继续向后找可用端口并保存新结果。
-		if listener, port, err := listenNextAvailable(host, savedPort, 100); err == nil {
+		// 已保存端口优先；若其他项目也记录了该端口或端口被占用，则继续向后找可用端口。
+		if listener, port, err := listenNextAvailable(host, savedPort, 100, reservedPorts); err == nil {
 			return listener, port, nil
 		}
 	}
@@ -232,7 +233,7 @@ func listenProjectPortFromRegistry(host string, targetDir string, registry proje
 	if preferDefault {
 		if defaultPort, err := strconv.Atoi(config.DefaultPort); err == nil {
 			// 未设置端口的默认启动仍优先使用 6100，保证老用户的默认 URL 不变化。
-			if listener, port, err := listenNextAvailable(host, defaultPort, 100); err == nil {
+			if listener, port, err := listenNextAvailable(host, defaultPort, 100, reservedPorts); err == nil {
 				return listener, port, nil
 			}
 		}
@@ -246,9 +247,28 @@ func listenProjectPortFromRegistry(host string, targetDir string, registry proje
 	return listener, listener.Addr().(*net.TCPAddr).Port, nil
 }
 
-func listenNextAvailable(host string, startPort int, limit int) (net.Listener, int, error) {
+func reservedProjectPorts(registry projects.Registry, targetDir string) map[int]struct{} {
+	key, err := projects.ProjectKey(targetDir)
+	if err != nil {
+		return nil
+	}
+
+	reserved := make(map[int]struct{})
+	for path, record := range registry {
+		if path == key || record.Port <= 0 {
+			continue
+		}
+		reserved[record.Port] = struct{}{}
+	}
+	return reserved
+}
+
+func listenNextAvailable(host string, startPort int, limit int, reservedPorts map[int]struct{}) (net.Listener, int, error) {
 	host = normalizeListenHost(host)
 	for port := startPort; port < startPort+limit; port++ {
+		if _, reserved := reservedPorts[port]; reserved {
+			continue
+		}
 		listener, err := net.Listen("tcp", net.JoinHostPort(host, fmt.Sprintf("%d", port)))
 		if err == nil {
 			return listener, port, nil
