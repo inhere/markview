@@ -1231,6 +1231,27 @@ blockquote {
 
 blockquote p { margin: 0; }
 
+.table-scroll-container {
+    width: max-content;
+    max-width: 100%;
+    margin: 24px 0;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg-paper);
+}
+
+.table-scroll-body {
+    max-height: min(520px, 70vh);
+    overflow: auto;
+}
+
+.table-scroll-container.is-expanded .table-scroll-body {
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
 table {
     display: block;
     width: max-content;
@@ -1243,6 +1264,39 @@ table {
     font-size: 0.875rem;
     border: 1px solid var(--border-light);
     border-radius: 6px;
+}
+
+.table-scroll-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+}
+
+.table-scroll-toggle {
+    display: none;
+    width: 100%;
+    padding: 9px 12px;
+    border: 0;
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-canvas);
+    color: var(--text-muted);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.table-scroll-container.is-overflowing .table-scroll-toggle,
+.table-scroll-container.is-expanded .table-scroll-toggle {
+    display: block;
+}
+
+.table-scroll-toggle:hover {
+    background: var(--accent-subtle);
+    color: var(--accent-primary);
 }
 
 th {

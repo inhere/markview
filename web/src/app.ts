@@ -51,6 +51,7 @@ import {
 } from './util';
 import { setupLinkPreview, enhanceLinksInContent } from './link-preview';
 import { enhanceCodeBlocks } from './code-copy';
+import { enhanceTablesInContent } from './table-overflow';
 
 interface RenderPageOptions {
     hash?: string;
@@ -104,6 +105,7 @@ async function enhancePageContent() {
     enhanceCodeBlocks(contentRoot);
     await enhanceMermaidContent(contentRoot);
     enhanceImagesInContent(contentRoot);
+    enhanceTablesInContent(contentRoot);
 }
 
 function setupToolbar() {
