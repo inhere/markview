@@ -1242,7 +1242,7 @@ blockquote p { margin: 0; }
 }
 
 .table-scroll-body {
-    max-height: min(520px, 70vh);
+    max-height: min(620px, 70vh);
     overflow: auto;
 }
 

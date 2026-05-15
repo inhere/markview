@@ -39,7 +39,7 @@ describe('table overflow enhancement', () => {
             const table = container.querySelector('table') as HTMLElement;
             const toggle = container.querySelector('.table-scroll-toggle') as HTMLButtonElement;
             expect(table.classList.contains('table-scroll-table')).toBe(true);
-            expect(toggle.textContent).toBe('展开完整表格');
+            expect(toggle.textContent).toBe('︾ 展开完整表格');
 
             Object.defineProperty(body, 'clientHeight', { value: 120, configurable: true });
             Object.defineProperty(body, 'scrollHeight', { value: 360, configurable: true });
@@ -52,7 +52,7 @@ describe('table overflow enhancement', () => {
             expect(container.classList.contains('is-expanded')).toBe(true);
             expect(container.classList.contains('is-overflowing')).toBe(false);
             expect(toggle.getAttribute('aria-expanded')).toBe('true');
-            expect(toggle.textContent).toBe('收起表格');
+            expect(toggle.textContent).toBe('︽ 收起表格');
         });
     });
 

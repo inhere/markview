@@ -31,13 +31,13 @@ export function enhanceTablesInContent(contentRoot: HTMLElement) {
         const toggle = document.createElement('button');
         toggle.type = 'button';
         toggle.className = TABLE_TOGGLE_CLASS;
-        toggle.textContent = '展开完整表格';
+        toggle.textContent = '︾ 展开完整表格';
         toggle.setAttribute('aria-expanded', 'false');
 
         toggle.addEventListener('click', () => {
             const expanded = container.classList.toggle(TABLE_EXPANDED_CLASS);
             toggle.setAttribute('aria-expanded', String(expanded));
-            toggle.textContent = expanded ? '收起表格' : '展开完整表格';
+            toggle.textContent = expanded ? '︽ 收起表格' : '︾ 展开完整表格';
             updateTableOverflow(container);
         });
 
