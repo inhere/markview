@@ -11,6 +11,7 @@ on:
     paths:
       - 'go.mod'
       - '**.go'
+      - '**.ts'
       - '**.yml'
 
 jobs:

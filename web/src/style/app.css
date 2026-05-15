@@ -1303,16 +1303,31 @@ th {
     background: var(--bg-canvas);
     text-align: left;
     padding: 12px 16px;
+    max-width: min(42rem, 60vw);
     border-bottom: 2px solid var(--border-light);
     color: var(--text-heading);
     font-weight: 600;
     font-family: var(--font-heading);
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 td {
     padding: 12px 16px;
+    max-width: min(42rem, 60vw);
     border-bottom: 1px solid var(--border-light);
     color: var(--text-body);
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+th code,
+td code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 tr:last-child td { border-bottom: none; }
