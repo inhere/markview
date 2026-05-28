@@ -34,6 +34,8 @@ type options struct {
 }
 
 var openBrowser = sysutil.OpenBrowser
+var cliPortFlagVisited bool
+var cliPrivateFlagVisited bool
 
 // Run 启动 CLI 入口，main 包只负责传入嵌入资源和构建信息。
 func Run(content fs.FS, version string, gitHash string, buildTime string) {
@@ -91,7 +93,7 @@ func newCommand(options options) *cflag.CFlags {
 }
 
 func run(c *cflag.CFlags, content fs.FS) error {
-	markPortFlagVisited(c)
+	markCliFlagVisits(c)
 	args := c.RemainArgs()
 	if projectsAction != "" {
 		return runProjectsAction(projectsAction, args, os.Stdout)
@@ -169,9 +171,21 @@ func buildPrepareArgsForSelectedProject(targetDir string, args []string) ([]stri
 }
 
 func markPortFlagVisited(c *cflag.CFlags) {
+	markCliFlagVisits(c)
+}
+
+func markCliFlagVisits(c *cflag.CFlags) {
+	cliPortFlagVisited = false
+	cliPrivateFlagVisited = false
 	c.Visit(func(flag *flag.Flag) {
-		if flag.Name == "port" {
+		switch flag.Name {
+		case "port":
+			// PortSource 是 prepare 后的运行态；单独记录本次解析，避免下一次 CLI 复用旧来源。
+			cliPortFlagVisited = true
 			config.Cfg.PortSource = config.PortSourceCLI
+		case "private":
+			// Bool flags can be explicitly set false; track visitation separately from the value.
+			cliPrivateFlagVisited = true
 		}
 	})
 }
@@ -179,11 +193,12 @@ func markPortFlagVisited(c *cflag.CFlags) {
 func shouldUseProjectPortRegistry() bool {
 	// 只有自动端口场景使用项目端口记忆，显式固定端口和 ENV 端口保持完全可预期。
 	return config.Cfg.PortSource == config.PortSourceUnset ||
+		config.Cfg.PortSource == config.PortSourceRegistry ||
 		(config.Cfg.PortSource == config.PortSourceCLI && config.Cfg.PortInt < 0)
 }
 
 func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
-	registryPath, err := projects.RegistryPath()
+	registryPath, err := projectRegistryPath()
 	if err != nil {
 		clog.Warnf("Failed to resolve project registry path: %v", err)
 	}
@@ -203,7 +218,8 @@ func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
 		host = "127.0.0.1"
 	}
 	preferDefault := config.Cfg.PortSource == config.PortSourceUnset
-	listener, actualPort, err := listenProjectPortFromRegistry(host, targetDir, registry, preferDefault)
+	useSavedPort := !(config.Cfg.PortSource == config.PortSourceCLI && config.Cfg.PortInt < 0)
+	listener, actualPort, err := listenProjectPortFromRegistry(host, targetDir, registry, preferDefault, useSavedPort)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -221,9 +237,9 @@ func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
 	return listener, actualPort, nil
 }
 
-func listenProjectPortFromRegistry(host string, targetDir string, registry projects.Registry, preferDefault bool) (net.Listener, int, error) {
-	reservedPorts := reservedProjectPorts(registry, targetDir)
-	if savedPort, ok := projects.LookupPort(registry, targetDir); ok {
+func listenProjectPortFromRegistry(host string, targetDir string, registry projects.Registry, preferDefault bool, useSavedPort bool) (net.Listener, int, error) {
+	reservedPorts := reservedProjectPorts(registry, targetDir, !useSavedPort)
+	if savedPort, ok := projects.LookupPort(registry, targetDir); useSavedPort && ok {
 		// 已保存端口优先；若其他项目也记录了该端口或端口被占用，则继续向后找可用端口。
 		if listener, port, err := listenNextAvailable(host, savedPort, 100, reservedPorts); err == nil {
 			return listener, port, nil
@@ -240,14 +256,10 @@ func listenProjectPortFromRegistry(host string, targetDir string, registry proje
 	}
 
 	// 兜底交给系统随机端口，避免缓存文件或连续端口占用阻止服务启动。
-	listener, err := net.Listen("tcp", net.JoinHostPort(normalizeListenHost(host), "0"))
-	if err != nil {
-		return nil, 0, err
-	}
-	return listener, listener.Addr().(*net.TCPAddr).Port, nil
+	return listenRandomPort(host, reservedPorts)
 }
 
-func reservedProjectPorts(registry projects.Registry, targetDir string) map[int]struct{} {
+func reservedProjectPorts(registry projects.Registry, targetDir string, includeCurrentProject bool) map[int]struct{} {
 	key, err := projects.ProjectKey(targetDir)
 	if err != nil {
 		return nil
@@ -255,7 +267,7 @@ func reservedProjectPorts(registry projects.Registry, targetDir string) map[int]
 
 	reserved := make(map[int]struct{})
 	for path, record := range registry {
-		if path == key || record.Port <= 0 {
+		if (!includeCurrentProject && path == key) || record.Port <= 0 {
 			continue
 		}
 		reserved[record.Port] = struct{}{}
@@ -275,6 +287,22 @@ func listenNextAvailable(host string, startPort int, limit int, reservedPorts ma
 		}
 	}
 	return nil, 0, fmt.Errorf("no available port found from %d to %d", startPort, startPort+limit-1)
+}
+
+func listenRandomPort(host string, reservedPorts map[int]struct{}) (net.Listener, int, error) {
+	host = normalizeListenHost(host)
+	for attempt := 0; attempt < 100; attempt++ {
+		listener, err := net.Listen("tcp", net.JoinHostPort(host, "0"))
+		if err != nil {
+			return nil, 0, err
+		}
+		port := listener.Addr().(*net.TCPAddr).Port
+		if _, reserved := reservedPorts[port]; !reserved {
+			return listener, port, nil
+		}
+		_ = listener.Close()
+	}
+	return nil, 0, fmt.Errorf("no random port available outside project registry reservations")
 }
 
 func normalizeListenHost(host string) string {
@@ -361,13 +389,31 @@ func newStaticHandler(content fs.FS) http.Handler {
 }
 
 func prepare(args []string, content fs.FS) error {
-	err := envutil.DotenvLoad(func(cfg *envutil.Dotenv) {
-		cfg.IgnoreNotExist = true
-	})
+	targetDir, entryFile := resolvePrepareTarget(args)
+	dotenv, err := loadProjectDotenv(targetDir)
 	if err != nil {
 		clog.Warnf("Failed to load dotenv: %v", err)
 	}
 
+	merged, err := buildRuntimeConfig(targetDir, dotenv)
+	if err != nil {
+		return err
+	}
+	config.Cfg = merged
+
+	utils.EnableDebug = runtimeDebugEnabled(dotenv)
+	config.EnableDebug = utils.EnableDebug
+	if err := config.Cfg.Init(targetDir, entryFile); err != nil {
+		return err
+	}
+
+	handlers.IfsReader = func(path string) ([]byte, error) {
+		return fs.ReadFile(content, path)
+	}
+	return nil
+}
+
+func resolvePrepareTarget(args []string) (string, string) {
 	var entryFile string
 	cwd, _ := os.Getwd()
 	targetDir := cwd
@@ -390,14 +436,179 @@ func prepare(args []string, content fs.FS) error {
 		entryFile = args[1]
 	}
 
-	utils.EnableDebug = envutil.GetBool(config.EnvDebug, false)
-	config.EnableDebug = utils.EnableDebug
-	if err := config.Cfg.Init(targetDir, entryFile); err != nil {
-		return err
+	return targetDir, entryFile
+}
+
+func loadProjectDotenv(targetDir string) (map[string]string, error) {
+	// Keep project .env values local to this prepare call so one project cannot poison the next.
+	before := environMap()
+	dotenv := envutil.NewDotenv()
+	dotenv.BaseDir = targetDir
+	dotenv.Files = []string{".env"}
+	dotenv.IgnoreNotExist = true
+	if err := dotenv.LoadAndInit(); err != nil {
+		restoreEnv(dotenv.LoadedData(), before)
+		return nil, err
+	}
+	loaded := map[string]string{}
+	for key, value := range dotenv.LoadedData() {
+		loaded[key] = value
+	}
+	restoreEnv(loaded, before)
+	return loaded, nil
+}
+
+func buildRuntimeConfig(targetDir string, dotenv map[string]string) (config.Config, error) {
+	globalCfg, err := loadGlobalRuntimeConfig()
+	if err != nil {
+		return config.Config{}, err
+	}
+	projectCfg, err := loadProjectRuntimeConfig(targetDir)
+	if err != nil {
+		return config.Config{}, err
+	}
+	registryPort := lookupProjectRegistryPort(targetDir)
+	envCfg, err := runtimeEnvConfig(dotenv)
+	if err != nil {
+		return config.Config{}, err
 	}
 
-	handlers.IfsReader = func(path string) ([]byte, error) {
-		return fs.ReadFile(content, path)
+	cliPort := (*int)(nil)
+	if cliPortFlagVisited {
+		cliPort = &config.Cfg.PortInt
 	}
-	return nil
+	cliPrivate := (*bool)(nil)
+	if cliPrivateFlagVisited {
+		cliPrivate = &config.Cfg.Private
+	}
+
+	merged, err := config.MergeRuntimeConfig(config.MergeInput{
+		Global:       globalCfg,
+		RegistryPort: registryPort,
+		Project:      projectCfg,
+		Env:          envCfg,
+		CLI: config.CLIConfig{
+			Port:    cliPort,
+			Private: cliPrivate,
+		},
+	})
+	if err != nil {
+		return config.Config{}, err
+	}
+	merged.NoBrowser = config.Cfg.NoBrowser
+	return merged, nil
+}
+
+func loadGlobalRuntimeConfig() (config.FileConfig, error) {
+	path, err := config.GlobalConfigPath()
+	if err != nil {
+		return config.FileConfig{}, err
+	}
+	if !fsutil.IsFile(path) {
+		return config.FileConfig{}, nil
+	}
+	return config.LoadFileConfig(path)
+}
+
+func loadProjectRuntimeConfig(targetDir string) (config.FileConfig, error) {
+	path, ok, err := config.FindProjectConfig(targetDir)
+	if err != nil || !ok {
+		return config.FileConfig{}, err
+	}
+	return config.LoadFileConfig(path)
+}
+
+func lookupProjectRegistryPort(targetDir string) *int {
+	registryPath, err := projectRegistryPath()
+	if err != nil {
+		clog.Warnf("Failed to resolve project registry path: %v", err)
+		return nil
+	}
+	registry, err := projects.Load(registryPath)
+	if err != nil {
+		clog.Warnf("Failed to load project registry, ignoring saved port: %v", err)
+		return nil
+	}
+	port, ok := projects.LookupPort(registry, targetDir)
+	if !ok {
+		return nil
+	}
+	return &port
+}
+
+func runtimeEnvConfig(dotenv map[string]string) (config.EnvConfig, error) {
+	port, err := config.ParseOptionalEnvInt(envValue(config.EnvPort, dotenv))
+	if err != nil {
+		return config.EnvConfig{}, err
+	}
+	watch, err := parseOptionalEnvBool(config.EnvWatch, envValue(config.EnvWatch, dotenv))
+	if err != nil {
+		return config.EnvConfig{}, err
+	}
+
+	envCfg := config.EnvConfig{
+		Port:  port,
+		Watch: watch,
+	}
+	if entry := envValue(config.EnvEntry, dotenv); entry != "" {
+		envCfg.Entry = &entry
+	}
+	if watchDir := envValue(config.EnvWatchDir, dotenv); watchDir != "" {
+		envCfg.WatchDir = &watchDir
+	}
+	if watchSkipDir := envValue(config.EnvWatchSkipDir, dotenv); watchSkipDir != "" {
+		envCfg.WatchSkipDir = &watchSkipDir
+	}
+	return envCfg, nil
+}
+
+func envValue(name string, dotenv map[string]string) string {
+	if dotenv != nil {
+		if value, ok := dotenv[name]; ok {
+			return value
+		}
+	}
+	return envutil.Getenv(name, "")
+}
+
+func runtimeDebugEnabled(dotenv map[string]string) bool {
+	raw := envValue(config.EnvDebug, dotenv)
+	if raw == "" {
+		return false
+	}
+	value, err := strconv.ParseBool(raw)
+	return err == nil && value
+}
+
+func environMap() map[string]string {
+	values := make(map[string]string)
+	for _, item := range os.Environ() {
+		key, value, ok := strings.Cut(item, "=")
+		if !ok {
+			continue
+		}
+		values[key] = value
+	}
+	return values
+}
+
+func restoreEnv(loaded map[string]string, before map[string]string) {
+	for key := range loaded {
+		if value, ok := before[key]; ok {
+			_ = os.Setenv(key, value)
+			continue
+		}
+		_ = os.Unsetenv(key)
+	}
+}
+
+func parseOptionalEnvBool(name string, raw string) (*bool, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	value, err := strconv.ParseBool(raw)
+	if err != nil {
+		return nil, fmt.Errorf("ENV %s %q is not a valid boolean", name, raw)
+	}
+	return &value, nil
 }

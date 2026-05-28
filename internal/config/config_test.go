@@ -8,13 +8,12 @@ import (
 	"github.com/gookit/goutil/testutil/assert"
 )
 
-func TestConfigInitDetectsEnvPortSource(t *testing.T) {
+func TestConfigInitPreservesMergedEnvPortSource(t *testing.T) {
 	targetDir := t.TempDir()
 	err := os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644)
 	assert.NoErr(t, err)
-	t.Setenv(EnvPort, "6123")
 
-	cfg := Config{}
+	cfg := Config{PortInt: 6123, PortSource: PortSourceEnv}
 	err = cfg.Init(targetDir, "")
 
 	assert.NoErr(t, err)
@@ -53,17 +52,38 @@ func TestConfigInitPreservesCliPortSource(t *testing.T) {
 	assert.Eq(t, "0", cfg.PortStr())
 }
 
-func TestConfigInitKeepsEnvRandomPortListeningOnZero(t *testing.T) {
+func TestConfigInitKeepsMergedEnvRandomPortListeningOnZero(t *testing.T) {
 	targetDir := t.TempDir()
 	err := os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644)
 	assert.NoErr(t, err)
-	t.Setenv(EnvPort, "-1")
 
-	cfg := Config{}
+	cfg := Config{PortInt: -1, PortSource: PortSourceEnv}
 	err = cfg.Init(targetDir, "")
 
 	assert.NoErr(t, err)
 	assert.Eq(t, PortSourceEnv, cfg.PortSource)
 	assert.Eq(t, -1, cfg.PortInt)
 	assert.Eq(t, "0", cfg.PortStr())
+}
+
+func TestConfigAppConfigCopiesPreviewExtsFromConfig(t *testing.T) {
+	cfg := Config{PreviewExts: []string{".md", ".txt"}}
+
+	appConfig := cfg.AppConfig()
+	appConfig.PreviewExts[0] = ".changed"
+
+	assert.Eq(t, []string{".md", ".txt"}, cfg.PreviewExts)
+}
+
+func TestConfigAppConfigCopiesDefaultPreviewExts(t *testing.T) {
+	originalDefaults := append([]string(nil), DefaultPreviewExts...)
+	t.Cleanup(func() {
+		DefaultPreviewExts = originalDefaults
+	})
+
+	cfg := Config{}
+	appConfig := cfg.AppConfig()
+	appConfig.PreviewExts[0] = ".changed"
+
+	assert.Eq(t, originalDefaults, DefaultPreviewExts)
 }

@@ -71,4 +71,25 @@ describe('table overflow enhancement', () => {
             expect(content.querySelectorAll('.table-scroll-body')).toHaveLength(1);
         });
     });
+
+    test('updates overflow with element owner document when global HTMLElement is unavailable', () => {
+        const dom = new JSDOM(`<!DOCTYPE html><body>
+            <div class="table-scroll-container"><div class="table-scroll-body"></div></div>
+        </body>`);
+        const container = dom.window.document.querySelector('.table-scroll-container') as HTMLElement;
+        const body = container.querySelector('.table-scroll-body') as HTMLElement;
+        const previousHTMLElement = globalThis.HTMLElement;
+
+        try {
+            // Simulates deferred callbacks after a test has restored the global DOM constructors.
+            globalThis.HTMLElement = undefined as unknown as typeof HTMLElement;
+            Object.defineProperty(body, 'clientHeight', { value: 120, configurable: true });
+            Object.defineProperty(body, 'scrollHeight', { value: 360, configurable: true });
+
+            expect(() => updateTableOverflow(container)).not.toThrow();
+            expect(container.classList.contains('is-overflowing')).toBe(true);
+        } finally {
+            globalThis.HTMLElement = previousHTMLElement;
+        }
+    });
 });

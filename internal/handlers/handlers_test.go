@@ -180,6 +180,66 @@ func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {
 	}
 }
 
+func TestConfigAppConfigUsesDefaultsAndConfiguredValues(t *testing.T) {
+	t.Run("defaults", func(t *testing.T) {
+		cfg := config.Config{}
+
+		appConfig := cfg.AppConfig()
+
+		assert.Eq(t, config.DefaultPreviewExts, appConfig.PreviewExts)
+		assert.Eq(t, config.UILayoutCompact, appConfig.Layout)
+	})
+
+	t.Run("configured values", func(t *testing.T) {
+		cfg := config.Config{
+			PreviewExts: []string{".md", ".json", ".ini"},
+			UILayout:    config.UILayoutTOCRight,
+		}
+
+		appConfig := cfg.AppConfig()
+
+		assert.Eq(t, []string{".md", ".json", ".ini"}, appConfig.PreviewExts)
+		assert.Eq(t, config.UILayoutTOCRight, appConfig.Layout)
+	})
+}
+
+func TestRenderFullPageInjectsAppConfigJSON(t *testing.T) {
+	origCfg := config.Cfg
+	origReader := IfsReader
+	t.Cleanup(func() {
+		config.Cfg = origCfg
+		IfsReader = origReader
+	})
+
+	config.Cfg = config.Config{
+		TargetDir:   t.TempDir(),
+		PreviewExts: []string{".md", ".json", ".ini"},
+		UILayout:    config.UILayoutTOCRight,
+	}
+	assert.NoErr(t, os.WriteFile(filepath.Join(config.Cfg.TargetDir, "README.md"), []byte("# Test"), 0o644))
+	IfsReader = func(path string) ([]byte, error) {
+		switch path {
+		case "web/template-main.html":
+			return []byte(`<article id="content">{{ .Content }}</article><script id="current-file-path-data" type="application/json">{{ .CurrentFilePathJSON }}</script>`), nil
+		case "web/template.html":
+			return []byte(`<html><body>{{ .MainContent }}<script id="app-config-data" type="application/json">{{ .AppConfigJSON }}</script></body></html>`), nil
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	pageData, err := buildPageData(filepath.Join(config.Cfg.TargetDir, "README.md"))
+	assert.NoErr(t, err)
+	rec := httptest.NewRecorder()
+
+	renderFullPage(rec, pageData)
+
+	body := rec.Body.String()
+	assert.StrContains(t, body, `id="app-config-data"`)
+	assert.StrContains(t, body, `"previewExts":[".md",".json",".ini"]`)
+	assert.StrContains(t, body, `"layout":"toc-right"`)
+}
+
 // --- 搜索功能回归测试：文件级 AND/NOT 语义 ---
 // 参考：https://github.com/inhere/markview/issues/XXX
 // 期望语义：

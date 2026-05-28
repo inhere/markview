@@ -68,7 +68,7 @@
 - Create: `internal/config/file_config_test.go`
 - Modify: `internal/config/consts.go`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `internal/config/file_config_test.go` 新增测试：
 
@@ -89,8 +89,9 @@ func TestFindProjectConfigUsesFirstExistingFile(t *testing.T) {
 	assert.NoErr(t, os.WriteFile(filepath.Join(dir, ".markview.json"), []byte(`{"server":{"port":6102}}`), 0644))
 	assert.NoErr(t, os.WriteFile(filepath.Join(dir, "markview.local.json"), []byte(`{"server":{"port":6103}}`), 0644))
 
-	path, ok := FindProjectConfig(dir)
+	path, ok, err := FindProjectConfig(dir)
 
+	assert.NoErr(t, err)
 	assert.True(t, ok)
 	assert.Eq(t, filepath.Join(dir, "markview.local.json"), path)
 }
@@ -140,7 +141,7 @@ func TestNormalizeExtListSetting(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -148,9 +149,9 @@ Run:
 go test ./internal/config
 ```
 
-Expected: FAIL，提示 `FindProjectConfig`、`LoadFileConfig`、`NormalizeUILayout`、`NormalizeExtListSetting` 未定义。
+Expected: FAIL，提示 `FindProjectConfig` 返回值/实现未匹配，或相关方法未定义。
 
-- [ ] **Step 3: 实现配置文件模型**
+- [x] **Step 3: 实现配置文件模型**
 
 在 `internal/config/consts.go` 增加：
 
@@ -213,14 +214,22 @@ func GlobalConfigPath() (string, error) {
 	return filepath.Join(dir, "markview", GlobalConfigFile), nil
 }
 
-func FindProjectConfig(targetDir string) (string, bool) {
+func FindProjectConfig(targetDir string) (string, bool, error) {
 	for _, name := range ProjectConfigFiles {
 		path := filepath.Join(targetDir, name)
-		if info, err := os.Stat(path); err == nil && !info.IsDir() {
-			return path, true
+		info, err := os.Stat(path)
+		if err == nil {
+			if info.IsDir() {
+				continue
+			}
+			return path, true, nil
 		}
+		if os.IsNotExist(err) {
+			continue
+		}
+		return "", false, err
 	}
-	return "", false
+	return "", false, nil
 }
 
 func LoadFileConfig(path string) (FileConfig, error) {
@@ -287,7 +296,7 @@ func appendUniqueString(items []string, item string) []string {
 }
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run:
 
@@ -297,7 +306,7 @@ go test ./internal/config
 
 Expected: PASS。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add internal/config/consts.go internal/config/file_config.go internal/config/file_config_test.go
@@ -311,7 +320,7 @@ git commit -m "feat(config): load markview config files"
 - Create: `internal/config/merge_test.go`
 - Modify: `internal/config/config.go`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `internal/config/merge_test.go` 新增：
 
@@ -397,7 +406,7 @@ func intPtr(value int) *int {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -407,7 +416,7 @@ go test ./internal/config
 
 Expected: FAIL，提示 `MergeRuntimeConfig`、`MergeInput`、`PortSourceConfig`、`PreviewExts`、`UILayout` 未定义。
 
-- [ ] **Step 3: 扩展运行时 Config**
+- [x] **Step 3: 扩展运行时 Config**
 
 在 `internal/config/config.go` 中：
 
@@ -448,7 +457,7 @@ var Cfg = Config{
 }
 ```
 
-- [ ] **Step 4: 实现合并逻辑**
+- [x] **Step 4: 实现合并逻辑**
 
 创建 `internal/config/merge.go`：
 
@@ -631,7 +640,7 @@ func ensureNodeModules(dirs []string) []string {
 }
 ```
 
-- [ ] **Step 5: 运行测试确认通过**
+- [x] **Step 5: 运行测试确认通过**
 
 Run:
 
@@ -641,7 +650,7 @@ go test ./internal/config
 
 Expected: PASS。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add internal/config/config.go internal/config/merge.go internal/config/merge_test.go
@@ -655,7 +664,7 @@ git commit -m "feat(config): merge runtime config sources"
 - Modify: `internal/bootstrap/bootstrap_test.go`
 - Modify: `internal/config/config.go`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `internal/bootstrap/bootstrap_test.go` 新增：
 
@@ -698,7 +707,7 @@ func TestPrepareProjectConfigPortSkipsProjectRegistryMode(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -708,7 +717,7 @@ go test ./internal/bootstrap
 
 Expected: FAIL，`.env` 仍从当前工作目录加载，配置端口仍未进入 `prepare()`。
 
-- [ ] **Step 3: 调整 `prepare()` 顺序**
+- [x] **Step 3: 调整 `prepare()` 顺序**
 
 在 `internal/bootstrap/bootstrap.go` 中：
 
@@ -768,7 +777,7 @@ func shouldUseProjectPortRegistry() bool {
 }
 ```
 
-- [ ] **Step 4: 收敛 `Config.Init()` 职责**
+- [x] **Step 4: 收敛 `Config.Init()` 职责**
 
 修改 `internal/config/config.go`：
 
@@ -779,7 +788,7 @@ func shouldUseProjectPortRegistry() bool {
 - 如果 `PortInt == 0 && PortSource == PortSourceUnset`，设置默认端口 `6100`。
 - 如果 `PortInt < 0`，`PortStr()` 继续返回 `"0"`。
 
-- [ ] **Step 5: 运行相关测试**
+- [x] **Step 5: 运行相关测试**
 
 Run:
 
@@ -789,7 +798,7 @@ go test ./internal/config ./internal/bootstrap
 
 Expected: PASS。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add internal/bootstrap/bootstrap.go internal/bootstrap/bootstrap_test.go internal/config/config.go
@@ -804,7 +813,7 @@ git commit -m "feat(config): apply config files during startup"
 - Modify: `internal/handlers/handlers_test.go`
 - Modify: `web/template.html`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `internal/handlers/handlers_test.go` 增加完整页面渲染断言，或在已有 handler 测试中补充：
 
@@ -846,7 +855,7 @@ func TestRenderFullPageInjectsAppConfigJSON(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -856,7 +865,7 @@ go test ./internal/handlers
 
 Expected: FAIL，`AppConfigJSON` 或 `Config.AppConfig` 未定义。
 
-- [ ] **Step 3: 增加 AppConfig 输出**
+- [x] **Step 3: 增加 AppConfig 输出**
 
 在 `internal/config/config.go` 增加：
 
@@ -893,7 +902,7 @@ func (c *Config) AppConfig() AppConfig {
 <script id="app-config-data" type="application/json">{{ .AppConfigJSON }}</script>
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run:
 
@@ -903,7 +912,7 @@ go test ./internal/handlers
 
 Expected: PASS。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add internal/config/config.go internal/handlers/page_handler.go internal/handlers/handlers_test.go web/template.html
@@ -918,7 +927,7 @@ git commit -m "feat(config): inject app config into page"
 - Modify: `web/src/link-preview.ts`
 - Modify: `web/src/link-preview.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 创建 `web/src/app-config.test.ts`：
 
@@ -967,7 +976,7 @@ test('uses configured preview extensions', () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -977,7 +986,7 @@ cd web && bun test
 
 Expected: FAIL，`app-config` 模块不存在，`isPreviewableContentPath` 还不接受配置扩展名。
 
-- [ ] **Step 3: 实现 `app-config.ts`**
+- [x] **Step 3: 实现 `app-config.ts`**
 
 创建 `web/src/app-config.ts`：
 
@@ -1025,7 +1034,7 @@ function normalizeExt(value: string): string {
 }
 ```
 
-- [ ] **Step 4: 修改 link preview 使用配置**
+- [x] **Step 4: 修改 link preview 使用配置**
 
 在 `web/src/link-preview.ts`：
 
@@ -1057,7 +1066,7 @@ export function configureLinkPreview(options: { previewExts: string[] }) {
 
 并让内部默认使用 `configuredPreviewExts`。
 
-- [ ] **Step 5: 运行前端测试**
+- [x] **Step 5: 运行前端测试**
 
 Run:
 
@@ -1067,7 +1076,7 @@ cd web && bun test
 
 Expected: PASS。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add web/src/app-config.ts web/src/app-config.test.ts web/src/link-preview.ts web/src/link-preview.test.ts
@@ -1083,7 +1092,7 @@ git commit -m "feat(web): read app preview config"
 - Modify: `web/src/app-config.ts`
 - Modify: `web/src/app-config.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `web/src/preferences.test.ts` 增加：
 
@@ -1136,7 +1145,7 @@ test('uses compact layout when injected layout is missing', () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -1146,7 +1155,7 @@ cd web && bun test web/src/preferences.test.ts web/src/app-config.test.ts
 
 Expected: FAIL，layout mode 偏好函数未定义。
 
-- [ ] **Step 3: 实现 layout preference**
+- [x] **Step 3: 实现 layout preference**
 
 在 `web/src/preferences.ts`：
 
@@ -1180,7 +1189,7 @@ export function persistLayoutMode(value: LayoutMode, storage: StorageWriter = wi
 }
 ```
 
-- [ ] **Step 4: 在 app 初始化中应用 dataset**
+- [x] **Step 4: 在 app 初始化中应用 dataset**
 
 在 `web/src/app.ts`：
 
@@ -1198,7 +1207,7 @@ function applyLayoutMode(mode: LayoutMode) {
 
 一期不改 CSS 三栏布局，只保证 dataset 存在，后续二期使用。
 
-- [ ] **Step 5: 运行前端测试**
+- [x] **Step 5: 运行前端测试**
 
 Run:
 
@@ -1208,7 +1217,7 @@ cd web && bun test
 
 Expected: PASS。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add web/src/preferences.ts web/src/preferences.test.ts web/src/app.ts web/src/app-config.ts web/src/app-config.test.ts
@@ -1220,7 +1229,7 @@ git commit -m "feat(web): add layout config foundation"
 **Files:**
 - Modify: `docs/TODO.md`
 
-- [ ] **Step 1: 运行后端完整测试**
+- [x] **Step 1: 运行后端完整测试**
 
 Run:
 
@@ -1230,7 +1239,7 @@ go test ./...
 
 Expected: PASS。
 
-- [ ] **Step 2: 运行前端测试**
+- [x] **Step 2: 运行前端测试**
 
 Run:
 
@@ -1240,7 +1249,7 @@ cd web && bun test
 
 Expected: PASS。
 
-- [ ] **Step 3: 构建前端资源**
+- [x] **Step 3: 构建前端资源**
 
 Run:
 
@@ -1250,7 +1259,7 @@ cd web && bun run build
 
 Expected: PASS，并更新 `web/dist` 中的构建产物。
 
-- [ ] **Step 4: 构建 Go 程序**
+- [x] **Step 4: 构建 Go 程序**
 
 Run:
 
@@ -1260,7 +1269,7 @@ go build ./...
 
 Expected: PASS。
 
-- [ ] **Step 5: 手动 smoke 验证**
+- [x] **Step 5: 手动 smoke 验证**
 
 创建临时项目配置：
 
@@ -1285,7 +1294,7 @@ Expected: PASS。
 - `app-config-data` 中包含 `.ini` 和 `toc-right`。
 - 不存在配置文件时，默认行为仍为端口 `6100` 和 `compact`。
 
-- [ ] **Step 6: 更新 TODO 说明**
+- [x] **Step 6: 更新 TODO 说明**
 
 由于完整三栏布局属于二期，本期不要把总 TODO 标记为完成。可以在 `docs/TODO.md` 对该项追加阶段说明：
 
@@ -1295,7 +1304,7 @@ Expected: PASS。
   - [ ] 二期：设置面板 layout 控件和完整三栏布局
 ```
 
-- [ ] **Step 7: 提交最终收尾**
+- [x] **Step 7: 提交最终收尾**
 
 ```bash
 git add docs/TODO.md web/dist

@@ -58,6 +58,7 @@ type PageData struct {
 	ModifiedAt          string
 	FileTreeJSON        template.JS
 	CurrentFilePathJSON template.JS
+	AppConfigJSON       template.JS
 	CurrentFilePath     string
 }
 
@@ -162,9 +163,10 @@ func renderFullPage(w http.ResponseWriter, mainData *PageData) {
 	t := template.Must(template.New("index").Parse(string(tmplData)))
 
 	data := PageData{
-		Title:        mainData.FileName,
-		MainContent:  template.HTML(mainContentBuf.String()),
-		FileTreeJSON: utils.MustMarshalJSON(fileTree),
+		Title:         mainData.FileName,
+		MainContent:   template.HTML(mainContentBuf.String()),
+		FileTreeJSON:  utils.MustMarshalJSON(fileTree),
+		AppConfigJSON: utils.MustMarshalJSON(config.Cfg.AppConfig()),
 	}
 
 	setPageCacheHeaders(w)

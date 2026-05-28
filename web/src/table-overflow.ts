@@ -54,7 +54,8 @@ export function enhanceTablesInContent(contentRoot: HTMLElement) {
 
 export function updateTableOverflow(container: HTMLElement) {
     const body = container.querySelector(`.${TABLE_BODY_CLASS}`);
-    if (!(body instanceof HTMLElement)) {
+    const elementCtor = container.ownerDocument.defaultView?.HTMLElement;
+    if (!elementCtor || !(body instanceof elementCtor)) {
         return;
     }
 

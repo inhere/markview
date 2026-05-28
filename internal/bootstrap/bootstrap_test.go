@@ -5,6 +5,9 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -13,6 +16,7 @@ import (
 	"github.com/gookit/goutil/testutil/assert"
 	"github.com/inhere/markview/internal/config"
 	"github.com/inhere/markview/internal/projects"
+	"github.com/inhere/markview/internal/utils"
 )
 
 func TestStaticHandlerSetsRevalidateCacheHeaders(t *testing.T) {
@@ -198,6 +202,7 @@ func TestShouldUseProjectPortRegistry(t *testing.T) {
 		shouldUse bool
 	}{
 		{name: "unset port uses registry", source: config.PortSourceUnset, port: 6100, shouldUse: true},
+		{name: "registry port uses registry", source: config.PortSourceRegistry, port: 6100, shouldUse: true},
 		{name: "CLI random uses registry", source: config.PortSourceCLI, port: -1, shouldUse: true},
 		{name: "CLI fixed skips registry", source: config.PortSourceCLI, port: 8080, shouldUse: false},
 		{name: "ENV fixed skips registry", source: config.PortSourceEnv, port: 8080, shouldUse: false},
@@ -257,17 +262,289 @@ func TestProjectFlagKeepsPortRegistryRules(t *testing.T) {
 	}
 }
 
+func TestPrepareLoadsDotenvFromTargetDir(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".env"), []byte("MKVIEW_PORT=6222\nMKVIEW_WATCH=false\n"), 0644))
+	t.Setenv(config.EnvPort, "")
+	t.Setenv(config.EnvWatch, "")
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{}
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		err := prepare([]string{targetDir}, testContentFS())
+
+		assert.NoErr(t, err)
+		assert.Eq(t, 6222, config.Cfg.PortInt)
+		assert.Eq(t, config.PortSourceEnv, config.Cfg.PortSource)
+		assert.False(t, config.Cfg.EnableWatch)
+	})
+}
+
+func TestPrepareDotenvDoesNotLeakBetweenProjects(t *testing.T) {
+	projectA := t.TempDir()
+	projectB := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(projectA, "README.md"), []byte("# A"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(projectA, ".env"), []byte("MKVIEW_PORT=6222\n"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(projectB, "README.md"), []byte("# B"), 0644))
+	t.Setenv(config.EnvPort, "")
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		config.Cfg = config.Config{}
+		err := prepare([]string{projectA}, testContentFS())
+		assert.NoErr(t, err)
+		assert.Eq(t, 6222, config.Cfg.PortInt)
+
+		config.Cfg = config.Config{}
+		err = prepare([]string{projectB}, testContentFS())
+		assert.NoErr(t, err)
+		assert.NotEq(t, 6222, config.Cfg.PortInt)
+	})
+}
+
+func TestPrepareProjectConfigPortSkipsProjectRegistryMode(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".markview.json"), []byte(`{"server":{"port":6223}}`), 0644))
+	t.Setenv(config.EnvPort, "")
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{}
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		err := prepare([]string{targetDir}, testContentFS())
+
+		assert.NoErr(t, err)
+		assert.Eq(t, 6223, config.Cfg.PortInt)
+		assert.Eq(t, config.PortSourceConfig, config.Cfg.PortSource)
+		assert.False(t, shouldUseProjectPortRegistry())
+	})
+}
+
+func TestPrepareIsolationClearsStaleCliPortFlag(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".markview.json"), []byte(`{"server":{"port":6223}}`), 0644))
+	t.Setenv(config.EnvPort, "")
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{PortInt: 6333, PortSource: config.PortSourceCLI}
+	cliPortFlagVisited = true
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		err := prepare([]string{targetDir}, testContentFS())
+
+		assert.NoErr(t, err)
+		assert.Eq(t, 6223, config.Cfg.PortInt)
+		assert.Eq(t, config.PortSourceConfig, config.Cfg.PortSource)
+	})
+}
+
+func TestPrepareProjectConfigPrivateCanBeOverriddenByExplicitCliFalse(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".markview.json"), []byte(`{"server":{"private":true}}`), 0644))
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		cmd := newCommand(testOptions())
+		cmd.Func = nil
+		assert.NoErr(t, cmd.Parse([]string{"--private=false", targetDir}))
+		markPortFlagVisited(cmd)
+
+		err := prepare(cmd.RemainArgs(), testContentFS())
+
+		assert.NoErr(t, err)
+		assert.False(t, config.Cfg.Private)
+	})
+}
+
+func TestPrepareNoBrowserCliFlagSurvivesConfigMerge(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		cmd := newCommand(testOptions())
+		cmd.Func = nil
+		assert.NoErr(t, cmd.Parse([]string{"--no-browser", targetDir}))
+		markPortFlagVisited(cmd)
+
+		err := prepare(cmd.RemainArgs(), testContentFS())
+
+		assert.NoErr(t, err)
+		assert.True(t, config.Cfg.NoBrowser)
+	})
+}
+
+func TestPrepareCliPortOverridesProjectConfigPort(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".markview.json"), []byte(`{"server":{"port":6223}}`), 0644))
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		cmd := newCommand(testOptions())
+		cmd.Func = nil
+		assert.NoErr(t, cmd.Parse([]string{"--port", "6333", targetDir}))
+		markPortFlagVisited(cmd)
+
+		err := prepare(cmd.RemainArgs(), testContentFS())
+
+		assert.NoErr(t, err)
+		assert.Eq(t, 6333, config.Cfg.PortInt)
+		assert.Eq(t, config.PortSourceCLI, config.Cfg.PortSource)
+	})
+}
+
+func TestPrepareDoesNotReusePreviousCliPortSource(t *testing.T) {
+	projectA := t.TempDir()
+	projectB := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(projectA, "README.md"), []byte("# A"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(projectB, "README.md"), []byte("# B"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(projectB, ".markview.json"), []byte(`{"server":{"port":6225}}`), 0644))
+	t.Setenv(config.EnvPort, "")
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		cmd := newCommand(testOptions())
+		cmd.Func = nil
+		assert.NoErr(t, cmd.Parse([]string{"--port", "6333", projectA}))
+		markPortFlagVisited(cmd)
+		assert.NoErr(t, prepare(cmd.RemainArgs(), testContentFS()))
+		assert.Eq(t, config.PortSourceCLI, config.Cfg.PortSource)
+
+		cmd = newCommand(testOptions())
+		cmd.Func = nil
+		assert.NoErr(t, cmd.Parse([]string{projectB}))
+		markPortFlagVisited(cmd)
+
+		err := prepare(cmd.RemainArgs(), testContentFS())
+
+		assert.NoErr(t, err)
+		assert.Eq(t, 6225, config.Cfg.PortInt)
+		assert.Eq(t, config.PortSourceConfig, config.Cfg.PortSource)
+	})
+}
+
+func TestPrepareUsesRegistryPortWhenNoHigherPrecedencePortExists(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+
+	withIsolatedPrepareFiles(t, registryForTest(t, targetDir, "markview", 6224), func(_ string) {
+		config.Cfg = config.Config{}
+
+		err := prepare([]string{targetDir}, testContentFS())
+
+		assert.NoErr(t, err)
+		assert.Eq(t, 6224, config.Cfg.PortInt)
+		assert.Eq(t, config.PortSourceRegistry, config.Cfg.PortSource)
+		assert.True(t, shouldUseProjectPortRegistry())
+	})
+}
+
+func TestPrepareDotenvDebugEnablesDebugWithoutLeakingEnv(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".env"), []byte("MKVIEW_DEBUG=true\n"), 0644))
+	t.Setenv(config.EnvDebug, "")
+
+	origCfg := config.Cfg
+	origUtilsDebug := utils.EnableDebug
+	origConfigDebug := config.EnableDebug
+	t.Cleanup(func() {
+		config.Cfg = origCfg
+		utils.EnableDebug = origUtilsDebug
+		config.EnableDebug = origConfigDebug
+	})
+	config.Cfg = config.Config{}
+	utils.EnableDebug = false
+	config.EnableDebug = false
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		err := prepare([]string{targetDir}, testContentFS())
+
+		assert.NoErr(t, err)
+		assert.True(t, utils.EnableDebug)
+		assert.True(t, config.EnableDebug)
+		assert.Eq(t, "", os.Getenv(config.EnvDebug))
+	})
+}
+
+func TestPrepareEnvEntryAppliesWithoutPositionalEntry(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "guide.md"), []byte("# Guide"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".env"), []byte("MKVIEW_ENTRY=guide.md\n"), 0644))
+	t.Setenv(config.EnvEntry, "")
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		config.Cfg = config.Config{}
+
+		err := prepare([]string{targetDir}, testContentFS())
+
+		assert.NoErr(t, err)
+		assert.Eq(t, "guide.md", config.Cfg.EntryFile)
+	})
+}
+
+func TestPreparePositionalEntryOverridesDotenvEntry(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "guide.md"), []byte("# Guide"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".env"), []byte("MKVIEW_ENTRY=README.md\n"), 0644))
+	t.Setenv(config.EnvEntry, "")
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		config.Cfg = config.Config{}
+
+		err := prepare([]string{targetDir, "guide.md"}, testContentFS())
+
+		assert.NoErr(t, err)
+		assert.Eq(t, "guide.md", config.Cfg.EntryFile)
+	})
+}
+
 func TestListenNextAvailable(t *testing.T) {
-	occupied, err := net.Listen("tcp", "127.0.0.1:0")
+	ports, closePorts := reserveConsecutivePorts(t, 5)
+	closePorts()
+	occupied, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", ports[0]))
 	assert.NoErr(t, err)
 	defer occupied.Close()
-	occupiedPort := occupied.Addr().(*net.TCPAddr).Port
+	reservedPorts := map[int]struct{}{ports[1]: {}}
 
-	listener, actualPort, err := listenNextAvailable("127.0.0.1", occupiedPort, 3, nil)
+	listener, actualPort, err := listenNextAvailable("127.0.0.1", ports[0], len(ports), reservedPorts)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
-	assert.Eq(t, occupiedPort+1, actualPort)
+	assert.NotEq(t, ports[0], actualPort)
+	assert.NotEq(t, ports[1], actualPort)
+	assert.True(t, actualPort >= ports[0])
+	assert.True(t, actualPort < ports[0]+len(ports))
 }
 
 func TestListenProjectPortFromRegistryUsesSavedPort(t *testing.T) {
@@ -281,7 +558,7 @@ func TestListenProjectPortFromRegistryUsesSavedPort(t *testing.T) {
 	err = projects.Upsert(registry, targetDir, savedPort, nowForTest())
 	assert.NoErr(t, err)
 
-	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true)
+	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true, true)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
@@ -298,11 +575,32 @@ func TestListenProjectPortFromRegistrySkipsPortsSavedByOtherProjects(t *testing.
 	assert.NoErr(t, projects.Upsert(registry, targetDir, ports[0], nowForTest()))
 	assert.NoErr(t, projects.Upsert(registry, otherDir, ports[0], nowForTest()))
 
-	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true)
+	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true, true)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
 	assert.Eq(t, ports[1], actualPort)
+}
+
+func TestReservedProjectPortsCanIncludeCurrentProjectSavedPort(t *testing.T) {
+	targetDir := t.TempDir()
+	otherDir := t.TempDir()
+
+	registry := projects.Registry{}
+	assert.NoErr(t, projects.Upsert(registry, targetDir, 6226, nowForTest()))
+	assert.NoErr(t, projects.Upsert(registry, otherDir, 6227, nowForTest()))
+
+	excludingCurrent := reservedProjectPorts(registry, targetDir, false)
+	_, hasCurrentWhenExcluded := excludingCurrent[6226]
+	_, hasOtherWhenExcluded := excludingCurrent[6227]
+	assert.False(t, hasCurrentWhenExcluded)
+	assert.True(t, hasOtherWhenExcluded)
+
+	includingCurrent := reservedProjectPorts(registry, targetDir, true)
+	_, hasCurrentWhenIncluded := includingCurrent[6226]
+	_, hasOtherWhenIncluded := includingCurrent[6227]
+	assert.True(t, hasCurrentWhenIncluded)
+	assert.True(t, hasOtherWhenIncluded)
 }
 
 func TestListenProjectPortFromRegistryFallsThroughFromDefaultPort(t *testing.T) {
@@ -312,11 +610,62 @@ func TestListenProjectPortFromRegistryFallsThroughFromDefaultPort(t *testing.T) 
 	}
 	defer occupied.Close()
 
-	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", t.TempDir(), projects.Registry{}, true)
+	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", t.TempDir(), projects.Registry{}, true, true)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
 	assert.Eq(t, 6101, actualPort)
+}
+
+func TestListenAndRememberProjectPortUsesHookRegistryPath(t *testing.T) {
+	targetDir := t.TempDir()
+	ports, closePorts := reserveConsecutivePorts(t, 1)
+	defer closePorts()
+	savedPort := ports[0]
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{PortSource: config.PortSourceRegistry, Private: true}
+	setUserRegistryHome(t)
+
+	withTempProjectRegistry(t, registryForTest(t, targetDir, "markview", savedPort), func(path string) {
+		listener, actualPort, err := listenAndRememberProjectPort(targetDir)
+		assert.NoErr(t, err)
+		defer listener.Close()
+
+		assert.True(t, actualPort > savedPort)
+		assert.True(t, actualPort < savedPort+100)
+		loaded, err := projects.Load(path)
+		assert.NoErr(t, err)
+		record, ok := loaded[projectsMustKey(t, targetDir)]
+		assert.True(t, ok)
+		assert.Eq(t, actualPort, record.Port)
+	})
+}
+
+func TestListenAndRememberProjectPortKeepsCliRandomFromReusingSavedPort(t *testing.T) {
+	targetDir := t.TempDir()
+	ports, closePorts := reserveConsecutivePorts(t, 1)
+	closePorts()
+	savedPort := ports[0]
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{PortInt: -1, PortSource: config.PortSourceCLI, Private: true}
+	setUserRegistryHome(t)
+
+	withTempProjectRegistry(t, registryForTest(t, targetDir, "markview", savedPort), func(path string) {
+		listener, actualPort, err := listenAndRememberProjectPort(targetDir)
+		assert.NoErr(t, err)
+		defer listener.Close()
+
+		assert.NotEq(t, savedPort, actualPort)
+		loaded, err := projects.Load(path)
+		assert.NoErr(t, err)
+		record, ok := loaded[projectsMustKey(t, targetDir)]
+		assert.True(t, ok)
+		assert.Eq(t, actualPort, record.Port)
+	})
 }
 
 func reserveConsecutivePorts(t *testing.T, count int) ([]int, func()) {
@@ -355,6 +704,24 @@ func reserveConsecutivePorts(t *testing.T, count int) ([]int, func()) {
 	return nil, nil
 }
 
+func setUserRegistryHome(t *testing.T) {
+	t.Helper()
+
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	t.Setenv("USERPROFILE", homeDir)
+	t.Setenv("APPDATA", filepath.Join(homeDir, "AppData", "Roaming"))
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(homeDir, ".config"))
+}
+
+func projectsMustKey(t *testing.T, targetDir string) string {
+	t.Helper()
+
+	key, err := projects.ProjectKey(targetDir)
+	assert.NoErr(t, err)
+	return key
+}
+
 func nowForTest() time.Time {
 	return time.Date(2026, 5, 14, 15, 0, 0, 0, time.FixedZone("CST", 8*60*60))
 }
@@ -372,4 +739,25 @@ func testContentFS() fstest.MapFS {
 	return fstest.MapFS{
 		"web/dist/app.css": {Data: []byte("body{}")},
 	}
+}
+
+func withIsolatedPrepareFiles(t *testing.T, registry projects.Registry, run func(path string)) {
+	t.Helper()
+
+	origCliPortFlagVisited := cliPortFlagVisited
+	origCliPrivateFlagVisited := cliPrivateFlagVisited
+	t.Cleanup(func() {
+		cliPortFlagVisited = origCliPortFlagVisited
+		cliPrivateFlagVisited = origCliPrivateFlagVisited
+	})
+	cliPortFlagVisited = false
+	cliPrivateFlagVisited = false
+
+	if runtime.GOOS == "windows" {
+		t.Setenv("APPDATA", t.TempDir())
+	} else {
+		t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+		t.Setenv("HOME", t.TempDir())
+	}
+	withTempProjectRegistry(t, registry, run)
 }

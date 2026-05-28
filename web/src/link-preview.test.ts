@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { JSDOM } from 'jsdom';
 import {
     buildHighlightedFilePreview,
+    configureLinkPreview,
     detectPreviewFileLanguage,
     enhanceLinksInContent,
     isPreviewableContentPath,
@@ -42,6 +43,12 @@ describe('link preview content files', () => {
         expect(isPreviewableContentPath('/assets/logo.png')).toBe(false);
     });
 
+    test('uses provided preview extensions and ignores markdown raw content previews', () => {
+        expect(isPreviewableContentPath('/config/app.ini', ['.ini'])).toBe(true);
+        expect(isPreviewableContentPath('/config/app.ini', ['.json'])).toBe(false);
+        expect(isPreviewableContentPath('/notes/readme.md', ['.md'])).toBe(false);
+    });
+
     test('maps preview file extension to highlight language', () => {
         expect(detectPreviewFileLanguage('/api/schema.json')).toBe('json');
         expect(detectPreviewFileLanguage('/api/events.jsonl')).toBe('json');
@@ -69,5 +76,23 @@ describe('link preview content files', () => {
             expect(content.querySelector('.link-preview-wrapper')).not.toBeNull();
             expect(content.querySelector('.link-preview-btn')).not.toBeNull();
         });
+    });
+
+    test('adds preview button for configured content extensions', () => {
+        configureLinkPreview({ previewExts: ['.ini'] });
+        try {
+            withDOM(`<!DOCTYPE html><body>
+                <article id="content"><a href="/config/app.ini">config</a></article>
+            </body>`, document => {
+                const content = document.getElementById('content') as HTMLElement;
+
+                enhanceLinksInContent(content);
+
+                expect(content.querySelector('.link-preview-wrapper')).not.toBeNull();
+                expect(content.querySelector('.link-preview-btn')).not.toBeNull();
+            });
+        } finally {
+            configureLinkPreview({ previewExts: ['.json', '.jsonl', '.yaml', '.yml', '.toml'] });
+        }
     });
 });
