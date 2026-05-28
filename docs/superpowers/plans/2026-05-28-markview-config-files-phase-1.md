@@ -320,7 +320,7 @@ git commit -m "feat(config): load markview config files"
 - Create: `internal/config/merge_test.go`
 - Modify: `internal/config/config.go`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `internal/config/merge_test.go` 新增：
 
@@ -406,7 +406,7 @@ func intPtr(value int) *int {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -416,7 +416,7 @@ go test ./internal/config
 
 Expected: FAIL，提示 `MergeRuntimeConfig`、`MergeInput`、`PortSourceConfig`、`PreviewExts`、`UILayout` 未定义。
 
-- [ ] **Step 3: 扩展运行时 Config**
+- [x] **Step 3: 扩展运行时 Config**
 
 在 `internal/config/config.go` 中：
 
@@ -457,7 +457,7 @@ var Cfg = Config{
 }
 ```
 
-- [ ] **Step 4: 实现合并逻辑**
+- [x] **Step 4: 实现合并逻辑**
 
 创建 `internal/config/merge.go`：
 
@@ -640,7 +640,7 @@ func ensureNodeModules(dirs []string) []string {
 }
 ```
 
-- [ ] **Step 5: 运行测试确认通过**
+- [x] **Step 5: 运行测试确认通过**
 
 Run:
 
@@ -650,7 +650,7 @@ go test ./internal/config
 
 Expected: PASS。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add internal/config/config.go internal/config/merge.go internal/config/merge_test.go

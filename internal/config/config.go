@@ -33,14 +33,18 @@ type Config struct {
 	WatchSkipDirs []string
 	Private       bool
 	NoBrowser     bool
+	PreviewExts   []string
+	UILayout      string
 }
 
 type PortSource string
 
 const (
-	PortSourceUnset PortSource = "unset"
-	PortSourceCLI   PortSource = "cli"
-	PortSourceEnv   PortSource = "env"
+	PortSourceUnset    PortSource = "unset"
+	PortSourceCLI      PortSource = "cli"
+	PortSourceEnv      PortSource = "env"
+	PortSourceConfig   PortSource = "config"
+	PortSourceRegistry PortSource = "registry"
 )
 
 // Cfg is the configuration struct instance.
@@ -48,6 +52,8 @@ var Cfg = Config{
 	PortSource:    PortSourceUnset,
 	EnableWatch:   true,
 	WatchSkipDirs: DefaultSkipDirs,
+	PreviewExts:   DefaultPreviewExts,
+	UILayout:      UILayoutCompact,
 }
 
 // PortStr returns the port string.
