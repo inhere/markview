@@ -1,4 +1,7 @@
+import type { AppLayout } from './app-config';
+
 export const LAYOUT_WIDTH_STORAGE_KEY = 'markview:layout-width';
+export const LAYOUT_MODE_STORAGE_KEY = 'markview:layout-mode';
 export const FONT_SIZE_STORAGE_KEY = 'markview:font-size';
 export const COLOR_SCHEME_STORAGE_KEY = 'markview:color-scheme';
 export const THEME_STORAGE_KEY = 'markview:theme';
@@ -16,6 +19,7 @@ export const LAYOUT_WIDTH_OPTIONS = ['768px', '960px', '1200px', '100%'] as cons
 export type LayoutWidth = (typeof LAYOUT_WIDTH_OPTIONS)[number];
 
 export const DEFAULT_LAYOUT_WIDTH: LayoutWidth = '960px';
+export const DEFAULT_LAYOUT_MODE: AppLayout = 'compact';
 export const DEFAULT_FONT_SIZE = 16;
 export const MIN_FONT_SIZE = 12;
 export const MAX_FONT_SIZE = 24;
@@ -48,6 +52,29 @@ export function normalizeLayoutWidth(value: string | null | undefined): LayoutWi
     }
 
     return DEFAULT_LAYOUT_WIDTH;
+}
+
+export function normalizeLayoutMode(value: string | null | undefined): AppLayout {
+    if (value === 'compact' || value === 'toc-middle' || value === 'toc-right') {
+        return value;
+    }
+    return DEFAULT_LAYOUT_MODE;
+}
+
+export function readStoredLayoutMode(storage: StorageReader = window.localStorage): AppLayout | null {
+    try {
+        const storedMode = storage.getItem(LAYOUT_MODE_STORAGE_KEY);
+        if (storedMode === 'compact' || storedMode === 'toc-middle' || storedMode === 'toc-right') {
+            return storedMode;
+        }
+        return null;
+    } catch {
+        return null;
+    }
+}
+
+export function resolveLayoutMode(storedMode: AppLayout | null, configMode: AppLayout): AppLayout {
+    return storedMode ?? normalizeLayoutMode(configMode);
 }
 
 export function normalizeFontSize(value: string | null | undefined) {
@@ -85,6 +112,7 @@ export function readStoredPreferences(storage: StorageReader = window.localStora
     try {
         return {
             layoutWidth: normalizeLayoutWidth(storage.getItem(LAYOUT_WIDTH_STORAGE_KEY)),
+            layoutMode: normalizeLayoutMode(storage.getItem(LAYOUT_MODE_STORAGE_KEY)),
             fontSize: normalizeFontSize(storage.getItem(FONT_SIZE_STORAGE_KEY)),
             colorScheme: normalizeColorScheme(storage.getItem(COLOR_SCHEME_STORAGE_KEY)),
             theme: normalizeTheme(storage.getItem(THEME_STORAGE_KEY)),
@@ -93,6 +121,7 @@ export function readStoredPreferences(storage: StorageReader = window.localStora
     } catch {
         return {
             layoutWidth: DEFAULT_LAYOUT_WIDTH,
+            layoutMode: DEFAULT_LAYOUT_MODE,
             fontSize: DEFAULT_FONT_SIZE,
             colorScheme: DEFAULT_COLOR_SCHEME,
             theme: DEFAULT_THEME,
@@ -107,6 +136,12 @@ export function persistLayoutWidth(value: LayoutWidth, storage: StorageWriter = 
     } catch {
         // Ignore storage failures so reading continues to work in restrictive contexts.
     }
+}
+
+export function persistLayoutMode(value: AppLayout, storage: StorageWriter = window.localStorage) {
+    try {
+        storage.setItem(LAYOUT_MODE_STORAGE_KEY, normalizeLayoutMode(value));
+    } catch {}
 }
 
 export function persistFontSize(value: number, storage: StorageWriter = window.localStorage) {

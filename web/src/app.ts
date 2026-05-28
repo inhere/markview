@@ -21,8 +21,10 @@ import {
     MIN_FONT_SIZE,
     persistFontSize,
     persistLayoutWidth,
+    readStoredLayoutMode,
     readStoredPreferences,
     readSidebarPreferences,
+    resolveLayoutMode,
     type LayoutWidth,
     type ColorScheme,
     type ThemePreset,
@@ -59,6 +61,7 @@ import {
 import { enhanceCodeBlocks } from './code-copy';
 import { enhanceTablesInContent } from './table-overflow';
 import { readAppConfig } from './app-config';
+import type { AppLayout } from './app-config';
 
 interface RenderPageOptions {
     hash?: string;
@@ -405,6 +408,7 @@ function setupOnce() {
     }
 
     const appConfig = readAppConfig();
+    applyLayoutMode(resolveLayoutMode(readStoredLayoutMode(), appConfig.layout));
     configureLinkPreview({ previewExts: appConfig.previewExts });
 
     setupToolbar();
@@ -435,6 +439,10 @@ function applyLayoutWidth(widthButtons: NodeListOf<Element>, width: LayoutWidth)
     widthButtons.forEach(node => {
         node.classList.toggle('active', (node as HTMLElement).dataset.width === width);
     });
+}
+
+function applyLayoutMode(mode: AppLayout) {
+    document.documentElement.dataset.layout = mode;
 }
 
 function applyFontSize(fontSize: number) {

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { JSDOM } from 'jsdom';
 import {
     DEFAULT_APP_CONFIG,
+    normalizeAppConfig,
     readAppConfig,
 } from './app-config';
 
@@ -50,5 +51,12 @@ describe('app config', () => {
 
         expect(config.previewExts).toEqual(DEFAULT_APP_CONFIG.previewExts);
         expect(config.layout).toBe('toc-middle');
+    });
+
+    test('uses compact layout when injected layout is missing', () => {
+        expect(normalizeAppConfig({ previewExts: ['json'] })).toEqual({
+            previewExts: ['.json'],
+            layout: 'compact',
+        });
     });
 });
