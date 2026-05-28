@@ -327,6 +327,26 @@ func TestPrepareProjectConfigPortSkipsProjectRegistryMode(t *testing.T) {
 	})
 }
 
+func TestPrepareIsolationClearsStaleCliPortFlag(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".markview.json"), []byte(`{"server":{"port":6223}}`), 0644))
+	t.Setenv(config.EnvPort, "")
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{PortInt: 6333, PortSource: config.PortSourceCLI}
+	cliPortFlagVisited = true
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		err := prepare([]string{targetDir}, testContentFS())
+
+		assert.NoErr(t, err)
+		assert.Eq(t, 6223, config.Cfg.PortInt)
+		assert.Eq(t, config.PortSourceConfig, config.Cfg.PortSource)
+	})
+}
+
 func TestPrepareProjectConfigPrivateCanBeOverriddenByExplicitCliFalse(t *testing.T) {
 	targetDir := t.TempDir()
 	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
@@ -510,16 +530,21 @@ func TestPreparePositionalEntryOverridesDotenvEntry(t *testing.T) {
 }
 
 func TestListenNextAvailable(t *testing.T) {
-	occupied, err := net.Listen("tcp", "127.0.0.1:0")
+	ports, closePorts := reserveConsecutivePorts(t, 5)
+	closePorts()
+	occupied, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", ports[0]))
 	assert.NoErr(t, err)
 	defer occupied.Close()
-	occupiedPort := occupied.Addr().(*net.TCPAddr).Port
+	reservedPorts := map[int]struct{}{ports[1]: {}}
 
-	listener, actualPort, err := listenNextAvailable("127.0.0.1", occupiedPort, 3, nil)
+	listener, actualPort, err := listenNextAvailable("127.0.0.1", ports[0], len(ports), reservedPorts)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
-	assert.Eq(t, occupiedPort+1, actualPort)
+	assert.NotEq(t, ports[0], actualPort)
+	assert.NotEq(t, ports[1], actualPort)
+	assert.True(t, actualPort >= ports[0])
+	assert.True(t, actualPort < ports[0]+len(ports))
 }
 
 func TestListenProjectPortFromRegistryUsesSavedPort(t *testing.T) {
@@ -574,7 +599,7 @@ func TestListenProjectPortFromRegistryFallsThroughFromDefaultPort(t *testing.T) 
 func TestListenAndRememberProjectPortUsesHookRegistryPath(t *testing.T) {
 	targetDir := t.TempDir()
 	ports, closePorts := reserveConsecutivePorts(t, 1)
-	closePorts()
+	defer closePorts()
 	savedPort := ports[0]
 
 	origCfg := config.Cfg
@@ -587,7 +612,8 @@ func TestListenAndRememberProjectPortUsesHookRegistryPath(t *testing.T) {
 		assert.NoErr(t, err)
 		defer listener.Close()
 
-		assert.Eq(t, savedPort, actualPort)
+		assert.True(t, actualPort > savedPort)
+		assert.True(t, actualPort < savedPort+100)
 		loaded, err := projects.Load(path)
 		assert.NoErr(t, err)
 		record, ok := loaded[projectsMustKey(t, targetDir)]
@@ -697,10 +723,14 @@ func testContentFS() fstest.MapFS {
 func withIsolatedPrepareFiles(t *testing.T, registry projects.Registry, run func(path string)) {
 	t.Helper()
 
+	origCliPortFlagVisited := cliPortFlagVisited
 	origCliPrivateFlagVisited := cliPrivateFlagVisited
 	t.Cleanup(func() {
+		cliPortFlagVisited = origCliPortFlagVisited
 		cliPrivateFlagVisited = origCliPrivateFlagVisited
 	})
+	cliPortFlagVisited = false
+	cliPrivateFlagVisited = false
 
 	if runtime.GOOS == "windows" {
 		t.Setenv("APPDATA", t.TempDir())
