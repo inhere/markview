@@ -34,6 +34,7 @@ type options struct {
 }
 
 var openBrowser = sysutil.OpenBrowser
+var cliPrivateFlagVisited bool
 
 // Run 启动 CLI 入口，main 包只负责传入嵌入资源和构建信息。
 func Run(content fs.FS, version string, gitHash string, buildTime string) {
@@ -91,7 +92,7 @@ func newCommand(options options) *cflag.CFlags {
 }
 
 func run(c *cflag.CFlags, content fs.FS) error {
-	markPortFlagVisited(c)
+	markCliFlagVisits(c)
 	args := c.RemainArgs()
 	if projectsAction != "" {
 		return runProjectsAction(projectsAction, args, os.Stdout)
@@ -169,9 +170,18 @@ func buildPrepareArgsForSelectedProject(targetDir string, args []string) ([]stri
 }
 
 func markPortFlagVisited(c *cflag.CFlags) {
+	markCliFlagVisits(c)
+}
+
+func markCliFlagVisits(c *cflag.CFlags) {
+	cliPrivateFlagVisited = false
 	c.Visit(func(flag *flag.Flag) {
-		if flag.Name == "port" {
+		switch flag.Name {
+		case "port":
 			config.Cfg.PortSource = config.PortSourceCLI
+		case "private":
+			// Bool flags can be explicitly set false; track visitation separately from the value.
+			cliPrivateFlagVisited = true
 		}
 	})
 }
@@ -363,11 +373,12 @@ func newStaticHandler(content fs.FS) http.Handler {
 
 func prepare(args []string, content fs.FS) error {
 	targetDir, entryFile := resolvePrepareTarget(args)
-	if err := loadProjectDotenv(targetDir); err != nil {
+	dotenv, err := loadProjectDotenv(targetDir)
+	if err != nil {
 		clog.Warnf("Failed to load dotenv: %v", err)
 	}
 
-	merged, err := buildRuntimeConfig(targetDir)
+	merged, err := buildRuntimeConfig(targetDir, dotenv)
 	if err != nil {
 		return err
 	}
@@ -411,15 +422,26 @@ func resolvePrepareTarget(args []string) (string, string) {
 	return targetDir, entryFile
 }
 
-func loadProjectDotenv(targetDir string) error {
-	return envutil.DotenvLoad(func(cfg *envutil.Dotenv) {
-		cfg.BaseDir = targetDir
-		cfg.Files = []string{".env"}
-		cfg.IgnoreNotExist = true
-	})
+func loadProjectDotenv(targetDir string) (map[string]string, error) {
+	// Keep project .env values local to this prepare call so one project cannot poison the next.
+	before := environMap()
+	dotenv := envutil.NewDotenv()
+	dotenv.BaseDir = targetDir
+	dotenv.Files = []string{".env"}
+	dotenv.IgnoreNotExist = true
+	if err := dotenv.LoadAndInit(); err != nil {
+		restoreEnv(dotenv.LoadedData(), before)
+		return nil, err
+	}
+	loaded := map[string]string{}
+	for key, value := range dotenv.LoadedData() {
+		loaded[key] = value
+	}
+	restoreEnv(loaded, before)
+	return loaded, nil
 }
 
-func buildRuntimeConfig(targetDir string) (config.Config, error) {
+func buildRuntimeConfig(targetDir string, dotenv map[string]string) (config.Config, error) {
 	globalCfg, err := loadGlobalRuntimeConfig()
 	if err != nil {
 		return config.Config{}, err
@@ -429,7 +451,7 @@ func buildRuntimeConfig(targetDir string) (config.Config, error) {
 		return config.Config{}, err
 	}
 	registryPort := lookupProjectRegistryPort(targetDir)
-	envCfg, err := runtimeEnvConfig()
+	envCfg, err := runtimeEnvConfig(dotenv)
 	if err != nil {
 		return config.Config{}, err
 	}
@@ -439,7 +461,7 @@ func buildRuntimeConfig(targetDir string) (config.Config, error) {
 		cliPort = &config.Cfg.PortInt
 	}
 	cliPrivate := (*bool)(nil)
-	if config.Cfg.Private {
+	if cliPrivateFlagVisited {
 		cliPrivate = &config.Cfg.Private
 	}
 
@@ -480,7 +502,7 @@ func loadProjectRuntimeConfig(targetDir string) (config.FileConfig, error) {
 }
 
 func lookupProjectRegistryPort(targetDir string) *int {
-	registryPath, err := projects.RegistryPath()
+	registryPath, err := projectRegistryPath()
 	if err != nil {
 		clog.Warnf("Failed to resolve project registry path: %v", err)
 		return nil
@@ -497,12 +519,12 @@ func lookupProjectRegistryPort(targetDir string) *int {
 	return &port
 }
 
-func runtimeEnvConfig() (config.EnvConfig, error) {
-	port, err := config.ParseOptionalEnvInt(envutil.Getenv(config.EnvPort, ""))
+func runtimeEnvConfig(dotenv map[string]string) (config.EnvConfig, error) {
+	port, err := config.ParseOptionalEnvInt(envValue(config.EnvPort, dotenv))
 	if err != nil {
 		return config.EnvConfig{}, err
 	}
-	watch, err := parseOptionalEnvBool(config.EnvWatch, envutil.Getenv(config.EnvWatch, ""))
+	watch, err := parseOptionalEnvBool(config.EnvWatch, envValue(config.EnvWatch, dotenv))
 	if err != nil {
 		return config.EnvConfig{}, err
 	}
@@ -511,16 +533,47 @@ func runtimeEnvConfig() (config.EnvConfig, error) {
 		Port:  port,
 		Watch: watch,
 	}
-	if entry := envutil.Getenv(config.EnvEntry, ""); entry != "" {
+	if entry := envValue(config.EnvEntry, dotenv); entry != "" {
 		envCfg.Entry = &entry
 	}
-	if watchDir := envutil.Getenv(config.EnvWatchDir, ""); watchDir != "" {
+	if watchDir := envValue(config.EnvWatchDir, dotenv); watchDir != "" {
 		envCfg.WatchDir = &watchDir
 	}
-	if watchSkipDir := envutil.Getenv(config.EnvWatchSkipDir, ""); watchSkipDir != "" {
+	if watchSkipDir := envValue(config.EnvWatchSkipDir, dotenv); watchSkipDir != "" {
 		envCfg.WatchSkipDir = &watchSkipDir
 	}
 	return envCfg, nil
+}
+
+func envValue(name string, dotenv map[string]string) string {
+	if dotenv != nil {
+		if value, ok := dotenv[name]; ok {
+			return value
+		}
+	}
+	return envutil.Getenv(name, "")
+}
+
+func environMap() map[string]string {
+	values := make(map[string]string)
+	for _, item := range os.Environ() {
+		key, value, ok := strings.Cut(item, "=")
+		if !ok {
+			continue
+		}
+		values[key] = value
+	}
+	return values
+}
+
+func restoreEnv(loaded map[string]string, before map[string]string) {
+	for key := range loaded {
+		if value, ok := before[key]; ok {
+			_ = os.Setenv(key, value)
+			continue
+		}
+		_ = os.Unsetenv(key)
+	}
 }
 
 func parseOptionalEnvBool(name string, raw string) (*bool, error) {
