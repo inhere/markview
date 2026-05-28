@@ -664,7 +664,7 @@ git commit -m "feat(config): merge runtime config sources"
 - Modify: `internal/bootstrap/bootstrap_test.go`
 - Modify: `internal/config/config.go`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `internal/bootstrap/bootstrap_test.go` 新增：
 
@@ -707,7 +707,7 @@ func TestPrepareProjectConfigPortSkipsProjectRegistryMode(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -717,7 +717,7 @@ go test ./internal/bootstrap
 
 Expected: FAIL，`.env` 仍从当前工作目录加载，配置端口仍未进入 `prepare()`。
 
-- [ ] **Step 3: 调整 `prepare()` 顺序**
+- [x] **Step 3: 调整 `prepare()` 顺序**
 
 在 `internal/bootstrap/bootstrap.go` 中：
 
@@ -777,7 +777,7 @@ func shouldUseProjectPortRegistry() bool {
 }
 ```
 
-- [ ] **Step 4: 收敛 `Config.Init()` 职责**
+- [x] **Step 4: 收敛 `Config.Init()` 职责**
 
 修改 `internal/config/config.go`：
 
@@ -788,7 +788,7 @@ func shouldUseProjectPortRegistry() bool {
 - 如果 `PortInt == 0 && PortSource == PortSourceUnset`，设置默认端口 `6100`。
 - 如果 `PortInt < 0`，`PortStr()` 继续返回 `"0"`。
 
-- [ ] **Step 5: 运行相关测试**
+- [x] **Step 5: 运行相关测试**
 
 Run:
 
@@ -798,7 +798,7 @@ go test ./internal/config ./internal/bootstrap
 
 Expected: PASS。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add internal/bootstrap/bootstrap.go internal/bootstrap/bootstrap_test.go internal/config/config.go

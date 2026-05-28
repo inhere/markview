@@ -179,6 +179,7 @@ func markPortFlagVisited(c *cflag.CFlags) {
 func shouldUseProjectPortRegistry() bool {
 	// 只有自动端口场景使用项目端口记忆，显式固定端口和 ENV 端口保持完全可预期。
 	return config.Cfg.PortSource == config.PortSourceUnset ||
+		config.Cfg.PortSource == config.PortSourceRegistry ||
 		(config.Cfg.PortSource == config.PortSourceCLI && config.Cfg.PortInt < 0)
 }
 
@@ -361,13 +362,30 @@ func newStaticHandler(content fs.FS) http.Handler {
 }
 
 func prepare(args []string, content fs.FS) error {
-	err := envutil.DotenvLoad(func(cfg *envutil.Dotenv) {
-		cfg.IgnoreNotExist = true
-	})
-	if err != nil {
+	targetDir, entryFile := resolvePrepareTarget(args)
+	if err := loadProjectDotenv(targetDir); err != nil {
 		clog.Warnf("Failed to load dotenv: %v", err)
 	}
 
+	merged, err := buildRuntimeConfig(targetDir)
+	if err != nil {
+		return err
+	}
+	config.Cfg = merged
+
+	utils.EnableDebug = envutil.GetBool(config.EnvDebug, false)
+	config.EnableDebug = utils.EnableDebug
+	if err := config.Cfg.Init(targetDir, entryFile); err != nil {
+		return err
+	}
+
+	handlers.IfsReader = func(path string) ([]byte, error) {
+		return fs.ReadFile(content, path)
+	}
+	return nil
+}
+
+func resolvePrepareTarget(args []string) (string, string) {
 	var entryFile string
 	cwd, _ := os.Getwd()
 	targetDir := cwd
@@ -390,14 +408,128 @@ func prepare(args []string, content fs.FS) error {
 		entryFile = args[1]
 	}
 
-	utils.EnableDebug = envutil.GetBool(config.EnvDebug, false)
-	config.EnableDebug = utils.EnableDebug
-	if err := config.Cfg.Init(targetDir, entryFile); err != nil {
-		return err
+	return targetDir, entryFile
+}
+
+func loadProjectDotenv(targetDir string) error {
+	return envutil.DotenvLoad(func(cfg *envutil.Dotenv) {
+		cfg.BaseDir = targetDir
+		cfg.Files = []string{".env"}
+		cfg.IgnoreNotExist = true
+	})
+}
+
+func buildRuntimeConfig(targetDir string) (config.Config, error) {
+	globalCfg, err := loadGlobalRuntimeConfig()
+	if err != nil {
+		return config.Config{}, err
+	}
+	projectCfg, err := loadProjectRuntimeConfig(targetDir)
+	if err != nil {
+		return config.Config{}, err
+	}
+	registryPort := lookupProjectRegistryPort(targetDir)
+	envCfg, err := runtimeEnvConfig()
+	if err != nil {
+		return config.Config{}, err
 	}
 
-	handlers.IfsReader = func(path string) ([]byte, error) {
-		return fs.ReadFile(content, path)
+	cliPort := (*int)(nil)
+	if config.Cfg.PortSource == config.PortSourceCLI {
+		cliPort = &config.Cfg.PortInt
 	}
-	return nil
+	cliPrivate := (*bool)(nil)
+	if config.Cfg.Private {
+		cliPrivate = &config.Cfg.Private
+	}
+
+	merged, err := config.MergeRuntimeConfig(config.MergeInput{
+		Global:       globalCfg,
+		RegistryPort: registryPort,
+		Project:      projectCfg,
+		Env:          envCfg,
+		CLI: config.CLIConfig{
+			Port:    cliPort,
+			Private: cliPrivate,
+		},
+	})
+	if err != nil {
+		return config.Config{}, err
+	}
+	merged.NoBrowser = config.Cfg.NoBrowser
+	return merged, nil
+}
+
+func loadGlobalRuntimeConfig() (config.FileConfig, error) {
+	path, err := config.GlobalConfigPath()
+	if err != nil {
+		return config.FileConfig{}, err
+	}
+	if !fsutil.IsFile(path) {
+		return config.FileConfig{}, nil
+	}
+	return config.LoadFileConfig(path)
+}
+
+func loadProjectRuntimeConfig(targetDir string) (config.FileConfig, error) {
+	path, ok, err := config.FindProjectConfig(targetDir)
+	if err != nil || !ok {
+		return config.FileConfig{}, err
+	}
+	return config.LoadFileConfig(path)
+}
+
+func lookupProjectRegistryPort(targetDir string) *int {
+	registryPath, err := projects.RegistryPath()
+	if err != nil {
+		clog.Warnf("Failed to resolve project registry path: %v", err)
+		return nil
+	}
+	registry, err := projects.Load(registryPath)
+	if err != nil {
+		clog.Warnf("Failed to load project registry, ignoring saved port: %v", err)
+		return nil
+	}
+	port, ok := projects.LookupPort(registry, targetDir)
+	if !ok {
+		return nil
+	}
+	return &port
+}
+
+func runtimeEnvConfig() (config.EnvConfig, error) {
+	port, err := config.ParseOptionalEnvInt(envutil.Getenv(config.EnvPort, ""))
+	if err != nil {
+		return config.EnvConfig{}, err
+	}
+	watch, err := parseOptionalEnvBool(config.EnvWatch, envutil.Getenv(config.EnvWatch, ""))
+	if err != nil {
+		return config.EnvConfig{}, err
+	}
+
+	envCfg := config.EnvConfig{
+		Port:  port,
+		Watch: watch,
+	}
+	if entry := envutil.Getenv(config.EnvEntry, ""); entry != "" {
+		envCfg.Entry = &entry
+	}
+	if watchDir := envutil.Getenv(config.EnvWatchDir, ""); watchDir != "" {
+		envCfg.WatchDir = &watchDir
+	}
+	if watchSkipDir := envutil.Getenv(config.EnvWatchSkipDir, ""); watchSkipDir != "" {
+		envCfg.WatchSkipDir = &watchSkipDir
+	}
+	return envCfg, nil
+}
+
+func parseOptionalEnvBool(name string, raw string) (*bool, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	value, err := strconv.ParseBool(raw)
+	if err != nil {
+		return nil, fmt.Errorf("ENV %s %q is not a valid boolean", name, raw)
+	}
+	return &value, nil
 }

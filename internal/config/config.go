@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/gookit/goutil/envutil"
 	"github.com/gookit/goutil/fsutil"
@@ -87,8 +86,10 @@ func (c *Config) ListenAddr() string {
 // Init initializes the configuration.
 func (c *Config) Init(targetDir, entryFile string) (err error) {
 	c.TargetDir = targetDir
-	c.EntryFile = entryFile
-	if entryFile == "" {
+	if entryFile != "" {
+		c.EntryFile = entryFile
+	}
+	if c.EntryFile == "" {
 		c.EntryFile = envutil.Getenv(EnvEntry, DefaultEntry)
 	}
 
@@ -100,52 +101,27 @@ func (c *Config) Init(targetDir, entryFile string) (err error) {
 		return fmt.Errorf("entry file %q is not exist", entryPath)
 	}
 
-	// Environment variables
-	// EnableDebug = envutil.GetBool(EnvDebug, false)
-	c.EnableWatch = envutil.GetBool(EnvWatch, true)
 	clog.Debugf("Config: Debug=%v, Watch=%v", EnableDebug, c.EnableWatch)
 
-	// port value
 	if c.PortInt > 0 {
 		c.portStr = fmt.Sprintf("%d", c.PortInt)
 	} else if c.PortInt < 0 {
 		c.portStr = "0" // 0 表示随机端口, 后续会根据随机端口更新
 	} else {
-		if c.PortSource == "" {
+		if c.PortSource == "" || c.PortSource == PortSourceUnset {
 			c.PortSource = PortSourceUnset
-		}
-		c.portStr = envutil.Getenv(EnvPort, DefaultPort)
-		if envutil.Getenv(EnvPort, "") != "" {
-			c.PortSource = PortSourceEnv
+			c.portStr = DefaultPort
+			c.PortInt, err = strconv.Atoi(c.portStr)
+			if err != nil {
+				return fmt.Errorf("default port %q is not a valid integer", c.portStr)
+			}
+			return nil
 		}
 		c.PortInt, err = strconv.Atoi(c.portStr)
 		if err != nil {
-			return fmt.Errorf("ENV MKVIEW_PORT %q is not a valid integer", c.portStr)
-		}
-		if c.PortInt < 0 {
-			c.portStr = "0"
+			return fmt.Errorf("port %q is not a valid integer", c.portStr)
 		}
 	}
 
-	// Watch directory. multi use comma split
-	if dirstr := envutil.Getenv(EnvWatchDir, ""); dirstr != "" {
-		clog.Debugf("Config: Watch directory=%s", dirstr)
-		c.WatchDirs = strings.Split(dirstr, ",")
-	}
-
-	// Watch skip directory. multi use comma split
-	if skipstr := envutil.Getenv(EnvWatchSkipDir, ""); skipstr != "" {
-		if strings.HasPrefix(skipstr, "override") {
-			c.WatchSkipDirs = strings.Split(skipstr[10:], ",")
-			// Always skip node_modules dir
-			if !strings.Contains(skipstr, "node_modules") {
-				c.WatchSkipDirs = append(c.WatchSkipDirs, "node_modules")
-			}
-		} else {
-			c.WatchSkipDirs = append(DefaultSkipDirs, strings.Split(skipstr, ",")...)
-		}
-	}
-
-	clog.Debugf("Config: Watch skip directory=%s", strings.Join(c.WatchSkipDirs, ","))
 	return nil
 }

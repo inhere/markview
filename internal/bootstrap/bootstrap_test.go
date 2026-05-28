@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -255,6 +257,43 @@ func TestProjectFlagKeepsPortRegistryRules(t *testing.T) {
 			assert.Eq(t, tt.shouldUse, shouldUseProjectPortRegistry())
 		})
 	}
+}
+
+func TestPrepareLoadsDotenvFromTargetDir(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".env"), []byte("MKVIEW_PORT=6222\nMKVIEW_WATCH=false\n"), 0644))
+	t.Setenv(config.EnvPort, "")
+	t.Setenv(config.EnvWatch, "")
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{}
+
+	err := prepare([]string{targetDir}, testContentFS())
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 6222, config.Cfg.PortInt)
+	assert.Eq(t, config.PortSourceEnv, config.Cfg.PortSource)
+	assert.False(t, config.Cfg.EnableWatch)
+}
+
+func TestPrepareProjectConfigPortSkipsProjectRegistryMode(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".markview.json"), []byte(`{"server":{"port":6223}}`), 0644))
+	t.Setenv(config.EnvPort, "")
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{}
+
+	err := prepare([]string{targetDir}, testContentFS())
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 6223, config.Cfg.PortInt)
+	assert.Eq(t, config.PortSourceConfig, config.Cfg.PortSource)
+	assert.False(t, shouldUseProjectPortRegistry())
 }
 
 func TestListenNextAvailable(t *testing.T) {
