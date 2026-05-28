@@ -813,7 +813,7 @@ git commit -m "feat(config): apply config files during startup"
 - Modify: `internal/handlers/handlers_test.go`
 - Modify: `web/template.html`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `internal/handlers/handlers_test.go` 增加完整页面渲染断言，或在已有 handler 测试中补充：
 
@@ -855,7 +855,7 @@ func TestRenderFullPageInjectsAppConfigJSON(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -865,7 +865,7 @@ go test ./internal/handlers
 
 Expected: FAIL，`AppConfigJSON` 或 `Config.AppConfig` 未定义。
 
-- [ ] **Step 3: 增加 AppConfig 输出**
+- [x] **Step 3: 增加 AppConfig 输出**
 
 在 `internal/config/config.go` 增加：
 
@@ -902,7 +902,7 @@ func (c *Config) AppConfig() AppConfig {
 <script id="app-config-data" type="application/json">{{ .AppConfigJSON }}</script>
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run:
 
@@ -912,7 +912,7 @@ go test ./internal/handlers
 
 Expected: PASS。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add internal/config/config.go internal/handlers/page_handler.go internal/handlers/handlers_test.go web/template.html
