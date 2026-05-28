@@ -36,6 +36,11 @@ type Config struct {
 	UILayout      string
 }
 
+type AppConfig struct {
+	PreviewExts []string `json:"previewExts"`
+	Layout      string   `json:"layout"`
+}
+
 type PortSource string
 
 const (
@@ -81,6 +86,21 @@ func (c *Config) ListenAddr() string {
 		return "127.0.0.1:" + c.PortStr()
 	}
 	return ":" + c.PortStr()
+}
+
+func (c *Config) AppConfig() AppConfig {
+	previewExts := c.PreviewExts
+	if len(previewExts) == 0 {
+		previewExts = DefaultPreviewExts
+	}
+	layout := c.UILayout
+	if layout == "" {
+		layout = UILayoutCompact
+	}
+	return AppConfig{
+		PreviewExts: previewExts,
+		Layout:      layout,
+	}
 }
 
 // Init initializes the configuration.
