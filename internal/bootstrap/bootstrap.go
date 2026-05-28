@@ -34,6 +34,7 @@ type options struct {
 }
 
 var openBrowser = sysutil.OpenBrowser
+var cliPortFlagVisited bool
 var cliPrivateFlagVisited bool
 
 // Run 启动 CLI 入口，main 包只负责传入嵌入资源和构建信息。
@@ -174,10 +175,13 @@ func markPortFlagVisited(c *cflag.CFlags) {
 }
 
 func markCliFlagVisits(c *cflag.CFlags) {
+	cliPortFlagVisited = false
 	cliPrivateFlagVisited = false
 	c.Visit(func(flag *flag.Flag) {
 		switch flag.Name {
 		case "port":
+			// PortSource 是 prepare 后的运行态；单独记录本次解析，避免下一次 CLI 复用旧来源。
+			cliPortFlagVisited = true
 			config.Cfg.PortSource = config.PortSourceCLI
 		case "private":
 			// Bool flags can be explicitly set false; track visitation separately from the value.
@@ -194,7 +198,7 @@ func shouldUseProjectPortRegistry() bool {
 }
 
 func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
-	registryPath, err := projects.RegistryPath()
+	registryPath, err := projectRegistryPath()
 	if err != nil {
 		clog.Warnf("Failed to resolve project registry path: %v", err)
 	}
@@ -214,7 +218,8 @@ func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
 		host = "127.0.0.1"
 	}
 	preferDefault := config.Cfg.PortSource == config.PortSourceUnset
-	listener, actualPort, err := listenProjectPortFromRegistry(host, targetDir, registry, preferDefault)
+	useSavedPort := !(config.Cfg.PortSource == config.PortSourceCLI && config.Cfg.PortInt < 0)
+	listener, actualPort, err := listenProjectPortFromRegistry(host, targetDir, registry, preferDefault, useSavedPort)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -232,9 +237,9 @@ func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
 	return listener, actualPort, nil
 }
 
-func listenProjectPortFromRegistry(host string, targetDir string, registry projects.Registry, preferDefault bool) (net.Listener, int, error) {
+func listenProjectPortFromRegistry(host string, targetDir string, registry projects.Registry, preferDefault bool, useSavedPort bool) (net.Listener, int, error) {
 	reservedPorts := reservedProjectPorts(registry, targetDir)
-	if savedPort, ok := projects.LookupPort(registry, targetDir); ok {
+	if savedPort, ok := projects.LookupPort(registry, targetDir); useSavedPort && ok {
 		// 已保存端口优先；若其他项目也记录了该端口或端口被占用，则继续向后找可用端口。
 		if listener, port, err := listenNextAvailable(host, savedPort, 100, reservedPorts); err == nil {
 			return listener, port, nil
@@ -251,11 +256,7 @@ func listenProjectPortFromRegistry(host string, targetDir string, registry proje
 	}
 
 	// 兜底交给系统随机端口，避免缓存文件或连续端口占用阻止服务启动。
-	listener, err := net.Listen("tcp", net.JoinHostPort(normalizeListenHost(host), "0"))
-	if err != nil {
-		return nil, 0, err
-	}
-	return listener, listener.Addr().(*net.TCPAddr).Port, nil
+	return listenRandomPort(host, reservedPorts)
 }
 
 func reservedProjectPorts(registry projects.Registry, targetDir string) map[int]struct{} {
@@ -286,6 +287,22 @@ func listenNextAvailable(host string, startPort int, limit int, reservedPorts ma
 		}
 	}
 	return nil, 0, fmt.Errorf("no available port found from %d to %d", startPort, startPort+limit-1)
+}
+
+func listenRandomPort(host string, reservedPorts map[int]struct{}) (net.Listener, int, error) {
+	host = normalizeListenHost(host)
+	for attempt := 0; attempt < 100; attempt++ {
+		listener, err := net.Listen("tcp", net.JoinHostPort(host, "0"))
+		if err != nil {
+			return nil, 0, err
+		}
+		port := listener.Addr().(*net.TCPAddr).Port
+		if _, reserved := reservedPorts[port]; !reserved {
+			return listener, port, nil
+		}
+		_ = listener.Close()
+	}
+	return nil, 0, fmt.Errorf("no random port available outside project registry reservations")
 }
 
 func normalizeListenHost(host string) string {
@@ -384,7 +401,7 @@ func prepare(args []string, content fs.FS) error {
 	}
 	config.Cfg = merged
 
-	utils.EnableDebug = envutil.GetBool(config.EnvDebug, false)
+	utils.EnableDebug = runtimeDebugEnabled(dotenv)
 	config.EnableDebug = utils.EnableDebug
 	if err := config.Cfg.Init(targetDir, entryFile); err != nil {
 		return err
@@ -457,7 +474,7 @@ func buildRuntimeConfig(targetDir string, dotenv map[string]string) (config.Conf
 	}
 
 	cliPort := (*int)(nil)
-	if config.Cfg.PortSource == config.PortSourceCLI {
+	if cliPortFlagVisited {
 		cliPort = &config.Cfg.PortInt
 	}
 	cliPrivate := (*bool)(nil)
@@ -552,6 +569,15 @@ func envValue(name string, dotenv map[string]string) string {
 		}
 	}
 	return envutil.Getenv(name, "")
+}
+
+func runtimeDebugEnabled(dotenv map[string]string) bool {
+	raw := envValue(config.EnvDebug, dotenv)
+	if raw == "" {
+		return false
+	}
+	value, err := strconv.ParseBool(raw)
+	return err == nil && value
 }
 
 func environMap() map[string]string {

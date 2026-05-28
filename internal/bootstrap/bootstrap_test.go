@@ -16,6 +16,7 @@ import (
 	"github.com/gookit/goutil/testutil/assert"
 	"github.com/inhere/markview/internal/config"
 	"github.com/inhere/markview/internal/projects"
+	"github.com/inhere/markview/internal/utils"
 )
 
 func TestStaticHandlerSetsRevalidateCacheHeaders(t *testing.T) {
@@ -389,6 +390,38 @@ func TestPrepareCliPortOverridesProjectConfigPort(t *testing.T) {
 	})
 }
 
+func TestPrepareDoesNotReusePreviousCliPortSource(t *testing.T) {
+	projectA := t.TempDir()
+	projectB := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(projectA, "README.md"), []byte("# A"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(projectB, "README.md"), []byte("# B"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(projectB, ".markview.json"), []byte(`{"server":{"port":6225}}`), 0644))
+	t.Setenv(config.EnvPort, "")
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		cmd := newCommand(testOptions())
+		cmd.Func = nil
+		assert.NoErr(t, cmd.Parse([]string{"--port", "6333", projectA}))
+		markPortFlagVisited(cmd)
+		assert.NoErr(t, prepare(cmd.RemainArgs(), testContentFS()))
+		assert.Eq(t, config.PortSourceCLI, config.Cfg.PortSource)
+
+		cmd = newCommand(testOptions())
+		cmd.Func = nil
+		assert.NoErr(t, cmd.Parse([]string{projectB}))
+		markPortFlagVisited(cmd)
+
+		err := prepare(cmd.RemainArgs(), testContentFS())
+
+		assert.NoErr(t, err)
+		assert.Eq(t, 6225, config.Cfg.PortInt)
+		assert.Eq(t, config.PortSourceConfig, config.Cfg.PortSource)
+	})
+}
+
 func TestPrepareUsesRegistryPortWhenNoHigherPrecedencePortExists(t *testing.T) {
 	targetDir := t.TempDir()
 	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
@@ -405,6 +438,34 @@ func TestPrepareUsesRegistryPortWhenNoHigherPrecedencePortExists(t *testing.T) {
 		assert.Eq(t, 6224, config.Cfg.PortInt)
 		assert.Eq(t, config.PortSourceRegistry, config.Cfg.PortSource)
 		assert.True(t, shouldUseProjectPortRegistry())
+	})
+}
+
+func TestPrepareDotenvDebugEnablesDebugWithoutLeakingEnv(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".env"), []byte("MKVIEW_DEBUG=true\n"), 0644))
+	t.Setenv(config.EnvDebug, "")
+
+	origCfg := config.Cfg
+	origUtilsDebug := utils.EnableDebug
+	origConfigDebug := config.EnableDebug
+	t.Cleanup(func() {
+		config.Cfg = origCfg
+		utils.EnableDebug = origUtilsDebug
+		config.EnableDebug = origConfigDebug
+	})
+	config.Cfg = config.Config{}
+	utils.EnableDebug = false
+	config.EnableDebug = false
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		err := prepare([]string{targetDir}, testContentFS())
+
+		assert.NoErr(t, err)
+		assert.True(t, utils.EnableDebug)
+		assert.True(t, config.EnableDebug)
+		assert.Eq(t, "", os.Getenv(config.EnvDebug))
 	})
 }
 
@@ -472,7 +533,7 @@ func TestListenProjectPortFromRegistryUsesSavedPort(t *testing.T) {
 	err = projects.Upsert(registry, targetDir, savedPort, nowForTest())
 	assert.NoErr(t, err)
 
-	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true)
+	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true, true)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
@@ -489,7 +550,7 @@ func TestListenProjectPortFromRegistrySkipsPortsSavedByOtherProjects(t *testing.
 	assert.NoErr(t, projects.Upsert(registry, targetDir, ports[0], nowForTest()))
 	assert.NoErr(t, projects.Upsert(registry, otherDir, ports[0], nowForTest()))
 
-	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true)
+	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true, true)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
@@ -503,11 +564,61 @@ func TestListenProjectPortFromRegistryFallsThroughFromDefaultPort(t *testing.T) 
 	}
 	defer occupied.Close()
 
-	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", t.TempDir(), projects.Registry{}, true)
+	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", t.TempDir(), projects.Registry{}, true, true)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
 	assert.Eq(t, 6101, actualPort)
+}
+
+func TestListenAndRememberProjectPortUsesHookRegistryPath(t *testing.T) {
+	targetDir := t.TempDir()
+	ports, closePorts := reserveConsecutivePorts(t, 1)
+	closePorts()
+	savedPort := ports[0]
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{PortSource: config.PortSourceRegistry, Private: true}
+	setUserRegistryHome(t)
+
+	withTempProjectRegistry(t, registryForTest(t, targetDir, "markview", savedPort), func(path string) {
+		listener, actualPort, err := listenAndRememberProjectPort(targetDir)
+		assert.NoErr(t, err)
+		defer listener.Close()
+
+		assert.Eq(t, savedPort, actualPort)
+		loaded, err := projects.Load(path)
+		assert.NoErr(t, err)
+		record, ok := loaded[projectsMustKey(t, targetDir)]
+		assert.True(t, ok)
+		assert.Eq(t, actualPort, record.Port)
+	})
+}
+
+func TestListenAndRememberProjectPortKeepsCliRandomFromReusingSavedPort(t *testing.T) {
+	targetDir := t.TempDir()
+	ports, closePorts := reserveConsecutivePorts(t, 1)
+	closePorts()
+	savedPort := ports[0]
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{PortInt: -1, PortSource: config.PortSourceCLI, Private: true}
+	setUserRegistryHome(t)
+
+	withTempProjectRegistry(t, registryForTest(t, targetDir, "markview", savedPort), func(path string) {
+		listener, actualPort, err := listenAndRememberProjectPort(targetDir)
+		assert.NoErr(t, err)
+		defer listener.Close()
+
+		assert.NotEq(t, savedPort, actualPort)
+		loaded, err := projects.Load(path)
+		assert.NoErr(t, err)
+		record, ok := loaded[projectsMustKey(t, targetDir)]
+		assert.True(t, ok)
+		assert.Eq(t, actualPort, record.Port)
+	})
 }
 
 func reserveConsecutivePorts(t *testing.T, count int) ([]int, func()) {
@@ -544,6 +655,24 @@ func reserveConsecutivePorts(t *testing.T, count int) ([]int, func()) {
 
 	t.Fatal("failed to reserve consecutive ports for test")
 	return nil, nil
+}
+
+func setUserRegistryHome(t *testing.T) {
+	t.Helper()
+
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	t.Setenv("USERPROFILE", homeDir)
+	t.Setenv("APPDATA", filepath.Join(homeDir, "AppData", "Roaming"))
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(homeDir, ".config"))
+}
+
+func projectsMustKey(t *testing.T, targetDir string) string {
+	t.Helper()
+
+	key, err := projects.ProjectKey(targetDir)
+	assert.NoErr(t, err)
+	return key
 }
 
 func nowForTest() time.Time {
