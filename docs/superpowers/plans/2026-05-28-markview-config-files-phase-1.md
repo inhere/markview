@@ -1092,7 +1092,7 @@ git commit -m "feat(web): read app preview config"
 - Modify: `web/src/app-config.ts`
 - Modify: `web/src/app-config.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `web/src/preferences.test.ts` 增加：
 
@@ -1145,7 +1145,7 @@ test('uses compact layout when injected layout is missing', () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -1155,7 +1155,7 @@ cd web && bun test web/src/preferences.test.ts web/src/app-config.test.ts
 
 Expected: FAIL，layout mode 偏好函数未定义。
 
-- [ ] **Step 3: 实现 layout preference**
+- [x] **Step 3: 实现 layout preference**
 
 在 `web/src/preferences.ts`：
 
@@ -1189,7 +1189,7 @@ export function persistLayoutMode(value: LayoutMode, storage: StorageWriter = wi
 }
 ```
 
-- [ ] **Step 4: 在 app 初始化中应用 dataset**
+- [x] **Step 4: 在 app 初始化中应用 dataset**
 
 在 `web/src/app.ts`：
 
@@ -1207,7 +1207,7 @@ function applyLayoutMode(mode: LayoutMode) {
 
 一期不改 CSS 三栏布局，只保证 dataset 存在，后续二期使用。
 
-- [ ] **Step 5: 运行前端测试**
+- [x] **Step 5: 运行前端测试**
 
 Run:
 
@@ -1217,7 +1217,7 @@ cd web && bun test
 
 Expected: PASS。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add web/src/preferences.ts web/src/preferences.test.ts web/src/app.ts web/src/app-config.ts web/src/app-config.test.ts
