@@ -236,23 +236,26 @@ toc-right  : files | body | toc
 
 ### DOM 结构
 
-当前模板里的 sidebar 同时包含 Files 和 TOC。为了避免为每种布局维护两套 DOM，建议保留单一数据源和单一渲染入口，但把 Files、TOC、Body 作为三个可布局区域：
+当前模板里的 sidebar 同时包含 Files 和 TOC。二期应把 TOC 从 sidebar DOM 层级中拆出，和 Files、Body 成为同级布局区域。这样 `compact` 和三栏模式都由同一个 CSS Grid 控制，不需要复制 TOC DOM，也不需要运行时移动节点。
 
 ```html
 <body data-layout="compact">
-  <aside class="files-pane">...</aside>
-  <aside class="toc-pane">...</aside>
-  <main class="content-wrapper">...</main>
+  <div class="app-shell">
+    <aside class="files-pane sidebar">...</aside>
+    <aside class="toc-pane sidebar-panel sidebar-panel-toc" id="toc-panel">...</aside>
+    <main class="content-wrapper">...</main>
+  </div>
 </body>
 ```
 
-`compact` 模式下，CSS 将 `.files-pane` 和 `.toc-pane` 视觉上组合为当前 sidebar 样式；三栏模式下，两者作为独立列展示。
+`compact` 模式下，CSS Grid 将 `.files-pane` 和 `.toc-pane` 放在左侧 sidebar 区域内，视觉保持当前 Files + TOC 的左栏体验；三栏模式下，两者作为独立列展示。
 
-实施时可以先用最小 DOM 调整完成：
+实施原则：
 
-- 将现有 `.sidebar-panel-files` 保留为文件面板。
-- 将现有 `.sidebar-panel-toc` 保留为 TOC 面板。
-- 在三栏模式下通过 CSS grid/flex 将 TOC 面板移出合并视觉。
+- 将现有 sidebar 外壳重命名/扩展为 `.files-pane.sidebar`，继续承载 header、文件面板、折叠图标和 resize handle。
+- 将现有 `.sidebar-panel-toc` 移到 `.app-shell` 下，成为 `.toc-pane.sidebar-panel.sidebar-panel-toc`。
+- `.content-wrapper` 同样作为 `.app-shell` 的直接子项。
+- 使用 CSS Grid 的 `grid-template-areas` 切换 `compact`、`toc-middle`、`toc-right`，不要使用 `position: fixed` 作为主布局方案。
 - 避免复制 TOC DOM，确保 `generateTOC()`、`highlightTOC()` 仍只操作一个 `#toc-list`。
 
 ### CSS 布局
@@ -262,12 +265,18 @@ toc-right  : files | body | toc
 ```text
 compact:
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr)
+  grid-template-rows: minmax(0, 1fr) minmax(12rem, 32vh)
+  grid-template-areas:
+    "files body"
+    "toc   body"
 
 toc-middle:
   grid-template-columns: var(--files-width) var(--toc-width) minmax(0, 1fr)
+  grid-template-areas: "files toc body"
 
 toc-right:
   grid-template-columns: var(--files-width) minmax(0, 1fr) var(--toc-width)
+  grid-template-areas: "files body toc"
 ```
 
 推荐默认宽度：
@@ -276,7 +285,7 @@ toc-right:
 - toc: 默认 `240px`，最小 `180px`，最大 `360px`。
 - body: 继续使用 `--layout-max-width` 控制正文内部宽度。
 
-`toc-middle` 和 `toc-right` 下，正文容器不应被强行拉满到失去阅读宽度控制；外层列占满剩余空间，正文内部仍按用户选择的 Width 设置居中。
+`compact` 下，`.files-pane` 和 `.toc-pane` 共享左列高度，不应继续无条件使用 `height: 100vh` 导致 TOC 被推到首屏外；`toc-middle` 和 `toc-right` 下，Files 与 TOC 才分别作为完整高度列展示。三栏模式中正文容器不应被强行拉满到失去阅读宽度控制；外层列占满剩余空间，正文内部仍按用户选择的 Width 设置居中。
 
 移动端建议统一回退为 `compact` 的单栏/抽屉式行为，不在小屏强行展示三列。回退只影响视觉布局，不改变用户保存的 layout 偏好；当视口恢复到桌面宽度时继续使用用户选择的模式。
 
