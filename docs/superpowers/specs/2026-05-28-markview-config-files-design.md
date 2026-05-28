@@ -4,6 +4,7 @@
 
 - [TODO 需求](../../TODO.md#新增支持全局和项目级别的配置文件-)
 - [一期实施计划](../plans/2026-05-28-markview-config-files-phase-1.md)
+- [二期实施计划](../plans/2026-05-28-markview-config-files-phase-2.md)
 
 ## 背景
 

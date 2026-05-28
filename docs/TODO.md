@@ -65,6 +65,7 @@ markview -P|--project <project name>
 相关文档：
 - [设计文档](superpowers/specs/2026-05-28-markview-config-files-design.md)
 - [一期实施计划](superpowers/plans/2026-05-28-markview-config-files-phase-1.md)
+- [二期实施计划](superpowers/plans/2026-05-28-markview-config-files-phase-2.md)
 
 新增支持全局和项目级别的配置文件 `markview.json`，用户可以在项目目录下创建该文件，来配置项目的预览服务参数。
 

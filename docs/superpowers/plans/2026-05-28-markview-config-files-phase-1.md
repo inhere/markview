@@ -4,6 +4,7 @@
 
 - [TODO 需求](../../TODO.md#新增支持全局和项目级别的配置文件-)
 - [设计文档](../specs/2026-05-28-markview-config-files-design.md)
+- [二期实施计划](2026-05-28-markview-config-files-phase-2.md)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
