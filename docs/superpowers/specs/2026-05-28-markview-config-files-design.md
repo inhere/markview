@@ -32,10 +32,10 @@ MarkView 当前主要通过 CLI 参数、项目 `.env`、环境变量和全局 `
 
 ## 非目标
 
-1. 本阶段不重构完整三栏布局。
-2. 本阶段不让多个项目配置文件叠加合并。
-3. 本阶段不把 `markview-projects.json` 扩展成通用项目配置文件。
-4. 本阶段不引入 YAML/TOML 配置格式。
+1. 不让多个项目配置文件叠加合并。
+2. 不把 `markview-projects.json` 扩展成通用项目配置文件。
+3. 不引入 YAML/TOML 配置格式。
+4. 不在配置文件支持的一期开发中完成完整三栏布局；完整布局设计仍包含在本文档中，并拆到二期实施。
 
 ## 配置文件格式
 
@@ -205,14 +205,125 @@ CLI 选项
 - 用户仍可在同一浏览器里保留自己的阅读偏好。
 - 不会因为项目配置变化导致每次刷新都覆盖用户设置。
 
-本阶段可先完整打通配置读取和注入链路，并只保证 `compact` 现有布局稳定。`toc-middle` 和 `toc-right` 可以先完成类型校验、默认值注入和 body/html class 标记，完整三栏布局作为后续独立阶段实现。
-
-设置面板后续应新增 layout 控件：
+设置面板应新增 layout 控件：
 
 - `compact`
 - `toc-middle`
 - `toc-right`
 - reset/default 操作恢复到服务端注入的项目默认 layout
+
+## 完整布局设计
+
+布局模式定义：
+
+```text
+compact    : sidebar(files + toc) | body
+toc-middle : files | toc | body
+toc-right  : files | body | toc
+```
+
+`compact` 保持当前体验：文件树和 TOC 都在左侧 sidebar 中，用户可以分别折叠 Files 区块和整个 sidebar。
+
+`toc-middle` 使用三列结构：左侧是文件树，中间是当前页面 TOC，右侧是正文。这个模式适合文件很多且页面较长的项目，文件导航和页面内导航同时可见，不互相挤占。
+
+`toc-right` 使用三列结构：左侧是文件树，中间是正文，右侧是当前页面 TOC。这个模式适合更接近文档站的阅读体验，正文居中，TOC 作为阅读辅助停靠在右侧。
+
+### DOM 结构
+
+当前模板里的 sidebar 同时包含 Files 和 TOC。为了避免为每种布局维护两套 DOM，建议保留单一数据源和单一渲染入口，但把 Files、TOC、Body 作为三个可布局区域：
+
+```html
+<body data-layout="compact">
+  <aside class="files-pane">...</aside>
+  <aside class="toc-pane">...</aside>
+  <main class="content-wrapper">...</main>
+</body>
+```
+
+`compact` 模式下，CSS 将 `.files-pane` 和 `.toc-pane` 视觉上组合为当前 sidebar 样式；三栏模式下，两者作为独立列展示。
+
+实施时可以先用最小 DOM 调整完成：
+
+- 将现有 `.sidebar-panel-files` 保留为文件面板。
+- 将现有 `.sidebar-panel-toc` 保留为 TOC 面板。
+- 在三栏模式下通过 CSS grid/flex 将 TOC 面板移出合并视觉。
+- 避免复制 TOC DOM，确保 `generateTOC()`、`highlightTOC()` 仍只操作一个 `#toc-list`。
+
+### CSS 布局
+
+桌面端建议使用页面级 grid：
+
+```text
+compact:
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr)
+
+toc-middle:
+  grid-template-columns: var(--files-width) var(--toc-width) minmax(0, 1fr)
+
+toc-right:
+  grid-template-columns: var(--files-width) minmax(0, 1fr) var(--toc-width)
+```
+
+推荐默认宽度：
+
+- files: 沿用当前 sidebar 宽度偏好，默认 `280px`。
+- toc: 默认 `240px`，最小 `180px`，最大 `360px`。
+- body: 继续使用 `--layout-max-width` 控制正文内部宽度。
+
+`toc-middle` 和 `toc-right` 下，正文容器不应被强行拉满到失去阅读宽度控制；外层列占满剩余空间，正文内部仍按用户选择的 Width 设置居中。
+
+移动端建议统一回退为 `compact` 的单栏/抽屉式行为，不在小屏强行展示三列。回退只影响视觉布局，不改变用户保存的 layout 偏好；当视口恢复到桌面宽度时继续使用用户选择的模式。
+
+### 折叠和 Resize
+
+现有 sidebar resize 可以继续控制 files 面板宽度。三栏模式新增 TOC 宽度时，不建议二期首版增加 TOC resize；默认固定宽度即可，降低交互复杂度。
+
+折叠策略：
+
+- `compact`: 沿用当前 sidebar 折叠和 Files 区块折叠。
+- `toc-middle`: sidebar 折叠只影响 files 面板；TOC 保持可见。
+- `toc-right`: sidebar 折叠只影响 files 面板；TOC 保持可见。
+- 后续如需单独折叠 TOC，可增加独立 `markview:toc-collapsed` 偏好，不与当前 sidebar 状态复用。
+
+### 设置面板交互
+
+设置面板新增 Layout 分段控件：
+
+```text
+Layout: Compact | TOC Middle | TOC Right
+```
+
+行为：
+
+- 页面初始化时读取 `localStorage` layout。
+- 若本地无 layout，使用服务端注入的项目默认 `ui.layout`。
+- 用户切换 layout 后立即应用，并保存到 `localStorage`。
+- Reset/Default 操作恢复到服务端注入的项目默认 layout，并清除本地 layout 覆盖。
+
+新增本地存储键：
+
+```text
+markview:layout-mode
+```
+
+### 前端状态流
+
+页面初始化流程：
+
+1. `readAppConfig()` 读取服务端注入配置。
+2. `readStoredPreferences()` 读取本地偏好。
+3. `resolveLayoutMode(localPreference, appConfig.layout)` 得到最终 layout。
+4. `applyLayoutMode(layout)` 设置 `document.body.dataset.layout` 或 `document.documentElement.dataset.layout`。
+5. 渲染文件树、TOC 和正文增强逻辑。
+
+局部页面导航时不重新解析 layout，只更新正文、当前文件路径、文件树和 TOC。layout 是页面级状态，应在 SPA 风格导航中保持稳定。
+
+### 可访问性和兼容性
+
+- Layout 控件使用 button group 或 segmented control，并通过 `aria-pressed` 表示当前选中项。
+- 三栏模式下 DOM 顺序建议保持 Files、TOC、Body，键盘导航顺序稳定；`toc-right` 只通过 CSS grid 调整视觉位置。
+- 移动端回退时，不应隐藏正文内容或让 TOC 覆盖正文。
+- `preview-active` 右侧预览面板打开时，三栏布局应优先保证正文和预览可读；可以临时隐藏独立 TOC 或降低 TOC 列宽，避免四列拥挤。
 
 ## 错误处理
 
@@ -244,6 +355,8 @@ Go 测试：
 - `previewExts` 增加新扩展名后，链接预览识别生效。
 - 无效 layout 回退到 `compact`。
 - 本地 layout 偏好覆盖服务端默认值。
+- Layout 设置面板切换 `compact`、`toc-middle`、`toc-right` 后写入本地偏好并更新页面 dataset。
+- Reset/Default 清除本地 layout 覆盖并恢复服务端默认 layout。
 
 集成验证：
 
@@ -268,7 +381,8 @@ Go 测试：
 - 完成 server 配置合并。
 - 注入 `preview_exts` 和 `layout` 到页面。
 - 让 `preview_exts` 在前端链接预览中生效。
-- 保留 `layout` 字段和默认值，但不展开完整三栏布局。
+- 完成 `layout` 类型、默认值、localStorage key 和页面 dataset 的基础链路。
+- 保持现有 `compact` 布局视觉不变。
 
 阶段二：布局设置和三栏布局
 
@@ -276,9 +390,10 @@ Go 测试：
 - 实现 `compact`、`toc-middle`、`toc-right`。
 - 本地 layout 偏好覆盖服务端项目默认值。
 - 移动端统一回退或适配为单栏/compact 行为。
+- 验证右侧预览面板打开时三栏布局不出现内容重叠。
 
 ## 开放问题
 
 1. 固定配置端口被占用时是否严格报错，还是沿用自动寻找下一个可用端口。当前建议严格报错。
 2. `watch_dir` 是否允许绝对路径。当前建议仅允许项目内相对路径，降低越权监听风险。
-3. `layout` 三栏实现是否与配置文件支持同一阶段完成。当前建议拆到第二阶段。
+3. TOC 面板是否需要独立 resize。当前建议二期先使用固定宽度，后续按需要再增加。
