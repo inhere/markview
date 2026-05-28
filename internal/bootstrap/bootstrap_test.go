@@ -582,6 +582,27 @@ func TestListenProjectPortFromRegistrySkipsPortsSavedByOtherProjects(t *testing.
 	assert.Eq(t, ports[1], actualPort)
 }
 
+func TestReservedProjectPortsCanIncludeCurrentProjectSavedPort(t *testing.T) {
+	targetDir := t.TempDir()
+	otherDir := t.TempDir()
+
+	registry := projects.Registry{}
+	assert.NoErr(t, projects.Upsert(registry, targetDir, 6226, nowForTest()))
+	assert.NoErr(t, projects.Upsert(registry, otherDir, 6227, nowForTest()))
+
+	excludingCurrent := reservedProjectPorts(registry, targetDir, false)
+	_, hasCurrentWhenExcluded := excludingCurrent[6226]
+	_, hasOtherWhenExcluded := excludingCurrent[6227]
+	assert.False(t, hasCurrentWhenExcluded)
+	assert.True(t, hasOtherWhenExcluded)
+
+	includingCurrent := reservedProjectPorts(registry, targetDir, true)
+	_, hasCurrentWhenIncluded := includingCurrent[6226]
+	_, hasOtherWhenIncluded := includingCurrent[6227]
+	assert.True(t, hasCurrentWhenIncluded)
+	assert.True(t, hasOtherWhenIncluded)
+}
+
 func TestListenProjectPortFromRegistryFallsThroughFromDefaultPort(t *testing.T) {
 	occupied, err := net.Listen("tcp", "127.0.0.1:6100")
 	if err != nil {

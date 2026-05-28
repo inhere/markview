@@ -238,7 +238,7 @@ func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
 }
 
 func listenProjectPortFromRegistry(host string, targetDir string, registry projects.Registry, preferDefault bool, useSavedPort bool) (net.Listener, int, error) {
-	reservedPorts := reservedProjectPorts(registry, targetDir)
+	reservedPorts := reservedProjectPorts(registry, targetDir, !useSavedPort)
 	if savedPort, ok := projects.LookupPort(registry, targetDir); useSavedPort && ok {
 		// 已保存端口优先；若其他项目也记录了该端口或端口被占用，则继续向后找可用端口。
 		if listener, port, err := listenNextAvailable(host, savedPort, 100, reservedPorts); err == nil {
@@ -259,7 +259,7 @@ func listenProjectPortFromRegistry(host string, targetDir string, registry proje
 	return listenRandomPort(host, reservedPorts)
 }
 
-func reservedProjectPorts(registry projects.Registry, targetDir string) map[int]struct{} {
+func reservedProjectPorts(registry projects.Registry, targetDir string, includeCurrentProject bool) map[int]struct{} {
 	key, err := projects.ProjectKey(targetDir)
 	if err != nil {
 		return nil
@@ -267,7 +267,7 @@ func reservedProjectPorts(registry projects.Registry, targetDir string) map[int]
 
 	reserved := make(map[int]struct{})
 	for path, record := range registry {
-		if path == key || record.Port <= 0 {
+		if (!includeCurrentProject && path == key) || record.Port <= 0 {
 			continue
 		}
 		reserved[record.Port] = struct{}{}
