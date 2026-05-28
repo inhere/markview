@@ -68,7 +68,7 @@
 - Create: `internal/config/file_config_test.go`
 - Modify: `internal/config/consts.go`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `internal/config/file_config_test.go` 新增测试：
 
@@ -140,7 +140,7 @@ func TestNormalizeExtListSetting(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -150,7 +150,7 @@ go test ./internal/config
 
 Expected: FAIL，提示 `FindProjectConfig`、`LoadFileConfig`、`NormalizeUILayout`、`NormalizeExtListSetting` 未定义。
 
-- [ ] **Step 3: 实现配置文件模型**
+- [x] **Step 3: 实现配置文件模型**
 
 在 `internal/config/consts.go` 增加：
 
@@ -287,7 +287,7 @@ func appendUniqueString(items []string, item string) []string {
 }
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run:
 
@@ -297,7 +297,7 @@ go test ./internal/config
 
 Expected: PASS。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add internal/config/consts.go internal/config/file_config.go internal/config/file_config_test.go

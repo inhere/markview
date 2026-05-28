@@ -1,9 +1,26 @@
 package config
 
-
 const (
 	DefaultPort  = "6100"
 	DefaultEntry = "README.md"
+)
+
+const (
+	GlobalConfigFile = "markview.json"
+)
+
+var ProjectConfigFiles = []string{
+	"markview.local.json",
+	".markview.json",
+	"markview.json",
+}
+
+var DefaultPreviewExts = []string{".md", ".json", ".jsonl", ".yaml", ".yml", ".toml"}
+
+const (
+	UILayoutCompact   = "compact"
+	UILayoutTOCMiddle = "toc-middle"
+	UILayoutTOCRight  = "toc-right"
 )
 
 const (
