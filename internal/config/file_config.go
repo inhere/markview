@@ -52,18 +52,29 @@ func LoadGlobalFileConfig() (FileConfig, bool, error) {
 	return cfg, true, nil
 }
 
-func FindProjectConfig(targetDir string) (string, bool) {
+func FindProjectConfig(targetDir string) (string, bool, error) {
 	for _, name := range ProjectConfigFiles {
 		path := filepath.Join(targetDir, name)
-		if info, err := os.Stat(path); err == nil && !info.IsDir() {
-			return path, true
+		info, err := os.Stat(path)
+		if err == nil {
+			if info.IsDir() {
+				continue
+			}
+			return path, true, nil
 		}
+		if os.IsNotExist(err) {
+			continue
+		}
+		return "", false, err
 	}
-	return "", false
+	return "", false, nil
 }
 
 func LoadProjectFileConfig(targetDir string) (FileConfig, bool, error) {
-	path, ok := FindProjectConfig(targetDir)
+	path, ok, err := FindProjectConfig(targetDir)
+	if err != nil {
+		return FileConfig{}, false, err
+	}
 	if !ok {
 		return FileConfig{}, false, nil
 	}

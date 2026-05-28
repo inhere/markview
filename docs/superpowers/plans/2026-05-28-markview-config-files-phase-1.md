@@ -89,8 +89,9 @@ func TestFindProjectConfigUsesFirstExistingFile(t *testing.T) {
 	assert.NoErr(t, os.WriteFile(filepath.Join(dir, ".markview.json"), []byte(`{"server":{"port":6102}}`), 0644))
 	assert.NoErr(t, os.WriteFile(filepath.Join(dir, "markview.local.json"), []byte(`{"server":{"port":6103}}`), 0644))
 
-	path, ok := FindProjectConfig(dir)
+	path, ok, err := FindProjectConfig(dir)
 
+	assert.NoErr(t, err)
 	assert.True(t, ok)
 	assert.Eq(t, filepath.Join(dir, "markview.local.json"), path)
 }
@@ -148,7 +149,7 @@ Run:
 go test ./internal/config
 ```
 
-Expected: FAIL，提示 `FindProjectConfig`、`LoadFileConfig`、`NormalizeUILayout`、`NormalizeExtListSetting` 未定义。
+Expected: FAIL，提示 `FindProjectConfig` 返回值/实现未匹配，或相关方法未定义。
 
 - [x] **Step 3: 实现配置文件模型**
 
@@ -213,14 +214,22 @@ func GlobalConfigPath() (string, error) {
 	return filepath.Join(dir, "markview", GlobalConfigFile), nil
 }
 
-func FindProjectConfig(targetDir string) (string, bool) {
+func FindProjectConfig(targetDir string) (string, bool, error) {
 	for _, name := range ProjectConfigFiles {
 		path := filepath.Join(targetDir, name)
-		if info, err := os.Stat(path); err == nil && !info.IsDir() {
-			return path, true
+		info, err := os.Stat(path)
+		if err == nil {
+			if info.IsDir() {
+				continue
+			}
+			return path, true, nil
 		}
+		if os.IsNotExist(err) {
+			continue
+		}
+		return "", false, err
 	}
-	return "", false
+	return "", false, nil
 }
 
 func LoadFileConfig(path string) (FileConfig, error) {

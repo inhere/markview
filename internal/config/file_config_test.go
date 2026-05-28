@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/gookit/goutil/testutil/assert"
@@ -14,20 +15,23 @@ func TestFindProjectConfigUsesFirstExistingFile(t *testing.T) {
 	assert.NoErr(t, os.WriteFile(filepath.Join(dir, ".markview.json"), []byte(`{"server":{"port":6102}}`), 0o644))
 	assert.NoErr(t, os.WriteFile(filepath.Join(dir, "markview.local.json"), []byte(`{"server":{"port":6103}}`), 0o644))
 
-	path, ok := FindProjectConfig(dir)
+	path, ok, err := FindProjectConfig(dir)
 
+	assert.NoErr(t, err)
 	assert.True(t, ok)
 	assert.Eq(t, filepath.Join(dir, "markview.local.json"), path)
 }
 
 func TestGlobalConfigPathUsesUserConfigDir(t *testing.T) {
 	baseDir := t.TempDir()
-	t.Setenv("APPDATA", baseDir)
+	setUserConfigEnv(t, baseDir)
+	expectedBase, err := os.UserConfigDir()
+	assert.NoErr(t, err)
 
 	path, err := GlobalConfigPath()
 
 	assert.NoErr(t, err)
-	assert.Eq(t, filepath.Join(baseDir, "markview", GlobalConfigFile), path)
+	assert.Eq(t, filepath.Join(expectedBase, "markview", GlobalConfigFile), path)
 }
 
 func TestLoadProjectFileConfigLoadsSelectedProjectFile(t *testing.T) {
@@ -42,6 +46,17 @@ func TestLoadProjectFileConfigLoadsSelectedProjectFile(t *testing.T) {
 	assert.Eq(t, 6102, *cfg.Server.Port)
 }
 
+func TestFindProjectConfigReturnsStatError(t *testing.T) {
+	invalidTargetDir := string([]byte{'b', 'a', 'd', 0})
+
+	path, ok, err := FindProjectConfig(invalidTargetDir)
+
+	assert.Err(t, err)
+	assert.False(t, ok)
+	assert.Eq(t, "", path)
+	assert.False(t, os.IsNotExist(err))
+}
+
 func TestLoadProjectFileConfigIgnoresMissingConfig(t *testing.T) {
 	cfg, ok, err := LoadProjectFileConfig(t.TempDir())
 
@@ -52,9 +67,11 @@ func TestLoadProjectFileConfigIgnoresMissingConfig(t *testing.T) {
 
 func TestLoadGlobalFileConfigLoadsGlobalConfig(t *testing.T) {
 	baseDir := t.TempDir()
-	t.Setenv("APPDATA", baseDir)
+	setUserConfigEnv(t, baseDir)
 
-	configDir := filepath.Join(baseDir, "markview")
+	configBase, err := os.UserConfigDir()
+	assert.NoErr(t, err)
+	configDir := filepath.Join(configBase, "markview")
 	assert.NoErr(t, os.MkdirAll(configDir, 0o755))
 	assert.NoErr(t, os.WriteFile(filepath.Join(configDir, GlobalConfigFile), []byte(`{"ui":{"layout":"toc-right"}}`), 0o644))
 
@@ -107,4 +124,16 @@ func TestNormalizeExtListSetting(t *testing.T) {
 	exts, err = NormalizeExtListSetting(DefaultPreviewExts, "override:ini")
 	assert.NoErr(t, err)
 	assert.Eq(t, []string{".ini"}, exts)
+}
+
+func setUserConfigEnv(t *testing.T, baseDir string) {
+	t.Helper()
+
+	if runtime.GOOS == "windows" {
+		t.Setenv("APPDATA", baseDir)
+		return
+	}
+
+	t.Setenv("XDG_CONFIG_HOME", baseDir)
+	t.Setenv("HOME", filepath.Join(baseDir, "home"))
 }
