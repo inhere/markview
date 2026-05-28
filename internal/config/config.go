@@ -98,7 +98,7 @@ func (c *Config) AppConfig() AppConfig {
 		layout = UILayoutCompact
 	}
 	return AppConfig{
-		PreviewExts: previewExts,
+		PreviewExts: append([]string(nil), previewExts...),
 		Layout:      layout,
 	}
 }

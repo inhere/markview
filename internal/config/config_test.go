@@ -65,3 +65,25 @@ func TestConfigInitKeepsMergedEnvRandomPortListeningOnZero(t *testing.T) {
 	assert.Eq(t, -1, cfg.PortInt)
 	assert.Eq(t, "0", cfg.PortStr())
 }
+
+func TestConfigAppConfigCopiesPreviewExtsFromConfig(t *testing.T) {
+	cfg := Config{PreviewExts: []string{".md", ".txt"}}
+
+	appConfig := cfg.AppConfig()
+	appConfig.PreviewExts[0] = ".changed"
+
+	assert.Eq(t, []string{".md", ".txt"}, cfg.PreviewExts)
+}
+
+func TestConfigAppConfigCopiesDefaultPreviewExts(t *testing.T) {
+	originalDefaults := append([]string(nil), DefaultPreviewExts...)
+	t.Cleanup(func() {
+		DefaultPreviewExts = originalDefaults
+	})
+
+	cfg := Config{}
+	appConfig := cfg.AppConfig()
+	appConfig.PreviewExts[0] = ".changed"
+
+	assert.Eq(t, originalDefaults, DefaultPreviewExts)
+}
