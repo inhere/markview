@@ -1229,7 +1229,7 @@ git commit -m "feat(web): add layout config foundation"
 **Files:**
 - Modify: `docs/TODO.md`
 
-- [ ] **Step 1: 运行后端完整测试**
+- [x] **Step 1: 运行后端完整测试**
 
 Run:
 
@@ -1239,7 +1239,7 @@ go test ./...
 
 Expected: PASS。
 
-- [ ] **Step 2: 运行前端测试**
+- [x] **Step 2: 运行前端测试**
 
 Run:
 
@@ -1249,7 +1249,7 @@ cd web && bun test
 
 Expected: PASS。
 
-- [ ] **Step 3: 构建前端资源**
+- [x] **Step 3: 构建前端资源**
 
 Run:
 
@@ -1259,7 +1259,7 @@ cd web && bun run build
 
 Expected: PASS，并更新 `web/dist` 中的构建产物。
 
-- [ ] **Step 4: 构建 Go 程序**
+- [x] **Step 4: 构建 Go 程序**
 
 Run:
 
@@ -1269,7 +1269,7 @@ go build ./...
 
 Expected: PASS。
 
-- [ ] **Step 5: 手动 smoke 验证**
+- [x] **Step 5: 手动 smoke 验证**
 
 创建临时项目配置：
 
@@ -1294,7 +1294,7 @@ Expected: PASS。
 - `app-config-data` 中包含 `.ini` 和 `toc-right`。
 - 不存在配置文件时，默认行为仍为端口 `6100` 和 `compact`。
 
-- [ ] **Step 6: 更新 TODO 说明**
+- [x] **Step 6: 更新 TODO 说明**
 
 由于完整三栏布局属于二期，本期不要把总 TODO 标记为完成。可以在 `docs/TODO.md` 对该项追加阶段说明：
 
@@ -1304,7 +1304,7 @@ Expected: PASS。
   - [ ] 二期：设置面板 layout 控件和完整三栏布局
 ```
 
-- [ ] **Step 7: 提交最终收尾**
+- [x] **Step 7: 提交最终收尾**
 
 ```bash
 git add docs/TODO.md web/dist
