@@ -1,5 +1,10 @@
 # MarkView 配置文件支持一期 Implementation Plan
 
+相关文档：
+
+- [TODO 需求](../../TODO.md#新增支持全局和项目级别的配置文件-)
+- [设计文档](../specs/2026-05-28-markview-config-files-design.md)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 实现全局/项目级 JSON 配置文件的一期能力：服务端配置合并、项目 `.env` 定向加载、页面配置注入、`preview_exts` 生效，以及 `layout` 的基础状态链路。

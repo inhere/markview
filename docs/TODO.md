@@ -19,6 +19,7 @@
   - 优化为 超过指定高度后启用y滚动，下边框添加可点击区，点击后也可以完全展开高度
 - [x] feat: 现在页面拦截了内部的 .md 链接，增强支持 .json, .jsonl, .yaml, .toml 等常见内容文件链接
   - 点击链接后在预览面板查看高亮的文件内容，而不需要打开新页面
+- [ ] 新增支持全局和项目级别的配置文件 `markview.json`（详细说明见下面对应章节）
 
 ## 随机端口时，自动保存获取到的端口号 ✅
 
@@ -33,7 +34,7 @@ json 格式参考：
 ```json
 {
   "project path": {
-    "port": 8080,
+    "port": 6100,
     "name": "project name(default is directory name)",
     "added": "2025-08-03T15:00:00"
   }
@@ -56,3 +57,35 @@ markview --projects show|remove <project name>
 # 启动指定项目的预览服务 会自动切换到项目目录，然后启动服务
 markview -P|--project <project name>
 ```
+
+## 新增支持全局和项目级别的配置文件 ⏳
+
+相关文档：
+- [设计文档](superpowers/specs/2026-05-28-markview-config-files-design.md)
+- [一期实施计划](superpowers/plans/2026-05-28-markview-config-files-phase-1.md)
+
+新增支持全局和项目级别的配置文件 `markview.json`，用户可以在项目目录下创建该文件，来配置项目的预览服务参数。
+
+项目下按 `markview.local.json`, `.markview.json`, `markview.json` 依次查找，第一个找到的文件会被使用。
+
+可以配置：
+
+server 配置：
+- port: 预览服务监听的端口号，默认8080
+- private: 是否监听为本地server，默认false
+- watch: bool 是否监听目录变化，默认 true
+- watch_dir: string 监听的目录配置，多个目录用逗号分隔，默认项目目录
+- watch_skip_dir: string 监听时，跳过的的目录配置，多个目录用逗号分隔，默认空字符串
+  - 支持前缀 override: 覆盖默认的skip设置, append(default): 追加到默认的设置
+
+UI 页面配置（server渲染设置到页面）：
+- preview_exts: string 支持的预览文件扩展名，多个逗号分隔，默认 .md, .json, .jsonl, .yaml, .toml
+  - 支持前缀 override: 覆盖默认的扩展名设置, append(default): 追加到默认的设置
+  - 配置后将会再右侧预览面板显示对应ext的文件内容，而不会打开新页面
+- layout: string 内容/TOC/目录布局位置，默认 compact
+  - 支持 compact(就是现在的布局：toc与file-tree合并,右侧内容), toc-middle(file-tree|toc|body), toc-right(file-tree|body|toc)
+  - 默认是 compact模式，与file-tree合并，不占用额外空间。但是在文件多，内容长时，不方便查看，会影响阅读体验。
+
+> 多种配置覆盖优先级：CLI 选项 > 项目 `.env` 文件 > 项目配置文件 > 全局 `markview-projects.json` > 全局 `markview.json` 文件
+
+同时页面的设置面板也可以配置 布局设置

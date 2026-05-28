@@ -1,5 +1,10 @@
 # MarkView 配置文件支持设计
 
+相关文档：
+
+- [TODO 需求](../../TODO.md#新增支持全局和项目级别的配置文件-)
+- [一期实施计划](../plans/2026-05-28-markview-config-files-phase-1.md)
+
 ## 背景
 
 MarkView 当前主要通过 CLI 参数、项目 `.env`、环境变量和全局 `markview-projects.json` 项目端口注册表控制启动行为。`docs/TODO.md` 计划新增全局和项目级别的 `markview.json` 配置文件，用于配置服务端启动参数和页面运行时选项。
