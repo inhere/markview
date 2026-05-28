@@ -67,6 +67,10 @@ func (c *Config) PortStr() string {
 // SetPort sets the port integer.
 func (c *Config) SetPort(port int) {
 	c.PortInt = port
+	if port < 0 {
+		c.portStr = "0"
+		return
+	}
 	c.portStr = fmt.Sprintf("%d", port)
 }
 

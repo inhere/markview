@@ -18,7 +18,7 @@ func TestMergeRuntimeConfigPriority(t *testing.T) {
 	projectLayout := "toc-middle"
 
 	result, err := MergeRuntimeConfig(MergeInput{
-		Global: FileConfig{Server: ServerFileConfig{Port: &globalPort}},
+		Global:       FileConfig{Server: ServerFileConfig{Port: &globalPort}},
 		RegistryPort: intPtr(6202),
 		Project: FileConfig{
 			Server: ServerFileConfig{Port: &projectPort, Private: &private, Watch: &watch, WatchDir: &watchDir},
@@ -50,6 +50,19 @@ func TestMergeRuntimeConfigUsesConfigPortSource(t *testing.T) {
 	assert.Eq(t, PortSourceConfig, result.PortSource)
 }
 
+func TestMergeRuntimeConfigKeepsRandomPortStringForNegativeCLI(t *testing.T) {
+	cliPort := -1
+
+	result, err := MergeRuntimeConfig(MergeInput{
+		CLI: CLIConfig{Port: &cliPort},
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, -1, result.PortInt)
+	assert.Eq(t, PortSourceCLI, result.PortSource)
+	assert.Eq(t, "0", result.PortStr())
+}
+
 func TestMergeRuntimeConfigUsesRegistryBeforeGlobalPort(t *testing.T) {
 	globalPort := 6201
 
@@ -63,6 +76,17 @@ func TestMergeRuntimeConfigUsesRegistryBeforeGlobalPort(t *testing.T) {
 	assert.Eq(t, PortSourceRegistry, result.PortSource)
 }
 
+func TestMergeRuntimeConfigUsesEnvEntryFile(t *testing.T) {
+	entry := "README.md"
+
+	result, err := MergeRuntimeConfig(MergeInput{
+		Env: EnvConfig{Entry: &entry},
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, entry, result.EntryFile)
+}
+
 func TestMergeRuntimeConfigWatchSkipOverrideKeepsNodeModules(t *testing.T) {
 	skip := "override:.cache"
 
@@ -72,6 +96,69 @@ func TestMergeRuntimeConfigWatchSkipOverrideKeepsNodeModules(t *testing.T) {
 
 	assert.NoErr(t, err)
 	assert.Eq(t, []string{".cache", "node_modules"}, result.WatchSkipDirs)
+}
+
+func TestMergeRuntimeConfigProjectPreviewExtsUseDefaultBase(t *testing.T) {
+	t.Run("project append ignores global append additions", func(t *testing.T) {
+		globalPreview := "append:.ini"
+		projectPreview := "append:.conf"
+
+		result, err := MergeRuntimeConfig(MergeInput{
+			Global:  FileConfig{UI: UIFileConfig{PreviewExts: &globalPreview}},
+			Project: FileConfig{UI: UIFileConfig{PreviewExts: &projectPreview}},
+		})
+
+		assert.NoErr(t, err)
+		assert.Eq(t, []string{".md", ".json", ".jsonl", ".yaml", ".yml", ".toml", ".conf"}, result.PreviewExts)
+	})
+
+	t.Run("project override replaces the default list", func(t *testing.T) {
+		globalPreview := "append:.ini"
+		projectPreview := "override:.conf"
+
+		result, err := MergeRuntimeConfig(MergeInput{
+			Global:  FileConfig{UI: UIFileConfig{PreviewExts: &globalPreview}},
+			Project: FileConfig{UI: UIFileConfig{PreviewExts: &projectPreview}},
+		})
+
+		assert.NoErr(t, err)
+		assert.Eq(t, []string{".conf"}, result.PreviewExts)
+	})
+}
+
+func TestMergeRuntimeConfigProjectWatchSkipUsesDefaultBase(t *testing.T) {
+	globalSkip := "append:.cache"
+	projectSkip := "append:coverage"
+
+	result, err := MergeRuntimeConfig(MergeInput{
+		Global:  FileConfig{Server: ServerFileConfig{WatchSkipDir: &globalSkip}},
+		Project: FileConfig{Server: ServerFileConfig{WatchSkipDir: &projectSkip}},
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"node_modules", "dist", "tmp", "temp", "coverage"}, result.WatchSkipDirs)
+}
+
+func TestMergeRuntimeConfigRejectsUnsupportedListModes(t *testing.T) {
+	t.Run("preview exts", func(t *testing.T) {
+		preview := "replace:.ini"
+
+		_, err := MergeRuntimeConfig(MergeInput{
+			Project: FileConfig{UI: UIFileConfig{PreviewExts: &preview}},
+		})
+
+		assert.Err(t, err)
+	})
+
+	t.Run("watch skip dir", func(t *testing.T) {
+		skip := "replace:.cache"
+
+		_, err := MergeRuntimeConfig(MergeInput{
+			Project: FileConfig{Server: ServerFileConfig{WatchSkipDir: &skip}},
+		})
+
+		assert.Err(t, err)
+	})
 }
 
 func intPtr(value int) *int {

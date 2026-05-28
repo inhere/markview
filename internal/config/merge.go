@@ -76,7 +76,7 @@ func applyFileConfig(cfg *Config, fileCfg FileConfig, portSource PortSource) err
 		cfg.WatchSkipDirs = ensureNodeModules(dirs)
 	}
 	if fileCfg.UI.PreviewExts != nil {
-		exts, err := NormalizeExtListSetting(cfg.PreviewExts, *fileCfg.UI.PreviewExts)
+		exts, err := NormalizeExtListSetting(DefaultPreviewExts, *fileCfg.UI.PreviewExts)
 		if err != nil {
 			return err
 		}
@@ -96,6 +96,9 @@ func applyEnvConfig(cfg *Config, env EnvConfig) error {
 	if env.Port != nil {
 		cfg.SetPort(*env.Port)
 		cfg.PortSource = PortSourceEnv
+	}
+	if env.Entry != nil && strings.TrimSpace(*env.Entry) != "" {
+		cfg.EntryFile = *env.Entry
 	}
 	if env.Watch != nil {
 		cfg.EnableWatch = *env.Watch
