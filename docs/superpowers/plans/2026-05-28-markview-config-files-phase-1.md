@@ -927,7 +927,7 @@ git commit -m "feat(config): inject app config into page"
 - Modify: `web/src/link-preview.ts`
 - Modify: `web/src/link-preview.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 创建 `web/src/app-config.test.ts`：
 
@@ -976,7 +976,7 @@ test('uses configured preview extensions', () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -986,7 +986,7 @@ cd web && bun test
 
 Expected: FAIL，`app-config` 模块不存在，`isPreviewableContentPath` 还不接受配置扩展名。
 
-- [ ] **Step 3: 实现 `app-config.ts`**
+- [x] **Step 3: 实现 `app-config.ts`**
 
 创建 `web/src/app-config.ts`：
 
@@ -1034,7 +1034,7 @@ function normalizeExt(value: string): string {
 }
 ```
 
-- [ ] **Step 4: 修改 link preview 使用配置**
+- [x] **Step 4: 修改 link preview 使用配置**
 
 在 `web/src/link-preview.ts`：
 
@@ -1066,7 +1066,7 @@ export function configureLinkPreview(options: { previewExts: string[] }) {
 
 并让内部默认使用 `configuredPreviewExts`。
 
-- [ ] **Step 5: 运行前端测试**
+- [x] **Step 5: 运行前端测试**
 
 Run:
 
@@ -1076,7 +1076,7 @@ cd web && bun test
 
 Expected: PASS。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add web/src/app-config.ts web/src/app-config.test.ts web/src/link-preview.ts web/src/link-preview.test.ts
