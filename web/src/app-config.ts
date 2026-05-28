@@ -18,11 +18,19 @@ export function normalizePreviewExts(value: unknown): string[] {
         return [...DEFAULT_APP_CONFIG.previewExts];
     }
 
+    const seenExts = new Set<string>();
     const previewExts = value
         .filter((item): item is string => typeof item === 'string')
         .map(item => item.trim().toLowerCase())
         .filter(Boolean)
-        .map(item => item.startsWith('.') ? item : `.${item}`);
+        .map(item => item.startsWith('.') ? item : `.${item}`)
+        .filter(item => {
+            if (seenExts.has(item)) {
+                return false;
+            }
+            seenExts.add(item);
+            return true;
+        });
 
     return previewExts.length > 0 ? previewExts : [...DEFAULT_APP_CONFIG.previewExts];
 }

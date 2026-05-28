@@ -19,7 +19,7 @@ describe('app config', () => {
 
     test('normalizes injected preview extensions and layout', () => {
         const config = readAppConfig(documentWithConfig(JSON.stringify({
-            previewExts: [' ini ', ' .JSON ', '', 123, '.Env'],
+            previewExts: [' ini ', ' .JSON ', ' json ', '', 123, '.Env'],
             layout: 'toc-right',
         })));
 
