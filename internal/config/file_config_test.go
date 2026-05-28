@@ -20,6 +20,51 @@ func TestFindProjectConfigUsesFirstExistingFile(t *testing.T) {
 	assert.Eq(t, filepath.Join(dir, "markview.local.json"), path)
 }
 
+func TestGlobalConfigPathUsesUserConfigDir(t *testing.T) {
+	baseDir := t.TempDir()
+	t.Setenv("APPDATA", baseDir)
+
+	path, err := GlobalConfigPath()
+
+	assert.NoErr(t, err)
+	assert.Eq(t, filepath.Join(baseDir, "markview", GlobalConfigFile), path)
+}
+
+func TestLoadProjectFileConfigLoadsSelectedProjectFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".markview.json")
+	assert.NoErr(t, os.WriteFile(path, []byte(`{"server":{"port":6102}}`), 0o644))
+
+	cfg, ok, err := LoadProjectFileConfig(dir)
+
+	assert.NoErr(t, err)
+	assert.True(t, ok)
+	assert.Eq(t, 6102, *cfg.Server.Port)
+}
+
+func TestLoadProjectFileConfigIgnoresMissingConfig(t *testing.T) {
+	cfg, ok, err := LoadProjectFileConfig(t.TempDir())
+
+	assert.NoErr(t, err)
+	assert.False(t, ok)
+	assert.Eq(t, FileConfig{}, cfg)
+}
+
+func TestLoadGlobalFileConfigLoadsGlobalConfig(t *testing.T) {
+	baseDir := t.TempDir()
+	t.Setenv("APPDATA", baseDir)
+
+	configDir := filepath.Join(baseDir, "markview")
+	assert.NoErr(t, os.MkdirAll(configDir, 0o755))
+	assert.NoErr(t, os.WriteFile(filepath.Join(configDir, GlobalConfigFile), []byte(`{"ui":{"layout":"toc-right"}}`), 0o644))
+
+	cfg, ok, err := LoadGlobalFileConfig()
+
+	assert.NoErr(t, err)
+	assert.True(t, ok)
+	assert.Eq(t, "toc-right", *cfg.UI.Layout)
+}
+
 func TestLoadFileConfigParsesPointerValues(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "markview.json")
 	assert.NoErr(t, os.WriteFile(path, []byte(`{

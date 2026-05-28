@@ -34,6 +34,24 @@ func GlobalConfigPath() (string, error) {
 	return filepath.Join(dir, "markview", GlobalConfigFile), nil
 }
 
+func LoadGlobalFileConfig() (FileConfig, bool, error) {
+	path, err := GlobalConfigPath()
+	if err != nil {
+		return FileConfig{}, false, err
+	}
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return FileConfig{}, false, nil
+		}
+		return FileConfig{}, false, err
+	}
+	cfg, err := LoadFileConfig(path)
+	if err != nil {
+		return FileConfig{}, false, err
+	}
+	return cfg, true, nil
+}
+
 func FindProjectConfig(targetDir string) (string, bool) {
 	for _, name := range ProjectConfigFiles {
 		path := filepath.Join(targetDir, name)
@@ -42,6 +60,18 @@ func FindProjectConfig(targetDir string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func LoadProjectFileConfig(targetDir string) (FileConfig, bool, error) {
+	path, ok := FindProjectConfig(targetDir)
+	if !ok {
+		return FileConfig{}, false, nil
+	}
+	cfg, err := LoadFileConfig(path)
+	if err != nil {
+		return FileConfig{}, false, err
+	}
+	return cfg, true, nil
 }
 
 func LoadFileConfig(path string) (FileConfig, error) {
