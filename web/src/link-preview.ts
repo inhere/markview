@@ -8,6 +8,10 @@ import {
     type PageSnapshot,
 } from './page';
 import { escapeHtml } from './util';
+import {
+    DEFAULT_APP_CONFIG,
+    normalizePreviewExts,
+} from './app-config';
 
 async function enhancePreviewContent(contentRoot: HTMLElement) {
     ensureHighlightLanguages();
@@ -35,11 +39,18 @@ const STATIC_RESOURCE_EXTENSIONS = [
     '.mp4', '.webm', '.mp3', '.ogg', '.wav', '.pdf', '.zip', '.tar', '.gz'
 ];
 
-const PREVIEWABLE_CONTENT_EXTENSIONS = ['.json', '.jsonl', '.yaml', '.yml', '.toml'];
+let previewableContentExtensions = normalizePreviewExts(DEFAULT_APP_CONFIG.previewExts);
 
-export function isPreviewableContentPath(pathname: string): boolean {
+export function configureLinkPreview(options: { previewExts: unknown }): void {
+    previewableContentExtensions = normalizePreviewExts(options.previewExts);
+}
+
+export function isPreviewableContentPath(pathname: string, previewExts = previewableContentExtensions): boolean {
     const lowerPath = pathname.split(/[?#]/, 1)[0].toLowerCase();
-    return PREVIEWABLE_CONTENT_EXTENSIONS.some(ext => lowerPath.endsWith(ext));
+    return normalizePreviewExts(previewExts)
+        // Markdown pages use the page/navigation preview path, not raw content rendering.
+        .filter(ext => ext !== '.md')
+        .some(ext => lowerPath.endsWith(ext));
 }
 
 export function detectPreviewFileLanguage(pathname: string): string | null {

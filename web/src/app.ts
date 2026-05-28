@@ -50,6 +50,7 @@ import {
     scrollToHash,
 } from './util';
 import {
+    configureLinkPreview,
     enhanceLinksInContent,
     isPreviewableContentPath,
     openPreviewPanel,
@@ -57,6 +58,7 @@ import {
 } from './link-preview';
 import { enhanceCodeBlocks } from './code-copy';
 import { enhanceTablesInContent } from './table-overflow';
+import { readAppConfig } from './app-config';
 
 interface RenderPageOptions {
     hash?: string;
@@ -401,6 +403,9 @@ function setupOnce() {
     if (setupCompleted) {
         return;
     }
+
+    const appConfig = readAppConfig();
+    configureLinkPreview({ previewExts: appConfig.previewExts });
 
     setupToolbar();
     setupInlineNavigation();
