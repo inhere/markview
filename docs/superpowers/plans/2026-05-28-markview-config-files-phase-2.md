@@ -163,7 +163,7 @@ git commit -m "feat(web): add layout preference reset"
 - Modify: `web/src/preferences.ts`
 - Test: `web/src/preferences.test.ts` 或新增 `web/src/layout-mode.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 优先新增 `web/src/layout-mode.ts` 和 `web/src/layout-mode.test.ts`，把控件状态同步逻辑从大型 `app.ts` 中拆出，便于测试：
 
@@ -216,7 +216,7 @@ test('setupLayoutControls persists selected layout and clears override on defaul
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -226,7 +226,7 @@ cd web && bun test src/layout-mode.test.ts src/preferences.test.ts
 
 Expected: FAIL，`layout-mode` 模块或相关函数不存在。
 
-- [ ] **Step 3: 模板新增 Layout 控件**
+- [x] **Step 3: 模板新增 Layout 控件**
 
 在 `web/template.html` 的 `.toolbar-content` 中新增一行，建议放在 Width 行之前：
 
@@ -248,7 +248,7 @@ Expected: FAIL，`layout-mode` 模块或相关函数不存在。
 - 文案保持短，避免 toolbar 过宽。
 - `Default` 的语义是清除本地 override，不是强制 compact。
 
-- [ ] **Step 4: 实现 layout 控件模块**
+- [x] **Step 4: 实现 layout 控件模块**
 
 新增 `web/src/layout-mode.ts`：
 
@@ -319,7 +319,7 @@ export function setupLayoutControls({
   - `applyLayoutMode(configuredLayout, documentRef)`。
   - `syncLayoutControls(documentRef, configuredLayout, false)`。
 
-- [ ] **Step 5: app.ts 接入**
+- [x] **Step 5: app.ts 接入**
 
 在 `web/src/app.ts`：
 
@@ -349,7 +349,7 @@ function setupToolbar(appConfig: AppConfig, initialLayout: AppLayout) {
 
 注意：局部页面导航不重新应用 layout。`toc-right` 浮动 TOC 控制在 Task 5 单独接入，不放进本任务提交。
 
-- [ ] **Step 6: 运行前端测试**
+- [x] **Step 6: 运行前端测试**
 
 Run:
 
@@ -359,7 +359,7 @@ cd web && bun test
 
 Expected: PASS。
 
-- [ ] **Step 7: 提交**
+- [x] **Step 7: 提交**
 
 ```bash
 git add web/template.html web/src/app.ts web/src/layout-mode.ts web/src/layout-mode.test.ts web/src/preferences.ts web/src/preferences.test.ts

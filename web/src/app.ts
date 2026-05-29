@@ -61,7 +61,11 @@ import {
 import { enhanceCodeBlocks } from './code-copy';
 import { enhanceTablesInContent } from './table-overflow';
 import { readAppConfig } from './app-config';
-import type { AppLayout } from './app-config';
+import type { AppConfig, AppLayout } from './app-config';
+import {
+    applyLayoutMode,
+    setupLayoutControls,
+} from './layout-mode';
 
 interface RenderPageOptions {
     hash?: string;
@@ -118,7 +122,7 @@ async function enhancePageContent() {
     enhanceTablesInContent(contentRoot);
 }
 
-function setupToolbar() {
+function setupToolbar(appConfig: AppConfig, initialLayout: AppLayout) {
     const toolbar = document.getElementById('toolbar');
     if (!toolbar) {
         return;
@@ -195,6 +199,12 @@ function setupToolbar() {
     fontReset?.addEventListener('click', () => {
         currentFontSize = DEFAULT_FONT_SIZE;
         applyFontSize(currentFontSize);
+    });
+
+    setupLayoutControls({
+        documentRef: document,
+        configuredLayout: appConfig.layout,
+        initialLayout,
     });
 }
 
@@ -408,10 +418,11 @@ function setupOnce() {
     }
 
     const appConfig = readAppConfig();
-    applyLayoutMode(resolveLayoutMode(readStoredLayoutMode(), appConfig.layout));
+    const initialLayout = resolveLayoutMode(readStoredLayoutMode(), appConfig.layout);
+    applyLayoutMode(initialLayout);
     configureLinkPreview({ previewExts: appConfig.previewExts });
 
-    setupToolbar();
+    setupToolbar(appConfig, initialLayout);
     setupInlineNavigation();
     setupMermaidModal();
     setupImageModal();
@@ -439,10 +450,6 @@ function applyLayoutWidth(widthButtons: NodeListOf<Element>, width: LayoutWidth)
     widthButtons.forEach(node => {
         node.classList.toggle('active', (node as HTMLElement).dataset.width === width);
     });
-}
-
-function applyLayoutMode(mode: AppLayout) {
-    document.documentElement.dataset.layout = mode;
 }
 
 function applyFontSize(fontSize: number) {
