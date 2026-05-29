@@ -425,6 +425,7 @@ export function setupSidebarCollapse() {
     const iconButtons = document.querySelectorAll('.sidebar-icon-btn');
     iconButtons.forEach(btn => {
         btn.addEventListener('click', () => {
+            const panel = btn.getAttribute('data-panel');
             // Expand sidebar
             sidebar.classList.remove('sidebar-collapsed');
             updateBodyClass(false);
@@ -434,7 +435,6 @@ export function setupSidebarCollapse() {
             collapseBtn.setAttribute('title', 'Collapse sidebar');
 
             // If Files button clicked, ensure Files is expanded
-            const panel = btn.getAttribute('data-panel');
             if (panel === 'files') {
                 filesPanel.classList.remove('files-collapsed');
                 persistFilesCollapsed(false);

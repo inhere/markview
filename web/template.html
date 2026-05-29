@@ -143,20 +143,16 @@
         <aside class="toc-pane sidebar-panel sidebar-panel-toc" id="toc-panel">
             <div class="sidebar-section-title">
                 <span class="sidebar-section-label">
-                    <span class="sidebar-section-icon" aria-hidden="true">
+                    <button class="sidebar-section-icon toc-section-toggle" type="button" aria-controls="toc-panel" aria-expanded="true" aria-label="Toggle table of contents" title="Toggle table of contents">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"></circle></svg>
-                    </span>
-                    <span>On This Page</span>
+                    </button>
+                    <span class="toc-section-label-text">On This Page</span>
                 </span>
             </div>
             <div class="sidebar-scroll toc-container">
                 <ul class="toc-list" id="toc-list"></ul>
             </div>
         </aside>
-
-        <button class="toc-toggle-button" id="toc-toggle-button" type="button" aria-controls="toc-panel" aria-expanded="true" title="Toggle table of contents">
-            TOC
-        </button>
 
         <!-- Main Content -->
         <main class="content-wrapper">

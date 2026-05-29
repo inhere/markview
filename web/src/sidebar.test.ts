@@ -135,4 +135,41 @@ describe('sidebar scroll behavior', () => {
             globalThis.HTMLElement = previousHTMLElement;
         }
     });
+
+    test('toc collapsed icon expands files pane even in toc-right layout', () => {
+        const dom = new JSDOM(`<!doctype html>
+            <html data-layout="toc-right">
+                <body class="sidebar-collapsed">
+                    <aside class="files-pane sidebar sidebar-collapsed">
+                        <button id="sidebar-collapse-btn"></button>
+                        <section id="files-panel"></section>
+                        <button class="sidebar-icon-btn" data-panel="toc"></button>
+                    </aside>
+                </body>
+            </html>`, {
+            url: 'http://localhost/docs/page',
+        });
+        const { document } = dom.window;
+        const previousWindow = globalThis.window;
+        const previousDocument = globalThis.document;
+        const previousHTMLElement = globalThis.HTMLElement;
+        // @ts-expect-error test env override
+        globalThis.window = dom.window;
+        // @ts-expect-error test env override
+        globalThis.document = document;
+        // @ts-expect-error test env override
+        globalThis.HTMLElement = dom.window.HTMLElement;
+
+        try {
+            setupSidebarCollapse();
+            (document.querySelector('[data-panel="toc"]') as HTMLButtonElement).click();
+
+            expect(document.body.classList.contains('sidebar-collapsed')).toBe(false);
+            expect(document.querySelector('.files-pane')?.classList.contains('sidebar-collapsed')).toBe(false);
+        } finally {
+            globalThis.window = previousWindow;
+            globalThis.document = previousDocument;
+            globalThis.HTMLElement = previousHTMLElement;
+        }
+    });
 });

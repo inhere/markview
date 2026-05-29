@@ -15,7 +15,7 @@ function readLayoutMode(documentRef: Document): AppLayout | null {
 function setExpandedState(documentRef: Document, expanded: boolean) {
     documentRef.body.classList.toggle('toc-floating-open', expanded);
 
-    const button = documentRef.getElementById('toc-toggle-button');
+    const button = documentRef.querySelector('.toc-section-toggle');
     if (button) {
         button.setAttribute('aria-expanded', String(expanded));
     }
@@ -27,7 +27,7 @@ function isPreviewActive(documentRef: Document) {
 
 function syncTocToggleDefaultState(documentRef: Document) {
     const layout = readLayoutMode(documentRef);
-    if (layout !== 'toc-right') {
+    if (!layout) {
         setExpandedState(documentRef, false);
         return;
     }
@@ -41,7 +41,7 @@ function syncTocToggleDefaultState(documentRef: Document) {
 }
 
 export function setupTocToggle({ documentRef = document }: TocToggleOptions) {
-    const button = documentRef.getElementById('toc-toggle-button');
+    const button = documentRef.querySelector('.toc-section-toggle');
     if (!button) {
         return;
     }
@@ -52,7 +52,7 @@ export function setupTocToggle({ documentRef = document }: TocToggleOptions) {
     syncTocToggleDefaultState(documentRef);
 
     button.addEventListener('click', () => {
-        if (readLayoutMode(documentRef) !== 'toc-right') {
+        if (!readLayoutMode(documentRef)) {
             setExpandedState(documentRef, false);
             return;
         }
