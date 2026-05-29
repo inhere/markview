@@ -29,6 +29,7 @@ describe('layout CSS modes', () => {
         expect(cssText).toContain('toc-floating-open');
         expect(cssText).toContain('.toc-toggle-button');
         expectRule(/html\[data-layout="toc-middle"\]\s+body\.preview-active\s+\.toc-pane\s*\{[^}]*display:\s*none;/s);
+        expectRule(/html\[data-layout="toc-right"\]\s+body\.preview-active\s+\.toc-pane,\s*html\[data-layout="toc-right"\]\s+body\.preview-active\s+\.toc-toggle-button\s*\{[^}]*right:\s*calc\(var\(--preview-width\) \+ 16px\);/s);
         expectRule(/html\[data-layout="toc-right"\]\s+body\.preview-active:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;/s);
         expectRule(/\.content-wrapper\s*\{[^}]*position:\s*relative;[^}]*overflow:\s*auto;/s);
         expectRule(/\.content-search-wrapper\s*\{[^}]*position:\s*absolute;[^}]*left:\s*30px;/s);

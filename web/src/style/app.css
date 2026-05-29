@@ -216,6 +216,7 @@ body.sidebar-collapsed .app-shell {
         width: var(--toc-width);
         min-width: var(--toc-min-width);
         max-width: var(--toc-max-width);
+        margin: 0;
         overflow: auto;
     }
 
@@ -223,6 +224,7 @@ body.sidebar-collapsed .app-shell {
         width: auto;
         min-width: 0;
         max-width: none;
+        margin: 0 10px 18px 10px;
     }
 
     html[data-layout="toc-middle"] .files-pane,
@@ -234,7 +236,7 @@ body.sidebar-collapsed .app-shell {
     /* toc-right keeps TOC out of the grid and turns it into a floating overlay. */
     html[data-layout="toc-right"] .toc-pane {
         position: fixed;
-        top: 16px;
+        top: 112px;
         right: 16px;
         bottom: 16px;
         z-index: 35;
@@ -258,7 +260,7 @@ body.sidebar-collapsed .app-shell {
     html[data-layout="toc-right"] .toc-toggle-button {
         display: inline-flex;
         position: fixed;
-        top: 16px;
+        top: 72px;
         right: 16px;
         z-index: 36;
     }
@@ -1831,6 +1833,7 @@ img {
 .link-preview-btn svg {
     width: 18px;
     height: 18px;
+    pointer-events: none;
 }
 
 /* Preview Panel */
@@ -2380,6 +2383,11 @@ div.mermaid {
         grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
         grid-template-areas: "files content";
         padding-right: var(--preview-width);
+    }
+
+    html[data-layout="toc-right"] body.preview-active .toc-pane,
+    html[data-layout="toc-right"] body.preview-active .toc-toggle-button {
+        right: calc(var(--preview-width) + 16px);
     }
 
     html[data-layout="toc-right"] body.preview-active:not(.toc-floating-open) .toc-pane {
