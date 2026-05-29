@@ -35,6 +35,7 @@ import {
     persistToolbarCollapsed,
 } from './preferences';
 import {
+    bindTOCScrollSpy,
     generateTOC,
     highlightTOC,
     renderFileTree,
@@ -46,9 +47,11 @@ import {
 } from './sidebar-resize';
 import {
     buildContentBaseURL,
+    getContentScrollTop,
     isInlineNavigablePath,
     readJSONScript,
     rewriteAttributeURLs,
+    scrollContentTo,
     scrollToHash,
 } from './util';
 import {
@@ -232,11 +235,11 @@ async function renderCurrentPage(options: RenderPageOptions = {}) {
         }
 
         if (typeof options.preserveScrollY === 'number') {
-            window.scrollTo({ top: options.preserveScrollY, left: 0, behavior: 'auto' });
+            scrollContentTo(options.preserveScrollY);
             return;
         }
 
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        scrollContentTo(0);
     };
 
     requestAnimationFrame(() => {
@@ -282,7 +285,7 @@ async function fetchPageSnapshot(url: URL): Promise<PageSnapshot> {
 }
 
 async function navigateTo(url: URL, historyMode: HistoryMode, options: { preserveScroll?: boolean } = {}) {
-    const preserveScrollY = options.preserveScroll ? window.scrollY : null;
+    const preserveScrollY = options.preserveScroll ? getContentScrollTop() : null;
 
     try {
         const snapshot = await fetchPageSnapshot(url);
@@ -432,9 +435,9 @@ function setupOnce() {
     applyInitialSidebarWidth(sidebarPrefs.sidebarWidth);
     initSidebarResize();
     setupSidebarCollapse();
-    window.addEventListener('scroll', () => {
+    bindTOCScrollSpy(() => {
         highlightTOC();
-    }, { passive: true });
+    });
 
     const evtSource = new EventSource('/sse');
     const liveDot = document.getElementById('live-dot');

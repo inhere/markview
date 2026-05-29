@@ -4,6 +4,7 @@ import {
     ensureUniqueId,
     fileIcon,
     folderIcon,
+    getContentScrollTop,
     readJSONScript,
 } from './util';
 import {
@@ -233,7 +234,7 @@ export function initFilesSearch() {
 }
 
 export function highlightTOC(contentSelector = '#content', sidebarSelector = '.toc-container') {
-    const scrollPos = window.scrollY + 100;
+    const scrollPos = getContentScrollTop() + 100;
     const headers = document.querySelectorAll(`${contentSelector} h1, ${contentSelector} h2, ${contentSelector} h3`);
     let currentId = '';
 
@@ -269,6 +270,14 @@ export function highlightTOC(contentSelector = '#content', sidebarSelector = '.t
             }
         }
     });
+}
+
+export function bindTOCScrollSpy(onScroll: () => void) {
+    const container = document.querySelector('.content-wrapper');
+    window.addEventListener('scroll', onScroll, { passive: true });
+    if (container instanceof HTMLElement) {
+        container.addEventListener('scroll', onScroll, { passive: true });
+    }
 }
 
 function createTreeNode(node: FileTreeNode, currentFilePath: string): HTMLLIElement {
@@ -369,7 +378,7 @@ function nodeContainsPath(node: FileTreeNode, currentFilePath: string): boolean 
 
 export function setupSidebarCollapse() {
     const collapseBtn = document.getElementById('sidebar-collapse-btn');
-    const sidebar = document.querySelector('.sidebar');
+    const sidebar = document.querySelector('.files-pane.sidebar, .sidebar');
     const filesPanel = document.getElementById('files-panel');
 
     if (!collapseBtn || !sidebar || !filesPanel) return;

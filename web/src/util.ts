@@ -80,7 +80,35 @@ export function isInlineNavigablePath(pathname: string) {
     return !lastSegment.includes('.') || lastSegment.toLowerCase().endsWith('.md');
 }
 
-export function scrollToHash(hash: string) {
+export function getContentScrollContainer(documentRef: Document = document): HTMLElement | null {
+    const view = documentRef.defaultView ?? window;
+    if (view.innerWidth <= 1024) {
+        return null;
+    }
+
+    const container = documentRef.querySelector('.content-wrapper');
+    return container instanceof HTMLElement ? container : null;
+}
+
+export function getContentScrollTop(documentRef: Document = document): number {
+    return getContentScrollContainer(documentRef)?.scrollTop ?? window.scrollY;
+}
+
+export function scrollContentTo(top: number, documentRef: Document = document) {
+    const container = getContentScrollContainer(documentRef);
+    if (container) {
+        if (typeof container.scrollTo === 'function') {
+            container.scrollTo({ top, left: 0, behavior: 'auto' });
+        } else {
+            container.scrollTop = top;
+        }
+        return;
+    }
+
+    window.scrollTo({ top, left: 0, behavior: 'auto' });
+}
+
+export function scrollToHash(hash: string, scrollContainer?: HTMLElement | null) {
     if (!hash) {
         return;
     }
@@ -94,7 +122,17 @@ export function scrollToHash(hash: string) {
         || document.querySelector(`[name="${CSS.escape(rawId)}"]`);
 
     if (target instanceof HTMLElement) {
-        target.scrollIntoView({ behavior: 'auto', block: 'start' });
+        const container = scrollContainer ?? getContentScrollContainer(target.ownerDocument);
+        if (!container || !container.contains(target)) {
+            target.scrollIntoView({ behavior: 'auto', block: 'start' });
+            return;
+        }
+
+        // 使用正文滚动容器，避免 grid 布局下 window.scrollTo/scrollIntoView 失效。
+        const containerRect = container.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const nextTop = container.scrollTop + (targetRect.top - containerRect.top);
+        scrollContentTo(nextTop, target.ownerDocument);
     }
 }
 

@@ -26,6 +26,10 @@
     --layout-max-width: 960px;
     --sidebar-width: 280px;
     --sidebar-collapsed-width: 48px;
+    --toc-width: 240px;
+    --toc-min-width: 180px;
+    --toc-max-width: 360px;
+    --preview-width: 40vw;
     --base-font-size: 16px;
 }
 
@@ -149,8 +153,36 @@ body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    display: flex;
-    flex-direction: row;
+    display: block;
+}
+
+.app-shell {
+    min-height: 100vh;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(12rem, 32vh);
+    grid-template-areas:
+        "files content"
+        "toc content";
+    position: relative;
+}
+
+body.sidebar-collapsed .app-shell {
+    grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
+}
+
+.files-pane {
+    grid-area: files;
+    min-width: 0;
+    min-height: 0;
+}
+
+.toc-pane {
+    grid-area: toc;
+    min-width: 0;
+    min-height: 0;
+    margin: 0 10px 18px 10px;
 }
 
 /* --- Toolbar --- */
@@ -372,20 +404,18 @@ body {
     box-shadow: 0 0 0 2px var(--accent-subtle);
 }
 
-/* --- Sidebar: Fixed Position --- */
+/* --- Sidebar: Files Pane --- */
 .sidebar {
-    width: var(--sidebar-width);
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     background: var(--bg-surface);
     border-right: 1px solid var(--border-light);
     display: flex;
     flex-direction: column;
     padding: 6px 0 18px;
-    position: fixed; /* Stick to left */
-    top: 0;
-    left: 0;
     z-index: 10;
     transition: width 0.15s ease;
+    min-height: 0;
 }
 
 .sidebar-header {
@@ -463,7 +493,7 @@ body {
 }
 
 .sidebar-panel-toc {
-    flex: 2;
+    flex: 1;
 }
 
 /* Dark mode sidebar panel adjustments */
@@ -488,6 +518,10 @@ body {
 }
 
 .sidebar-collapsed .sidebar-panels {
+    display: none;
+}
+
+html[data-layout="compact"] body.sidebar-collapsed .toc-pane {
     display: none;
 }
 
@@ -967,26 +1001,45 @@ body {
     padding: 6px 12px;
 }
 
+/* --- TOC Pane --- */
+.toc-pane .sidebar-section-title {
+    border-bottom: 1px solid var(--border-light);
+}
+
+.toc-pane .sidebar-scroll {
+    padding: 6px 0 10px;
+}
+
+.toc-toggle-button {
+    display: none;
+}
+
 /* --- Main Content: Natural Flow --- */
 .content-wrapper {
-    margin-left: var(--sidebar-width);
-    flex: 1;
+    grid-area: content;
     padding: 40px 60px;
     display: flex;
     justify-content: center;
-    min-height: 100vh;
-    transition: margin-left 0.15s ease;
+    min-height: 0;
     position: relative;
+    overflow: auto;
 }
 
-body.sidebar-collapsed .content-wrapper {
-    margin-left: var(--sidebar-collapsed-width);
+.content-inner {
+    width: 100%;
+    max-width: var(--layout-max-width);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 /* Split Layout (when preview is open) */
-body.preview-active .content-wrapper {
-    width: 60%;
-    margin-right: 40%;
+body.preview-active .app-shell {
+    padding-right: var(--preview-width);
+}
+
+body.preview-active .preview-panel {
+    width: var(--preview-width);
 }
 
 body.preview-active .paper {
@@ -1579,8 +1632,17 @@ img {
 /* Mobile */
 @media (max-width: 1024px) {
     body { display: block; }
-    .sidebar { display: none; }
-    .content-wrapper { margin-left: 0; padding: 0; display: block; }
+    .app-shell {
+        height: auto;
+        min-height: 100vh;
+        display: block;
+    }
+    .files-pane,
+    .toc-pane {
+        display: none;
+    }
+    .content-wrapper { padding: 0; display: block; overflow: visible; }
+    .content-inner { max-width: 100%; }
     .paper { padding: 30px 20px; border: none; max-width: 100%; box-shadow: none; margin-bottom: 0; }
 }
 
@@ -2192,14 +2254,10 @@ div.mermaid {
 /* ===== Content Search ===== */
 
 .content-search-wrapper {
-    position: fixed;
+    position: absolute;
     top: 6px;
-    left: calc(var(--sidebar-width) + 30px);
+    left: 30px;
     z-index: 100;
-}
-
-body.sidebar-collapsed .content-search-wrapper {
-    left: calc(var(--sidebar-collapsed-width) + 30px);
 }
 
 .content-search-box {

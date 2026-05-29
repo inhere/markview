@@ -375,7 +375,7 @@ git commit -m "feat(web): add layout selector controls"
 - Modify: `web/src/sidebar-resize.ts`
 - Test: `internal/handlers/handlers_test.go` 或现有模板渲染测试
 
-- [ ] **Step 1: 写/更新失败测试**
+- [x] **Step 1: 写/更新失败测试**
 
 新增 Go handler/template 测试，确认完整页面包含新的布局骨架，且 TOC 不再是 `.sidebar-panels` 的后代。测试文件优先放在 `internal/handlers/handlers_test.go`，复用现有完整页面渲染 helper。
 
@@ -393,7 +393,7 @@ assert.True(t, strings.Index(body, `id="toc-panel"`) < strings.Index(body, `clas
 
 如果测试中要判断嵌套关系，优先用 Go HTML tokenizer 或 `goquery` 等结构化方式；没有现成依赖时，用明确的片段断言即可，不为测试引入重量级依赖。
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -403,7 +403,7 @@ go test ./internal/handlers
 
 Expected: FAIL，模板还没有 `.app-shell`、`.files-pane`、`.toc-pane` 或 TOC 仍在旧 sidebar 内。
 
-- [ ] **Step 3: 调整模板 DOM**
+- [x] **Step 3: 调整模板 DOM**
 
 在 `web/template.html`：
 
@@ -443,7 +443,7 @@ Expected: FAIL，模板还没有 `.app-shell`、`.files-pane`、`.toc-pane` 或 
 </div>
 ```
 
-- [ ] **Step 4: 增加 pane 基础 CSS**
+- [x] **Step 4: 增加 pane 基础 CSS**
 
 在 `web/src/style/app.css` 增加 `app-shell`、pane 和正文内部 wrapper 的基础规则。此时只做到 compact 视觉兼容，不实现完整布局切换：
 
@@ -500,7 +500,7 @@ body {
 - sidebar resize 继续改变左侧 files/compact sidebar 宽度。
 - TOC 不是 `.sidebar-panels` 后代。
 
-- [ ] **Step 5: 调整 sidebar collapse 与 resize selector**
+- [x] **Step 5: 调整 sidebar collapse 与 resize selector**
 
 检查 `web/src/sidebar.ts`：
 
@@ -514,7 +514,7 @@ body {
 - 只写 `--sidebar-width`。
 - 不增加 TOC resize。
 
-- [ ] **Step 6: 运行测试**
+- [x] **Step 6: 运行测试**
 
 Run:
 
@@ -525,12 +525,14 @@ cd web && bun test
 
 Expected: PASS。
 
-- [ ] **Step 7: 提交**
+- [x] **Step 7: 提交**
 
 ```bash
 git add web/template.html web/src/style/app.css web/src/sidebar.ts web/src/sidebar-resize.ts internal/handlers/handlers_test.go
 git commit -m "feat(web): split layout panes"
 ```
+
+Implementation note: `.content-wrapper` 成为桌面阅读滚动容器后，同步修复了 hash 跳转、TOC 高亮和 inline refresh 滚动恢复，移动端仍回退到 window 滚动。
 
 ## Task 4: 桌面布局 CSS 与 toc-right 浮动面板
 
