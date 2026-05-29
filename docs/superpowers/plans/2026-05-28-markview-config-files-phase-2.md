@@ -956,7 +956,7 @@ git commit -m "feat(web): add floating toc controls"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-05-28-markview-config-files-phase-2.md`
 
-- [ ] **Step 1: 构建并启动本地服务**
+- [x] **Step 1: 构建并启动本地服务**
 
 Run:
 
@@ -980,7 +980,7 @@ if ($server -and -not $server.HasExited) {
 
 如果 smoke 中途失败，也必须在 `finally` 或等价清理步骤中停止该进程，避免遗留端口占用。
 
-- [ ] **Step 2: 使用浏览器检查 desktop 布局**
+- [x] **Step 2: 使用浏览器检查 desktop 布局**
 
 用浏览器打开 `http://127.0.0.1:6224/`，分别验证：
 
@@ -1000,7 +1000,7 @@ if ($server -and -not $server.HasExited) {
 - 打开 preview 后，Body 与 Preview 不重叠，`toc-right` 默认关闭浮动 TOC；手动打开浮动 TOC 后能点击 TOC 项跳转，跳转后本期建议保持 TOC 打开。
 - desktop 截图无横向重叠。
 
-- [ ] **Step 3: 使用浏览器检查 mobile 回退**
+- [x] **Step 3: 使用浏览器检查 mobile 回退**
 
 设置 viewport 宽度小于 `1024px`，验证：
 
@@ -1008,7 +1008,7 @@ if ($server -and -not $server.HasExited) {
 - 视觉布局回退为单正文/compact，不展示三列。
 - 内容不被 toolbar、preview、TOC 或 TOC 开关遮挡。
 
-- [ ] **Step 4: 记录 smoke 结果**
+- [x] **Step 4: 记录 smoke 结果**
 
 在本计划 Task 6 下方追加简短记录：
 
@@ -1020,7 +1020,13 @@ Smoke result:
 - Mobile fallback: PASS
 ```
 
-- [ ] **Step 5: 提交**
+Smoke result:
+- Desktop compact/toc-middle/toc-right floating TOC: PASS
+- Sidebar collapsed with toc-middle and toc-right floating TOC: PASS
+- Preview panel with toc-right default-hidden/manual-open TOC: PASS
+- Mobile fallback: PASS
+
+- [x] **Step 5: 提交**
 
 ```bash
 git add docs/superpowers/plans/2026-05-28-markview-config-files-phase-2.md
