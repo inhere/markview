@@ -83,12 +83,26 @@ Using environment variables:
 ```bash
 MKVIEW_PORT=8080 markview
 MKVIEW_ENTRY=guide.md markview
+MKVIEW_INCLUDE_DIR=.docs markview
 ```
 
 ```powershell
 $env:MKVIEW_PORT = "8080"; markview
 $env:MKVIEW_ENTRY = "guide.md"; markview
+$env:MKVIEW_INCLUDE_DIR = ".docs"; markview
 ```
+
+Using project config, create `markview.local.json`, `.markview.json`, or `markview.json` in the project root:
+
+```json
+{
+  "server": {
+    "include_dir": ".docs,.wiki"
+  }
+}
+```
+
+`server.include_dir` and `MKVIEW_INCLUDE_DIR` allow selected skipped directories, including dot-prefixed documentation directories, to appear in the file tree. `.git` and `node_modules` are always skipped.
 
 Using CLI options:
 

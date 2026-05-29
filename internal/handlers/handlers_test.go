@@ -19,6 +19,11 @@ import (
 
 func TestBuildFileTree(t *testing.T) {
 	root := t.TempDir()
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{
+		WatchSkipDirs: append([]string(nil), config.DefaultSkipDirs...),
+	}
 
 	files := []string{
 		"README.md",
@@ -89,6 +94,37 @@ func TestBuildFileTree(t *testing.T) {
 	if tree[3].Kind != "file" || tree[3].Name != "z-last.md" {
 		t.Fatalf("expected fourth node to be z-last.md, got %+v", tree[3])
 	}
+}
+
+func TestBuildFileTreeIncludesConfiguredDotDirectory(t *testing.T) {
+	root := t.TempDir()
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+	config.Cfg = config.Config{
+		WatchSkipDirs: append([]string(nil), config.DefaultSkipDirs...),
+		IncludeDirs:   []string{".docs"},
+	}
+
+	files := []string{
+		".docs/guide.md",
+		".hidden/secret.md",
+		".git/index.md",
+		"node_modules/pkg/readme.md",
+	}
+	for _, relativePath := range files {
+		fullPath := filepath.Join(root, filepath.FromSlash(relativePath))
+		assert.NoErr(t, os.MkdirAll(filepath.Dir(fullPath), 0o755))
+		assert.NoErr(t, os.WriteFile(fullPath, []byte("# test"), 0o644))
+	}
+
+	tree, err := buildFileTree(root)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(tree))
+	assert.Eq(t, ".docs", tree[0].Name)
+	assert.Eq(t, "directory", tree[0].Kind)
+	assert.Eq(t, 1, len(tree[0].Children))
+	assert.Eq(t, "guide.md", tree[0].Children[0].Name)
 }
 
 func TestHandleRequestRendersDirectoryListingWithoutEntryFile(t *testing.T) {

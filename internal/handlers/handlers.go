@@ -9,6 +9,12 @@ import (
 
 // Skip directories start with dot or in watchSkipDirs
 func shouldSkipDir(name string) bool {
+	if name == ".git" || name == "node_modules" {
+		return true
+	}
+	if slices.Contains(config.Cfg.IncludeDirs, name) {
+		return false
+	}
 	// Skip directories start with dot
 	if name[0] == '.' {
 		return true

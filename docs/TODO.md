@@ -80,6 +80,9 @@ server 配置：
 - watch_dir: string 监听的目录配置，多个目录用逗号分隔，默认项目目录
 - watch_skip_dir: string 监听时，跳过的的目录配置，多个目录用逗号分隔，默认空字符串
   - 支持前缀 override: 覆盖默认的skip设置, append(default): 追加到默认的设置
+- include_dir: string 放行被跳过的目录，多个目录用逗号分隔，例如 `.docs,.wiki`
+  - 可通过 `MKVIEW_INCLUDE_DIR` 配置
+  - 用于让点开头的文档目录显示到 file-tree；`.git` 和 `node_modules` 始终跳过
 
 UI 页面配置（server渲染设置到页面）：
 - preview_exts: string 支持的预览文件扩展名，多个逗号分隔，默认 .md, .json, .jsonl, .yaml, .toml

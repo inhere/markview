@@ -559,6 +559,9 @@ func runtimeEnvConfig(dotenv map[string]string) (config.EnvConfig, error) {
 	if watchSkipDir := envValue(config.EnvWatchSkipDir, dotenv); watchSkipDir != "" {
 		envCfg.WatchSkipDir = &watchSkipDir
 	}
+	if includeDir := envValue(config.EnvIncludeDir, dotenv); includeDir != "" {
+		envCfg.IncludeDir = &includeDir
+	}
 	return envCfg, nil
 }
 

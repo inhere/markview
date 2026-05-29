@@ -85,7 +85,7 @@ func TestLoadGlobalFileConfigLoadsGlobalConfig(t *testing.T) {
 func TestLoadFileConfigParsesPointerValues(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "markview.json")
 	assert.NoErr(t, os.WriteFile(path, []byte(`{
-		"server": {"port": 0, "private": false, "watch": false},
+		"server": {"port": 0, "private": false, "watch": false, "include_dir": ".docs,.wiki"},
 		"ui": {"preview_exts": "append:.ini", "layout": "toc-right"}
 	}`), 0o644))
 
@@ -95,6 +95,7 @@ func TestLoadFileConfigParsesPointerValues(t *testing.T) {
 	assert.Eq(t, 0, *cfg.Server.Port)
 	assert.Eq(t, false, *cfg.Server.Private)
 	assert.Eq(t, false, *cfg.Server.Watch)
+	assert.Eq(t, ".docs,.wiki", *cfg.Server.IncludeDir)
 	assert.Eq(t, "append:.ini", *cfg.UI.PreviewExts)
 	assert.Eq(t, "toc-right", *cfg.UI.Layout)
 }

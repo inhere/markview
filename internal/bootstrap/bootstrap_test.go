@@ -565,6 +565,15 @@ func TestListenProjectPortFromRegistryUsesSavedPort(t *testing.T) {
 	assert.Eq(t, savedPort, actualPort)
 }
 
+func TestRuntimeEnvConfigReadsIncludeDir(t *testing.T) {
+	envCfg, err := runtimeEnvConfig(map[string]string{
+		config.EnvIncludeDir: ".docs,.wiki",
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, ".docs,.wiki", *envCfg.IncludeDir)
+}
+
 func TestListenProjectPortFromRegistrySkipsPortsSavedByOtherProjects(t *testing.T) {
 	ports, closePorts := reserveConsecutivePorts(t, 2)
 	closePorts()

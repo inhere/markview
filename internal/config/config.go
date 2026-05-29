@@ -30,6 +30,7 @@ type Config struct {
 	EnableWatch   bool
 	WatchDirs     []string
 	WatchSkipDirs []string
+	IncludeDirs   []string
 	Private       bool
 	NoBrowser     bool
 	PreviewExts   []string

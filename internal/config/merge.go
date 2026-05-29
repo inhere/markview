@@ -20,6 +20,7 @@ type EnvConfig struct {
 	Watch        *bool
 	WatchDir     *string
 	WatchSkipDir *string
+	IncludeDir   *string
 }
 
 type CLIConfig struct {
@@ -75,6 +76,13 @@ func applyFileConfig(cfg *Config, fileCfg FileConfig, portSource PortSource) err
 		}
 		cfg.WatchSkipDirs = ensureNodeModules(dirs)
 	}
+	if fileCfg.Server.IncludeDir != nil {
+		dirs, err := normalizeDirListSetting(nil, *fileCfg.Server.IncludeDir)
+		if err != nil {
+			return err
+		}
+		cfg.IncludeDirs = dirs
+	}
 	if fileCfg.UI.PreviewExts != nil {
 		exts, err := NormalizeExtListSetting(DefaultPreviewExts, *fileCfg.UI.PreviewExts)
 		if err != nil {
@@ -112,6 +120,13 @@ func applyEnvConfig(cfg *Config, env EnvConfig) error {
 			return err
 		}
 		cfg.WatchSkipDirs = ensureNodeModules(dirs)
+	}
+	if env.IncludeDir != nil {
+		dirs, err := normalizeDirListSetting(nil, *env.IncludeDir)
+		if err != nil {
+			return err
+		}
+		cfg.IncludeDirs = dirs
 	}
 	return nil
 }

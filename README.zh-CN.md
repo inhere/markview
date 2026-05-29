@@ -83,12 +83,26 @@ markview "path/to/docs" "intro.md"
 ```bash
 MKVIEW_PORT=8080 markview
 MKVIEW_ENTRY=guide.md markview
+MKVIEW_INCLUDE_DIR=.docs markview
 ```
 
 ```powershell
 $env:MKVIEW_PORT = "8080"; markview
 $env:MKVIEW_ENTRY = "guide.md"; markview
+$env:MKVIEW_INCLUDE_DIR = ".docs"; markview
 ```
+
+使用项目配置时，可在项目根目录创建 `markview.local.json`、`.markview.json` 或 `markview.json`：
+
+```json
+{
+  "server": {
+    "include_dir": ".docs,.wiki"
+  }
+}
+```
+
+`server.include_dir` 和 `MKVIEW_INCLUDE_DIR` 用于放行被跳过的目录，包括点开头的文档目录，让它们显示在 file-tree 中。`.git` 和 `node_modules` 会始终跳过。
 
 使用CLI选项：
 

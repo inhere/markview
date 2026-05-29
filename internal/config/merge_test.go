@@ -98,6 +98,31 @@ func TestMergeRuntimeConfigWatchSkipOverrideKeepsNodeModules(t *testing.T) {
 	assert.Eq(t, []string{".cache", "node_modules"}, result.WatchSkipDirs)
 }
 
+func TestMergeRuntimeConfigIncludeDirPriority(t *testing.T) {
+	globalInclude := "append:.global"
+	projectInclude := "append:.project"
+	envInclude := "append:.env"
+
+	result, err := MergeRuntimeConfig(MergeInput{
+		Global:  FileConfig{Server: ServerFileConfig{IncludeDir: &globalInclude}},
+		Project: FileConfig{Server: ServerFileConfig{IncludeDir: &projectInclude}},
+		Env:     EnvConfig{IncludeDir: &envInclude},
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{".env"}, result.IncludeDirs)
+}
+
+func TestMergeRuntimeConfigRejectsUnsupportedIncludeDirMode(t *testing.T) {
+	include := "replace:.docs"
+
+	_, err := MergeRuntimeConfig(MergeInput{
+		Project: FileConfig{Server: ServerFileConfig{IncludeDir: &include}},
+	})
+
+	assert.Err(t, err)
+}
+
 func TestMergeRuntimeConfigProjectPreviewExtsUseDefaultBase(t *testing.T) {
 	t.Run("project append ignores global append additions", func(t *testing.T) {
 		globalPreview := "append:.ini"

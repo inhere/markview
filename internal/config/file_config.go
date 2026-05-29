@@ -19,6 +19,7 @@ type ServerFileConfig struct {
 	Watch        *bool   `json:"watch"`
 	WatchDir     *string `json:"watch_dir"`
 	WatchSkipDir *string `json:"watch_skip_dir"`
+	IncludeDir   *string `json:"include_dir"`
 }
 
 type UIFileConfig struct {
