@@ -82,7 +82,7 @@ export function isInlineNavigablePath(pathname: string) {
 
 export function getContentScrollContainer(documentRef: Document = document): HTMLElement | null {
     const view = documentRef.defaultView ?? window;
-    if (view.innerWidth <= 1024) {
+    if (view.innerWidth < 1024) {
         return null;
     }
 
