@@ -1040,7 +1040,7 @@ git commit -m "docs: record layout smoke verification"
 - Modify: `docs/superpowers/specs/2026-05-28-markview-config-files-design.md`
 - Modify: `docs/superpowers/plans/2026-05-28-markview-config-files-phase-2.md`
 
-- [ ] **Step 1: 运行完整质量门**
+- [x] **Step 1: 运行完整质量门**
 
 Run:
 
@@ -1055,7 +1055,13 @@ cd ..
 
 Expected: 全部 PASS。
 
-- [ ] **Step 2: 更新 TODO**
+Quality gate result:
+- `go test ./...`: PASS
+- `go build ./...`: PASS
+- `cd web && bun test`: PASS
+- `cd web && bun run build`: PASS
+
+- [x] **Step 2: 更新 TODO**
 
 当二期实现和 smoke 都完成后，更新 `docs/TODO.md`：
 
@@ -1067,7 +1073,7 @@ Expected: 全部 PASS。
 
 并将章节标题状态从 `⏳` 改为 `✅`。
 
-- [ ] **Step 3: 更新设计文档链接**
+- [x] **Step 3: 更新设计文档链接**
 
 确认设计文档顶部相关文档包含：
 
@@ -1077,7 +1083,7 @@ Expected: 全部 PASS。
 
 如果二期实现与设计有差异，补充“实施说明”而不是悄悄让文档过期。
 
-- [ ] **Step 4: 提交收尾文档**
+- [x] **Step 4: 提交收尾文档**
 
 ```bash
 git add docs/TODO.md docs/superpowers/specs/2026-05-28-markview-config-files-design.md docs/superpowers/plans/2026-05-28-markview-config-files-phase-2.md

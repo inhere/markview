@@ -19,9 +19,9 @@
   - 优化为 超过指定高度后启用y滚动，下边框添加可点击区，点击后也可以完全展开高度
 - [x] feat: 现在页面拦截了内部的 .md 链接，增强支持 .json, .jsonl, .yaml, .toml 等常见内容文件链接
   - 点击链接后在预览面板查看高亮的文件内容，而不需要打开新页面
-- [ ] 新增支持全局和项目级别的配置文件 `markview.json`（详细说明见下面对应章节）
+- [x] 新增支持全局和项目级别的配置文件 `markview.json`（详细说明见下面对应章节）
   - [x] 一期：配置文件读取/合并、页面配置注入、preview_exts 生效、layout 基础链路
-  - [ ] 二期：设置面板 layout 控件和完整布局模式
+  - [x] 二期：设置面板 layout 控件和完整布局模式
 
 ## 随机端口时，自动保存获取到的端口号 ✅
 
@@ -60,7 +60,7 @@ markview --projects show|remove <project name>
 markview -P|--project <project name>
 ```
 
-## 新增支持全局和项目级别的配置文件 ⏳
+## 新增支持全局和项目级别的配置文件 ✅
 
 相关文档：
 - [设计文档](superpowers/specs/2026-05-28-markview-config-files-design.md)
