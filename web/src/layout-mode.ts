@@ -25,8 +25,14 @@ function readLayoutMode(value: string | undefined): AppLayout | null {
     return null;
 }
 
+function createDocumentEvent(documentRef: Document, type: string, detail: Record<string, unknown>) {
+    const CustomEventCtor = documentRef.defaultView?.CustomEvent ?? CustomEvent;
+    return new CustomEventCtor(type, { detail });
+}
+
 export function applyLayoutMode(mode: AppLayout, documentRef: Document = document) {
     documentRef.documentElement.dataset.layout = mode;
+    documentRef.dispatchEvent(createDocumentEvent(documentRef, 'markview:layout-mode-changed', { mode }));
 }
 
 export function hasStoredLayoutMode(storage: Pick<Storage, 'getItem'> = window.localStorage): boolean {

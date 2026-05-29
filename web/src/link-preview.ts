@@ -129,6 +129,17 @@ let currentPreviewUrl: string | null = null;
 let currentTriggerButton: HTMLElement | null = null;
 let previewPanelOpen = false;
 
+function createPreviewStateEvent(): Event {
+    const CustomEventCtor = document.defaultView?.CustomEvent ?? CustomEvent;
+    return new CustomEventCtor('markview:preview-state-changed', {
+        detail: { open: previewPanelOpen },
+    });
+}
+
+function emitPreviewStateChanged(): void {
+    document.dispatchEvent(createPreviewStateEvent());
+}
+
 function handleEscapeKey(event: KeyboardEvent): void {
     if (event.key === 'Escape' && previewPanelOpen) {
         closePreviewPanel();
@@ -192,6 +203,7 @@ export function openPreviewPanel(url: string, triggerButton?: HTMLElement | null
     // 显示面板
     panel.style.display = 'flex';
     document.body.classList.add('preview-active');
+    emitPreviewStateChanged();
 
     // 绑定关闭按钮
     const closeBtn = panel.querySelector('.preview-close');
@@ -216,6 +228,7 @@ function closePreviewPanel(): void {
     currentPreviewUrl = null;
     currentTriggerButton = null;
     previewPanelOpen = false;
+    emitPreviewStateChanged();
 
     resetPanelState();
 }

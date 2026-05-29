@@ -69,6 +69,7 @@ import {
     applyLayoutMode,
     setupLayoutControls,
 } from './layout-mode';
+import { setupTocToggle } from './toc-toggle';
 
 interface RenderPageOptions {
     hash?: string;
@@ -431,6 +432,7 @@ function setupOnce() {
     setupImageModal();
     setupLinkPreview();
     setupContentSearch();
+    setupTocToggle({ documentRef: document });
     const sidebarPrefs = readSidebarPreferences();
     applyInitialSidebarWidth(sidebarPrefs.sidebarWidth);
     initSidebarResize();

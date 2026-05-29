@@ -23,4 +23,15 @@ describe('layout CSS modes', () => {
         expectRule(/html\[data-layout="toc-middle"\]\s+body\.sidebar-collapsed\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-collapsed-width\)\s+var\(--toc-width\)\s+minmax\(0,\s*1fr\);/s);
         expect(cssText).not.toMatch(/(?:^|})\s*body\.sidebar-collapsed\s+\.toc-pane\s*\{\s*display:\s*none;/);
     });
+
+    test('defines preview-active and mobile fallback layout rules', () => {
+        expect(cssText).toContain('preview-active');
+        expect(cssText).toContain('toc-floating-open');
+        expect(cssText).toContain('.toc-toggle-button');
+        expectRule(/html\[data-layout="toc-middle"\]\s+body\.preview-active\s+\.toc-pane\s*\{[^}]*display:\s*none;/s);
+        expectRule(/html\[data-layout="toc-right"\]\s+body\.preview-active:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;/s);
+        expectRule(/\.content-wrapper\s*\{[^}]*position:\s*relative;[^}]*overflow:\s*auto;/s);
+        expectRule(/\.content-search-wrapper\s*\{[^}]*position:\s*absolute;[^}]*left:\s*30px;/s);
+        expectRule(/@media \(max-width:\s*1023px\)\s*\{[\s\S]*\.toc-toggle-button\s*\{[^}]*display:\s*none;/);
+    });
 });
