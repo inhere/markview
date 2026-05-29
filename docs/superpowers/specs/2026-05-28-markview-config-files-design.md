@@ -41,7 +41,7 @@ MarkView 当前主要通过 CLI 参数、项目 `.env`、环境变量和全局 `
 1. 不让多个项目配置文件叠加合并。
 2. 不把 `markview-projects.json` 扩展成通用项目配置文件。
 3. 不引入 YAML/TOML 配置格式。
-4. 不在配置文件支持的一期开发中完成完整三栏布局；完整布局设计仍包含在本文档中，并拆到二期实施。
+4. 不在配置文件支持的一期开发中完成完整布局；完整布局设计仍包含在本文档中，并拆到二期实施。
 
 ## 配置文件格式
 
@@ -225,18 +225,18 @@ CLI 选项
 ```text
 compact    : sidebar(files + toc) | body
 toc-middle : files | toc | body
-toc-right  : files | body | toc
+toc-right  : files | body + floating toc
 ```
 
 `compact` 保持当前体验：文件树和 TOC 都在左侧 sidebar 中，用户可以分别折叠 Files 区块和整个 sidebar。
 
 `toc-middle` 使用三列结构：左侧是文件树，中间是当前页面 TOC，右侧是正文。这个模式适合文件很多且页面较长的项目，文件导航和页面内导航同时可见，不互相挤占。
 
-`toc-right` 使用三列结构：左侧是文件树，中间是正文，右侧是当前页面 TOC。这个模式适合更接近文档站的阅读体验，正文居中，TOC 作为阅读辅助停靠在右侧。
+`toc-right` 使用两列主布局加浮动 TOC：左侧是文件树，正文占据剩余主区域，当前页面 TOC 作为右侧浮动面板覆盖在阅读区域上方。这个模式适合更接近文档站的阅读体验，正文不再为 TOC 预留固定列，用户可以通过浮动控制按钮显示或隐藏 TOC。
 
 ### DOM 结构
 
-当前模板里的 sidebar 同时包含 Files 和 TOC。二期应把 TOC 从 sidebar DOM 层级中拆出，和 Files、Body 成为同级布局区域。这样 `compact` 和三栏模式都由同一个 CSS Grid 控制，不需要复制 TOC DOM，也不需要运行时移动节点。
+当前模板里的 sidebar 同时包含 Files 和 TOC。二期应把 TOC 从 sidebar DOM 层级中拆出，和 Files、Body 成为同级布局区域。这样 `compact`、`toc-middle` 和 `toc-right` 都由同一套页面结构控制，不需要复制 TOC DOM，也不需要运行时移动节点。
 
 ```html
 <body data-layout="compact">
@@ -248,12 +248,13 @@ toc-right  : files | body | toc
 </body>
 ```
 
-`compact` 模式下，CSS Grid 将 `.files-pane` 和 `.toc-pane` 放在左侧 sidebar 区域内，视觉保持当前 Files + TOC 的左栏体验；三栏模式下，两者作为独立列展示。
+`compact` 模式下，CSS Grid 将 `.files-pane` 和 `.toc-pane` 放在左侧 sidebar 区域内，视觉保持当前 Files + TOC 的左栏体验；`toc-middle` 下 TOC 作为中间独立列展示；`toc-right` 下 TOC 不占 grid 列，而是浮动在正文右侧。
 
 实施原则：
 
 - 将现有 sidebar 外壳重命名/扩展为 `.files-pane.sidebar`，继续承载 header、文件面板、折叠图标和 resize handle。
 - 将现有 `.sidebar-panel-toc` 移到 `.app-shell` 下，成为 `.toc-pane.sidebar-panel.sidebar-panel-toc`。
+- 新增一个轻量 TOC 浮动开关按钮，例如 `.toc-toggle-button`，用于 `toc-right` 下显示/隐藏浮动 TOC。按钮只控制页面运行时状态，不写入配置文件。
 - `.content-wrapper` 同样作为 `.app-shell` 的直接子项。
 - 使用 CSS Grid 的 `grid-template-areas` 切换 `compact`、`toc-middle`、`toc-right`，不要使用 `position: fixed` 作为主布局方案。
 - 避免复制 TOC DOM，确保 `generateTOC()`、`highlightTOC()` 仍只操作一个 `#toc-list`。
@@ -275,30 +276,54 @@ toc-middle:
   grid-template-areas: "files toc body"
 
 toc-right:
-  grid-template-columns: var(--files-width) minmax(0, 1fr) var(--toc-width)
-  grid-template-areas: "files body toc"
+  grid-template-columns: var(--files-width) minmax(0, 1fr)
+  grid-template-areas: "files body"
+  .toc-pane 使用浮动定位停靠在右侧，不占用 grid track
 ```
 
 推荐默认宽度：
 
 - files: 沿用当前 sidebar 宽度偏好，默认 `280px`。
-- toc: 默认 `240px`，最小 `180px`，最大 `360px`。
+- toc: 默认 `240px`，最小 `180px`，最大 `360px`；`toc-middle` 中作为列宽，`toc-right` 中作为浮动面板宽度。
 - body: 继续使用 `--layout-max-width` 控制正文内部宽度。
 
-`compact` 下，`.files-pane` 和 `.toc-pane` 共享左列高度，不应继续无条件使用 `height: 100vh` 导致 TOC 被推到首屏外；`toc-middle` 和 `toc-right` 下，Files 与 TOC 才分别作为完整高度列展示。三栏模式中正文容器不应被强行拉满到失去阅读宽度控制；外层列占满剩余空间，正文内部仍按用户选择的 Width 设置居中。
+`compact` 下，`.files-pane` 和 `.toc-pane` 共享左列高度，不应继续无条件使用 `height: 100vh` 导致 TOC 被推到首屏外；`toc-middle` 下 Files 与 TOC 分别作为完整高度列展示；`toc-right` 下 Files 是完整高度列，TOC 是浮动面板。正文容器不应被强行拉满到失去阅读宽度控制；外层列占满剩余空间，正文内部仍按用户选择的 Width 设置居中。`Width = Full` 只让正文铺满 content pane，不侵占 TOC 浮动层或 preview 面板。
+
+### toc-right 浮动 TOC
+
+`toc-right` 的 TOC 行为：
+
+- 默认显示浮动 TOC 面板，停靠在正文右侧，宽度使用 `--toc-width`。
+- 面板上方或右上角提供一个控制按钮，用于显示/隐藏 TOC；按钮使用图标或短文本，并通过 `aria-expanded` 表示状态。
+- 隐藏时保留控制按钮，用户可以随时重新打开。
+- 打开 link preview 后，TOC 默认隐藏，避免正文、TOC、preview 三者同时争夺右侧空间。
+- preview 打开期间，用户仍可点击控制按钮临时展开 TOC，用于页面内跳转；点击 TOC 项后可保持打开，也可按实现便利自动收起，本期建议保持打开，避免跳转后状态突变。
+- 浮动 TOC 不写入 `ui.layout`，也不新增 Go 配置项；是否展开属于前端页面运行时状态。
+
+推荐状态：
+
+```text
+toc-right + preview inactive:
+  files | body
+             floating toc visible by default
+
+toc-right + preview active:
+  files | body | preview
+             floating toc hidden by default, toggle can reopen it as overlay
+```
 
 移动端建议统一回退为 `compact` 的单栏/抽屉式行为，不在小屏强行展示三列。回退只影响视觉布局，不改变用户保存的 layout 偏好；当视口恢复到桌面宽度时继续使用用户选择的模式。
 
 ### 折叠和 Resize
 
-现有 sidebar resize 可以继续控制 files 面板宽度。三栏模式新增 TOC 宽度时，不建议二期首版增加 TOC resize；默认固定宽度即可，降低交互复杂度。
+现有 sidebar resize 可以继续控制 files 面板宽度。`toc-middle` 的 TOC 列宽和 `toc-right` 的浮动 TOC 宽度二期首版都不提供 resize；默认固定宽度即可，降低交互复杂度。
 
 折叠策略：
 
 - `compact`: 沿用当前 sidebar 折叠和 Files 区块折叠。
 - `toc-middle`: sidebar 折叠只影响 files 面板；TOC 保持可见。
-- `toc-right`: sidebar 折叠只影响 files 面板；TOC 保持可见。
-- 后续如需单独折叠 TOC，可增加独立 `markview:toc-collapsed` 偏好，不与当前 sidebar 状态复用。
+- `toc-right`: sidebar 折叠只影响 files 面板；浮动 TOC 状态由 TOC 自己的开关按钮控制。
+- 后续如需持久化 TOC 折叠状态，可增加独立 `markview:toc-collapsed` 偏好，不与当前 sidebar 状态复用；二期先不持久化。
 
 ### 设置面板交互
 
@@ -336,9 +361,10 @@ markview:layout-mode
 ### 可访问性和兼容性
 
 - Layout 控件使用 button group 或 segmented control，并通过 `aria-pressed` 表示当前选中项。
-- 三栏模式下 DOM 顺序建议保持 Files、TOC、Body，键盘导航顺序稳定；`toc-right` 只通过 CSS grid 调整视觉位置。
+- 完整布局下 DOM 顺序建议保持 Files、TOC、Body，键盘导航顺序稳定；`toc-middle` 通过 CSS grid 调整视觉位置，`toc-right` 通过浮动层调整视觉位置。
+- `toc-right` 的 TOC 开关按钮需要有可访问名称，更新 `aria-expanded`，并通过 `aria-controls="toc-panel"` 关联面板。
 - 移动端回退时，不应隐藏正文内容或让 TOC 覆盖正文。
-- `preview-active` 右侧预览面板打开时，三栏布局应优先保证正文和预览可读；可以临时隐藏独立 TOC 或降低 TOC 列宽，避免四列拥挤。
+- `preview-active` 右侧预览面板打开时，布局应优先保证正文和预览可读；`toc-right` 默认隐藏浮动 TOC，但保留开关按钮允许用户临时打开 TOC 跳转。
 
 ## 错误处理
 
@@ -372,6 +398,8 @@ Go 测试：
 - 本地 layout 偏好覆盖服务端默认值。
 - Layout 设置面板切换 `compact`、`toc-middle`、`toc-right` 后写入本地偏好并更新页面 dataset。
 - Reset/Default 清除本地 layout 覆盖并恢复服务端默认 layout。
+- `toc-right` 下 TOC 开关按钮能显示/隐藏浮动 TOC，并同步 `aria-expanded`。
+- preview 打开时 `toc-right` 默认隐藏浮动 TOC，用户手动打开后可点击 TOC 项进行跳转。
 
 集成验证：
 
@@ -399,13 +427,13 @@ Go 测试：
 - 完成 `layout` 类型、默认值、localStorage key 和页面 dataset 的基础链路。
 - 保持现有 `compact` 布局视觉不变。
 
-阶段二：布局设置和三栏布局
+阶段二：布局设置和完整布局
 
 - 新增设置面板 layout 控件。
 - 实现 `compact`、`toc-middle`、`toc-right`。
 - 本地 layout 偏好覆盖服务端项目默认值。
 - 移动端统一回退或适配为单栏/compact 行为。
-- 验证右侧预览面板打开时三栏布局不出现内容重叠。
+- 验证右侧预览面板打开时正文、TOC 和预览面板不出现内容重叠。
 
 ## 开放问题
 

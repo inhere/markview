@@ -21,7 +21,7 @@
   - 点击链接后在预览面板查看高亮的文件内容，而不需要打开新页面
 - [ ] 新增支持全局和项目级别的配置文件 `markview.json`（详细说明见下面对应章节）
   - [x] 一期：配置文件读取/合并、页面配置注入、preview_exts 生效、layout 基础链路
-  - [ ] 二期：设置面板 layout 控件和完整三栏布局
+  - [ ] 二期：设置面板 layout 控件和完整布局模式
 
 ## 随机端口时，自动保存获取到的端口号 ✅
 
@@ -86,7 +86,8 @@ UI 页面配置（server渲染设置到页面）：
   - 支持前缀 override: 覆盖默认的扩展名设置, append(default): 追加到默认的设置
   - 配置后将会再右侧预览面板显示对应ext的文件内容，而不会打开新页面
 - layout: string 内容/TOC/目录布局位置，默认 compact
-  - 支持 compact(就是现在的布局：toc与file-tree合并,右侧内容), toc-middle(file-tree|toc|body), toc-right(file-tree|body|toc)
+  - 支持 compact(就是现在的布局：toc与file-tree合并,右侧内容), toc-middle(file-tree|toc|body), toc-right(file-tree|body + floating toc)
+  - toc-right 中 TOC 是右侧浮动面板，不为 TOC 预留固定列；打开预览面板时默认隐藏 TOC，但可通过按钮手动打开用于跳转
   - 默认是 compact模式，与file-tree合并，不占用额外空间。但是在文件多，内容长时，不方便查看，会影响阅读体验。
 
 > 多种配置覆盖优先级：CLI 选项 > 项目 `.env` 文件 > 项目配置文件 > 全局 `markview-projects.json` > 全局 `markview.json` 文件
