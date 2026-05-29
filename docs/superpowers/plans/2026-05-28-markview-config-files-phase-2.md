@@ -75,7 +75,7 @@
 - Modify: `web/src/preferences.ts`
 - Modify: `web/src/preferences.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `web/src/preferences.test.ts` 增加：
 
@@ -112,7 +112,7 @@ test('invalid stored layout does not override configured layout', () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -122,7 +122,7 @@ cd web && bun test src/preferences.test.ts
 
 Expected: FAIL，`clearStoredLayoutMode` 未定义。
 
-- [ ] **Step 3: 实现清除 helper**
+- [x] **Step 3: 实现清除 helper**
 
 在 `web/src/preferences.ts` 增加：
 
@@ -138,7 +138,7 @@ export function clearStoredLayoutMode(storage: StorageRemover = window.localStor
 }
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run:
 
@@ -148,7 +148,7 @@ cd web && bun test src/preferences.test.ts
 
 Expected: PASS。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add web/src/preferences.ts web/src/preferences.test.ts

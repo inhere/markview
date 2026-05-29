@@ -46,6 +46,10 @@ interface StorageWriter {
     setItem(key: string, value: string): void;
 }
 
+interface StorageRemover {
+    removeItem(key: string): void;
+}
+
 export function normalizeLayoutWidth(value: string | null | undefined): LayoutWidth {
     if (value && LAYOUT_WIDTH_OPTIONS.includes(value as LayoutWidth)) {
         return value as LayoutWidth;
@@ -141,6 +145,12 @@ export function persistLayoutWidth(value: LayoutWidth, storage: StorageWriter = 
 export function persistLayoutMode(value: AppLayout, storage: StorageWriter = window.localStorage) {
     try {
         storage.setItem(LAYOUT_MODE_STORAGE_KEY, normalizeLayoutMode(value));
+    } catch {}
+}
+
+export function clearStoredLayoutMode(storage: StorageRemover = window.localStorage) {
+    try {
+        storage.removeItem(LAYOUT_MODE_STORAGE_KEY);
     } catch {}
 }
 
