@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+    clearStoredLayoutMode,
     DEFAULT_LAYOUT_MODE,
     DEFAULT_FONT_SIZE,
     DEFAULT_LAYOUT_WIDTH,
@@ -88,6 +89,30 @@ describe('web preferences', () => {
     test('resolveLayoutMode prefers stored mode before configured layout', () => {
         expect(resolveLayoutMode('toc-middle', 'toc-right')).toBe('toc-middle');
         expect(resolveLayoutMode(null, 'toc-right')).toBe('toc-right');
+    });
+
+    test('clearStoredLayoutMode removes local layout override', () => {
+        const storage = new Map<string, string>([
+            [LAYOUT_MODE_STORAGE_KEY, 'toc-right'],
+        ]);
+
+        clearStoredLayoutMode({
+            removeItem(key: string) {
+                storage.delete(key);
+            },
+        });
+
+        expect(storage.has(LAYOUT_MODE_STORAGE_KEY)).toBe(false);
+    });
+
+    test('invalid stored layout does not override configured layout', () => {
+        const stored = readStoredLayoutMode({
+            getItem() {
+                return 'wide';
+            },
+        });
+
+        expect(resolveLayoutMode(stored, 'toc-right')).toBe('toc-right');
     });
 
     test('persistLayoutMode stores normalized supported value', () => {

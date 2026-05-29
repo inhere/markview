@@ -35,6 +35,7 @@ import {
     persistToolbarCollapsed,
 } from './preferences';
 import {
+    bindTOCScrollSpy,
     generateTOC,
     highlightTOC,
     renderFileTree,
@@ -46,9 +47,11 @@ import {
 } from './sidebar-resize';
 import {
     buildContentBaseURL,
+    getContentScrollTop,
     isInlineNavigablePath,
     readJSONScript,
     rewriteAttributeURLs,
+    scrollContentTo,
     scrollToHash,
 } from './util';
 import {
@@ -61,7 +64,12 @@ import {
 import { enhanceCodeBlocks } from './code-copy';
 import { enhanceTablesInContent } from './table-overflow';
 import { readAppConfig } from './app-config';
-import type { AppLayout } from './app-config';
+import type { AppConfig, AppLayout } from './app-config';
+import {
+    applyLayoutMode,
+    setupLayoutControls,
+} from './layout-mode';
+import { setupTocToggle } from './toc-toggle';
 
 interface RenderPageOptions {
     hash?: string;
@@ -118,7 +126,7 @@ async function enhancePageContent() {
     enhanceTablesInContent(contentRoot);
 }
 
-function setupToolbar() {
+function setupToolbar(appConfig: AppConfig, initialLayout: AppLayout) {
     const toolbar = document.getElementById('toolbar');
     if (!toolbar) {
         return;
@@ -196,6 +204,12 @@ function setupToolbar() {
         currentFontSize = DEFAULT_FONT_SIZE;
         applyFontSize(currentFontSize);
     });
+
+    setupLayoutControls({
+        documentRef: document,
+        configuredLayout: appConfig.layout,
+        initialLayout,
+    });
 }
 
 async function renderCurrentPage(options: RenderPageOptions = {}) {
@@ -222,11 +236,11 @@ async function renderCurrentPage(options: RenderPageOptions = {}) {
         }
 
         if (typeof options.preserveScrollY === 'number') {
-            window.scrollTo({ top: options.preserveScrollY, left: 0, behavior: 'auto' });
+            scrollContentTo(options.preserveScrollY);
             return;
         }
 
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        scrollContentTo(0);
     };
 
     requestAnimationFrame(() => {
@@ -272,7 +286,7 @@ async function fetchPageSnapshot(url: URL): Promise<PageSnapshot> {
 }
 
 async function navigateTo(url: URL, historyMode: HistoryMode, options: { preserveScroll?: boolean } = {}) {
-    const preserveScrollY = options.preserveScroll ? window.scrollY : null;
+    const preserveScrollY = options.preserveScroll ? getContentScrollTop() : null;
 
     try {
         const snapshot = await fetchPageSnapshot(url);
@@ -408,22 +422,24 @@ function setupOnce() {
     }
 
     const appConfig = readAppConfig();
-    applyLayoutMode(resolveLayoutMode(readStoredLayoutMode(), appConfig.layout));
+    const initialLayout = resolveLayoutMode(readStoredLayoutMode(), appConfig.layout);
+    applyLayoutMode(initialLayout);
     configureLinkPreview({ previewExts: appConfig.previewExts });
 
-    setupToolbar();
+    setupToolbar(appConfig, initialLayout);
     setupInlineNavigation();
     setupMermaidModal();
     setupImageModal();
     setupLinkPreview();
     setupContentSearch();
+    setupTocToggle({ documentRef: document });
     const sidebarPrefs = readSidebarPreferences();
     applyInitialSidebarWidth(sidebarPrefs.sidebarWidth);
     initSidebarResize();
     setupSidebarCollapse();
-    window.addEventListener('scroll', () => {
+    bindTOCScrollSpy(() => {
         highlightTOC();
-    }, { passive: true });
+    });
 
     const evtSource = new EventSource('/sse');
     const liveDot = document.getElementById('live-dot');
@@ -439,10 +455,6 @@ function applyLayoutWidth(widthButtons: NodeListOf<Element>, width: LayoutWidth)
     widthButtons.forEach(node => {
         node.classList.toggle('active', (node as HTMLElement).dataset.width === width);
     });
-}
-
-function applyLayoutMode(mode: AppLayout) {
-    document.documentElement.dataset.layout = mode;
 }
 
 function applyFontSize(fontSize: number) {

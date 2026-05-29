@@ -1,5 +1,10 @@
 # MarkView 配置文件支持设计
 
+| 日期 | 修订人 | 变更 |
+| --- | --- | --- |
+| 2026-05-28 | Codex | 初版设计：配置文件加载、页面配置注入、layout 完整布局方案。 |
+| 2026-05-29 | Codex | 补充二期实施说明：独立 TOC pane、toc-right 浮动 TOC 与 preview 避让行为已落地。 |
+
 相关文档：
 
 - [TODO 需求](../../TODO.md#新增支持全局和项目级别的配置文件-)
@@ -312,6 +317,8 @@ toc-right + preview active:
              floating toc hidden by default, toggle can reopen it as overlay
 ```
 
+实施说明：二期实现中，preview 打开时 `toc-right` 的浮动 TOC 面板和控制按钮会移动到 preview 面板左侧，避免按钮被 preview 覆盖；TOC 仍默认关闭，用户可手动打开并点击目录跳转。
+
 移动端建议统一回退为 `compact` 的单栏/抽屉式行为，不在小屏强行展示三列。回退只影响视觉布局，不改变用户保存的 layout 偏好；当视口恢复到桌面宽度时继续使用用户选择的模式。
 
 ### 折叠和 Resize
@@ -433,7 +440,7 @@ Go 测试：
 - 实现 `compact`、`toc-middle`、`toc-right`。
 - 本地 layout 偏好覆盖服务端项目默认值。
 - 移动端统一回退或适配为单栏/compact 行为。
-- 验证右侧预览面板打开时正文、TOC 和预览面板不出现内容重叠。
+- 验证右侧预览面板打开时正文、TOC 和预览面板不出现内容重叠；`toc-right` 中浮动 TOC 控制按钮和面板避开 preview 面板。
 
 ## 开放问题
 

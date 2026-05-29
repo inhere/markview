@@ -1,10 +1,14 @@
 import { describe, expect, test } from 'bun:test';
+import { JSDOM } from 'jsdom';
 import {
     buildContentBaseURL,
     buildHeadingAnchorId,
     escapeHtml,
+    getContentScrollTop,
     isAlreadyAbsoluteURL,
     isInlineNavigablePath,
+    scrollContentTo,
+    scrollToHash,
     toDisplaySlug,
 } from './util';
 
@@ -51,5 +55,156 @@ describe('web util', () => {
     test('buildHeadingAnchorId uses indexed prefix for chinese-only headings', () => {
         const anchorId = buildHeadingAnchorId('产品定位', 3);
         expect(anchorId).toMatch(/^i3-[a-z0-9]{6}$/);
+    });
+
+    test('scrollToHash scrolls the content wrapper when present', () => {
+        const dom = new JSDOM(`<!doctype html><body>
+            <main class="content-wrapper">
+                <div id="target">Target</div>
+            </main>
+        </body>`);
+        const { document } = dom.window;
+        Object.defineProperty(dom.window, 'innerWidth', {
+            value: 1280,
+            configurable: true,
+        });
+        const contentWrapper = document.querySelector('.content-wrapper') as HTMLElement;
+        const target = document.getElementById('target') as HTMLElement;
+
+        let scrolledTop = -1;
+        Object.defineProperty(contentWrapper, 'scrollTop', {
+            value: 40,
+            writable: true,
+            configurable: true,
+        });
+        contentWrapper.scrollTo = ((options: ScrollToOptions) => {
+            scrolledTop = Number(options.top ?? 0);
+        }) as typeof contentWrapper.scrollTo;
+        contentWrapper.getBoundingClientRect = () => ({
+            top: 120,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: 0,
+            height: 0,
+            x: 0,
+            y: 0,
+            toJSON() {
+                return {};
+            },
+        });
+        target.getBoundingClientRect = () => ({
+            top: 360,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: 0,
+            height: 0,
+            x: 0,
+            y: 0,
+            toJSON() {
+                return {};
+            },
+        });
+
+        const previousWindow = globalThis.window;
+        const previousDocument = globalThis.document;
+        const previousHTMLElement = globalThis.HTMLElement;
+        const previousCSS = globalThis.CSS;
+        // @ts-expect-error test env override
+        globalThis.window = dom.window;
+        // @ts-expect-error test env override
+        globalThis.document = document;
+        // @ts-expect-error test env override
+        globalThis.HTMLElement = dom.window.HTMLElement;
+        // @ts-expect-error test env override
+        globalThis.CSS = dom.window.CSS;
+
+        try {
+            scrollToHash('#target');
+            expect(scrolledTop).toBe(280);
+        } finally {
+            globalThis.window = previousWindow;
+            globalThis.document = previousDocument;
+            globalThis.HTMLElement = previousHTMLElement;
+            globalThis.CSS = previousCSS;
+        }
+    });
+
+    test('getContentScrollTop and scrollContentTo use the content wrapper first', () => {
+        const dom = new JSDOM(`<!doctype html><body><main class="content-wrapper"></main></body>`);
+        const { document } = dom.window;
+        Object.defineProperty(dom.window, 'innerWidth', {
+            value: 1280,
+            configurable: true,
+        });
+        const contentWrapper = document.querySelector('.content-wrapper') as HTMLElement;
+        Object.defineProperty(contentWrapper, 'scrollTop', {
+            value: 128,
+            writable: true,
+            configurable: true,
+        });
+
+        let scrolledTop = -1;
+        contentWrapper.scrollTo = ((options: ScrollToOptions) => {
+            scrolledTop = Number(options.top ?? 0);
+        }) as typeof contentWrapper.scrollTo;
+
+        const previousWindow = globalThis.window;
+        const previousDocument = globalThis.document;
+        const previousHTMLElement = globalThis.HTMLElement;
+        // @ts-expect-error test env override
+        globalThis.window = dom.window;
+        // @ts-expect-error test env override
+        globalThis.document = document;
+        // @ts-expect-error test env override
+        globalThis.HTMLElement = dom.window.HTMLElement;
+
+        try {
+            expect(getContentScrollTop()).toBe(128);
+            scrollContentTo(256);
+            expect(scrolledTop).toBe(256);
+        } finally {
+            globalThis.window = previousWindow;
+            globalThis.document = previousDocument;
+            globalThis.HTMLElement = previousHTMLElement;
+        }
+    });
+
+    test('getContentScrollTop falls back to window scroll on mobile layout', () => {
+        const dom = new JSDOM(`<!doctype html><body><main class="content-wrapper"></main></body>`);
+        const { document } = dom.window;
+        const contentWrapper = document.querySelector('.content-wrapper') as HTMLElement;
+        Object.defineProperty(dom.window, 'innerWidth', {
+            value: 800,
+            configurable: true,
+        });
+        Object.defineProperty(contentWrapper, 'scrollTop', {
+            value: 128,
+            writable: true,
+            configurable: true,
+        });
+        Object.defineProperty(dom.window, 'scrollY', {
+            value: 64,
+            configurable: true,
+        });
+
+        const previousWindow = globalThis.window;
+        const previousDocument = globalThis.document;
+        const previousHTMLElement = globalThis.HTMLElement;
+        // @ts-expect-error test env override
+        globalThis.window = dom.window;
+        // @ts-expect-error test env override
+        globalThis.document = document;
+        // @ts-expect-error test env override
+        globalThis.HTMLElement = dom.window.HTMLElement;
+
+        try {
+            expect(getContentScrollTop()).toBe(64);
+        } finally {
+            globalThis.window = previousWindow;
+            globalThis.document = previousDocument;
+            globalThis.HTMLElement = previousHTMLElement;
+        }
     });
 });

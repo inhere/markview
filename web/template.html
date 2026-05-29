@@ -27,6 +27,15 @@
         </div>
         <div class="toolbar-content">
             <div class="toolbar-row">
+                <div class="toolbar-group toolbar-layout-group" role="group" aria-label="Layout">
+                    <span class="toolbar-label">Layout</span>
+                    <button class="toolbar-btn" data-layout-mode="compact" aria-pressed="false" title="Compact layout">Compact</button>
+                    <button class="toolbar-btn" data-layout-mode="toc-middle" aria-pressed="false" title="Files, TOC, content">TOC Mid</button>
+                    <button class="toolbar-btn" data-layout-mode="toc-right" aria-pressed="false" title="Files, content, TOC">TOC Right</button>
+                    <button class="toolbar-btn" id="layout-default" title="Use project default layout">Default</button>
+                </div>
+            </div>
+            <div class="toolbar-row">
                 <div class="toolbar-group">
                     <span class="toolbar-label">Width</span>
                     <button class="toolbar-btn" data-width="768px">S</button>
@@ -66,104 +75,111 @@
         </div>
     </div>
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-resize-handle" id="sidebar-resize-handle"></div>
-        <div class="sidebar-header">
-            <!-- Collapsed state: vertical logo + status -->
-            <div class="sidebar-collapsed-header">
-                <img src="/static/logo.svg" alt="" class="sidebar-collapsed-logo">
-                <div class="sidebar-collapsed-status"></div>
-            </div>
-            <!-- Expanded state: horizontal layout -->
-            <div class="doc-meta">
-                <div class="brand-lockup" aria-label="MarkView">
-                    <img src="/static/logo.svg" alt="" class="brand-logo">
-                    <span class="brand-wordmark">MarkView</span>
+    <div class="app-shell">
+        <!-- Sidebar -->
+        <aside class="files-pane sidebar" id="files-pane">
+            <div class="sidebar-resize-handle" id="sidebar-resize-handle"></div>
+            <div class="sidebar-header">
+                <!-- Collapsed state: vertical logo + status -->
+                <div class="sidebar-collapsed-header">
+                    <img src="/static/logo.svg" alt="" class="sidebar-collapsed-logo">
+                    <div class="sidebar-collapsed-status"></div>
                 </div>
-                <span class="brand-divider" aria-hidden="true"></span>
-                <div class="doc-status">
-                <div class="live-dot" id="live-dot"></div>
-                <span id="status-text">Live</span>
+                <!-- Expanded state: horizontal layout -->
+                <div class="doc-meta">
+                    <div class="brand-lockup" aria-label="MarkView">
+                        <img src="/static/logo.svg" alt="" class="brand-logo">
+                        <span class="brand-wordmark">MarkView</span>
+                    </div>
+                    <span class="brand-divider" aria-hidden="true"></span>
+                    <div class="doc-status">
+                    <div class="live-dot" id="live-dot"></div>
+                    <span id="status-text">Live</span>
+                    </div>
                 </div>
+                <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
             </div>
-            <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            </button>
-        </div>
-        <div class="sidebar-panels">
-            <section class="sidebar-panel sidebar-panel-files" id="files-panel">
-                <div class="sidebar-section-title">
-                    <span class="sidebar-section-label">
-                        <span class="sidebar-section-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            <div class="sidebar-panels">
+                <section class="sidebar-panel sidebar-panel-files" id="files-panel">
+                    <div class="sidebar-section-title">
+                        <span class="sidebar-section-label">
+                            <span class="sidebar-section-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            </span>
+                            <span>Files</span>
                         </span>
-                        <span>Files</span>
-                    </span>
-                    <!-- 文件搜索框 -->
-                    <form class="files-search-box" role="search">
-                        <label for="files-search-input" class="visually-hidden">搜索文件</label>
-                        <input
-                            type="text"
-                            id="files-search-input"
-                            placeholder="Search file..."
-                            autocomplete="off"
-                        />
-                        <button id="files-search-clear" class="search-clear-btn" type="button" aria-label="清除搜索">
-                            ×
+                        <!-- 文件搜索框 -->
+                        <form class="files-search-box" role="search">
+                            <label for="files-search-input" class="visually-hidden">搜索文件</label>
+                            <input
+                                type="text"
+                                id="files-search-input"
+                                placeholder="Search file..."
+                                autocomplete="off"
+                            />
+                            <button id="files-search-clear" class="search-clear-btn" type="button" aria-label="清除搜索">
+                                ×
+                            </button>
+                        </form>
+                        <button class="sidebar-section-collapse-btn" id="files-collapse-btn" title="Collapse Files" aria-label="Collapse Files section">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </button>
-                    </form>
-                    <button class="sidebar-section-collapse-btn" id="files-collapse-btn" title="Collapse Files" aria-label="Collapse Files section">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </button>
-                </div>
-                <div class="sidebar-scroll" id="file-tree"></div>
-            </section>
-            <section class="sidebar-panel sidebar-panel-toc">
-                <div class="sidebar-section-title">
-                    <span class="sidebar-section-label">
-                        <span class="sidebar-section-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"></circle></svg>
-                        </span>
-                        <span>On This Page</span>
-                    </span>
-                </div>
-                <div class="sidebar-scroll toc-container">
-                    <ul class="toc-list" id="toc-list"></ul>
-                </div>
-            </section>
-        </div>
-        <div class="sidebar-icons" id="sidebar-icons">
-            <button class="sidebar-icon-btn" data-panel="files" title="Files">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-            </button>
-            <button class="sidebar-icon-btn" data-panel="toc" title="Table of Contents">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"></circle></svg>
-            </button>
-        </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="content-wrapper">
-        <!-- Content Search -->
-        <div class="content-search-wrapper" id="content-search">
-            <div class="content-search-box">
-                <input
-                    type="text"
-                    class="content-search-input"
-                    id="content-search-input"
-                    placeholder="Search in files ..."
-                    autocomplete="off"
-                />
-                <button class="content-search-clear" type="button" aria-label="Clear search">×</button>
+                    </div>
+                    <div class="sidebar-scroll" id="file-tree"></div>
+                </section>
             </div>
-            <div class="content-search-results"></div>
-        </div>
-        <div style="width: 100%; max-width: var(--layout-max-width); display: flex; flex-direction: column; align-items: center;">
-            <!-- inject the tempalte-main.html -->
-            {{ .MainContent }}
-        </div>
-    </main>
+            <div class="sidebar-icons" id="sidebar-icons">
+                <button class="sidebar-icon-btn" data-panel="files" title="Files">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                </button>
+                <button class="sidebar-icon-btn" data-panel="toc" title="Table of Contents">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"></circle></svg>
+                </button>
+            </div>
+        </aside>
+
+        <aside class="toc-pane sidebar-panel sidebar-panel-toc" id="toc-panel">
+            <div class="sidebar-section-title">
+                <span class="sidebar-section-label">
+                    <span class="sidebar-section-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"></circle></svg>
+                    </span>
+                    <span>On This Page</span>
+                </span>
+            </div>
+            <div class="sidebar-scroll toc-container">
+                <ul class="toc-list" id="toc-list"></ul>
+            </div>
+        </aside>
+
+        <button class="toc-toggle-button" id="toc-toggle-button" type="button" aria-controls="toc-panel" aria-expanded="true" title="Toggle table of contents">
+            TOC
+        </button>
+
+        <!-- Main Content -->
+        <main class="content-wrapper">
+            <!-- Content Search -->
+            <div class="content-search-wrapper" id="content-search">
+                <div class="content-search-box">
+                    <input
+                        type="text"
+                        class="content-search-input"
+                        id="content-search-input"
+                        placeholder="Search in files ..."
+                        autocomplete="off"
+                    />
+                    <button class="content-search-clear" type="button" aria-label="Clear search">×</button>
+                </div>
+                <div class="content-search-results"></div>
+            </div>
+            <div class="content-inner">
+                <!-- inject the tempalte-main.html -->
+                {{ .MainContent }}
+            </div>
+        </main>
+    </div>
 
     <!-- Mermaid Modal -->
     <div id="mermaid-modal" class="mermaid-modal">

@@ -7,7 +7,7 @@ import {
 
 const SIDEBAR_WIDTH_VAR = '--sidebar-width';
 const RESIZE_HANDLE_ID = 'sidebar-resize-handle';
-const SIDEBAR_SELECTOR = '.sidebar';
+const SIDEBAR_SELECTOR = '.files-pane.sidebar, .sidebar';
 
 let isResizing = false;
 let startX = 0;

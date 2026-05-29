@@ -240,6 +240,49 @@ func TestRenderFullPageInjectsAppConfigJSON(t *testing.T) {
 	assert.StrContains(t, body, `"layout":"toc-right"`)
 }
 
+func TestRenderFullPageUsesSplitPaneLayoutSkeleton(t *testing.T) {
+	origCfg := config.Cfg
+	origReader := IfsReader
+	t.Cleanup(func() {
+		config.Cfg = origCfg
+		IfsReader = origReader
+	})
+
+	config.Cfg = config.Config{
+		TargetDir: t.TempDir(),
+		UILayout:  config.UILayoutCompact,
+	}
+	assert.NoErr(t, os.WriteFile(filepath.Join(config.Cfg.TargetDir, "README.md"), []byte("# Test"), 0o644))
+	IfsReader = func(path string) ([]byte, error) {
+		switch path {
+		case "web/template-main.html":
+			return []byte(`<article id="content">{{ .Content }}</article><script id="current-file-path-data" type="application/json">{{ .CurrentFilePathJSON }}</script>`), nil
+		case "web/template.html":
+			return os.ReadFile(filepath.Join("..", "..", "web", "template.html"))
+		default:
+			return nil, os.ErrNotExist
+		}
+	}
+
+	pageData, err := buildPageData(filepath.Join(config.Cfg.TargetDir, "README.md"))
+	assert.NoErr(t, err)
+	rec := httptest.NewRecorder()
+
+	renderFullPage(rec, pageData)
+
+	body := rec.Body.String()
+	assert.StrContains(t, body, `class="app-shell"`)
+	assert.StrContains(t, body, `class="files-pane sidebar" id="files-pane"`)
+	assert.StrContains(t, body, `class="toc-pane sidebar-panel sidebar-panel-toc" id="toc-panel"`)
+	assert.StrContains(t, body, `id="toc-toggle-button"`)
+	assert.StrContains(t, body, `aria-controls="toc-panel"`)
+	assert.StrContains(t, body, `class="content-inner"`)
+	assert.StrContains(t, body, `data-layout-mode="compact"`)
+	assert.StrContains(t, body, `data-panel="toc"`)
+	assert.True(t, strings.Index(body, `id="files-panel"`) < strings.Index(body, `id="toc-panel"`))
+	assert.True(t, strings.Index(body, `id="toc-panel"`) < strings.Index(body, `class="content-wrapper"`))
+}
+
 // --- 搜索功能回归测试：文件级 AND/NOT 语义 ---
 // 参考：https://github.com/inhere/markview/issues/XXX
 // 期望语义：
