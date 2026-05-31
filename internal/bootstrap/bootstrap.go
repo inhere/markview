@@ -33,6 +33,7 @@ type options struct {
 	BuildTime string
 }
 
+var showVersion bool
 var openBrowser = sysutil.OpenBrowser
 var cliPortFlagVisited bool
 var cliPrivateFlagVisited bool
@@ -57,8 +58,8 @@ func newCommand(options options) *cflag.CFlags {
 
 	cmd := cflag.New()
 	cmd.Desc = fmt.Sprintf(
-		"MarkView - Markdown Live Preview Server\n (Version: %s, Git Hash: %s, Build Time: %s)",
-		options.Version, options.GitHash, options.BuildTime,
+		"MarkView - Markdown Live Preview Server (Version: %s, Build At: %s)",
+		options.Version, options.BuildTime,
 	)
 	cmd.LongHelp = fmt.Sprintf(`
 <cyan>Arguments:</>
@@ -86,8 +87,16 @@ func newCommand(options options) *cflag.CFlags {
 	cmd.StringVar(&selectedProject, "project", "",
 		"Start a saved project by name or path;;proj,P",
 	)
+	cmd.BoolVar(&showVersion, "version", false, "Show version information;;V")
 	cmd.Func = func(c *cflag.CFlags) error {
 		return run(c, options.Content)
+	}
+	cmd.AfterFlagParse = func(c *cflag.CFlags) bool {
+		if showVersion {
+			fmt.Printf("%s (%s, %s)", options.Version, options.GitHash, options.BuildTime)
+			return false
+		}
+		return true
 	}
 	return cmd
 }
