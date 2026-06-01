@@ -8,9 +8,11 @@ function expectRule(pattern: RegExp) {
 describe('layout CSS modes', () => {
     test('defines desktop rules for toc-middle and floating toc-right', () => {
         expect(cssText).toContain('@media (min-width: 1024px)');
-        expectRule(/html\[data-layout="toc-middle"\]\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-width\)\s+var\(--toc-width\)\s+minmax\(0,\s*1fr\);[^}]*grid-template-areas:\s*"files toc content";/s);
+        expectRule(/--toc-width:\s*280px;/);
+        expectRule(/html\[data-layout="toc-middle"\]\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-width\)\s+minmax\(0,\s*1fr\);[^}]*grid-template-areas:\s*"files content";/s);
         expectRule(/html\[data-layout="toc-right"\]\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-width\)\s+minmax\(0,\s*1fr\);[^}]*grid-template-areas:\s*"files content";/s);
-        expectRule(/html\[data-layout="toc-right"\]\s+\.toc-pane\s*\{[^}]*position:\s*fixed;[^}]*border-radius:\s*0;[^}]*transform:\s*translateX\(calc\(100% - 44px\)\);[^}]*opacity:\s*1;/s);
+        expectRule(/html\[data-layout="toc-middle"\]\s+\.toc-pane\s*\{[^}]*position:\s*fixed;[^}]*top:\s*56px;[^}]*left:\s*var\(--sidebar-width\);[^}]*box-shadow:\s*none;[^}]*width:\s*var\(--toc-width\);/s);
+        expectRule(/html\[data-layout="toc-right"\]\s+\.toc-pane\s*\{[^}]*position:\s*fixed;[^}]*border-radius:\s*0;[^}]*box-shadow:\s*none;[^}]*transform:\s*translateX\(calc\(100% - 44px\)\);[^}]*opacity:\s*1;/s);
         expectRule(/html\[data-layout="toc-right"\]\s+body\.toc-floating-open\s+\.toc-pane\s*\{[^}]*transform:\s*translateX\(0\);[^}]*opacity:\s*1;[^}]*pointer-events:\s*auto;/s);
         expectRule(/html\[data-layout="compact"\]\s+\.app-shell\s*\{[^}]*grid-template-rows:\s*minmax\(8rem,\s*1fr\)\s+minmax\(16rem,\s*2fr\);/s);
         expectRule(/html\[data-layout="compact"\]\s+\.toc-pane\s*\{[^}]*margin:\s*0\s+0\s+8px;/s);
@@ -21,7 +23,6 @@ describe('layout CSS modes', () => {
         expectRule(/body:not\(\.toc-floating-open\)\s+\.toc-pane\s+\.toc-section-label-text\s*\{[^}]*display:\s*none;/s);
         expectRule(/body:not\(\.toc-floating-open\)\s+\.toc-pane\s+\.toc-container\s*\{[^}]*display:\s*none;/s);
         expectRule(/html\[data-layout="compact"\]\s+body:not\(\.toc-floating-open\)\s+\.app-shell\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)\s+44px;/s);
-        expectRule(/html\[data-layout="toc-middle"\]\s+body:not\(\.toc-floating-open\)\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-width\)\s+44px\s+minmax\(0,\s*1fr\);/s);
         expectRule(/html\[data-layout="toc-middle"\]\s+body:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*width:\s*44px;[^}]*overflow:\s*hidden;/s);
         expect(cssText).not.toMatch(/html\[data-layout="toc-right"\]\s+\.sidebar-icons\s*\{[^}]*display:\s*flex;/s);
         expect(cssText).not.toContain('.toc-toggle-button');
@@ -32,7 +33,7 @@ describe('layout CSS modes', () => {
         expectRule(/@media \(max-width:\s*1023px\)\s*\{[\s\S]*\.app-shell\s*\{[^}]*display:\s*block;/);
         expectRule(/@media \(max-width:\s*1023px\)\s*\{[\s\S]*\.files-pane,\s*\.toc-pane\s*\{[^}]*display:\s*none;/);
         expectRule(/body\.sidebar-collapsed\s+\.files-pane\s*\{[^}]*width:\s*var\(--sidebar-collapsed-width\);/s);
-        expectRule(/html\[data-layout="toc-middle"\]\s+body\.sidebar-collapsed\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-collapsed-width\)\s+var\(--toc-width\)\s+minmax\(0,\s*1fr\);/s);
+        expectRule(/html\[data-layout="toc-middle"\]\s+body\.sidebar-collapsed\s+\.toc-pane\s*\{[^}]*left:\s*var\(--sidebar-collapsed-width\);/s);
         expect(cssText).not.toMatch(/(?:^|})\s*body\.sidebar-collapsed\s+\.toc-pane\s*\{\s*display:\s*none;/);
     });
 
@@ -42,8 +43,7 @@ describe('layout CSS modes', () => {
         expectRule(/--preview-width:\s*clamp\(420px,\s*40vw,\s*960px\);/);
         expect(cssText).not.toContain('.toc-toggle-button');
         expect(cssText).not.toMatch(/html\[data-layout="toc-middle"\]\s+body\.preview-active\s+\.toc-pane\s*\{[^}]*display:\s*none;/s);
-        expectRule(/html\[data-layout="toc-middle"\]\s+body\.preview-active\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-width\)\s+44px\s+minmax\(0,\s*1fr\);[^}]*grid-template-areas:\s*"files toc content";[^}]*padding-right:\s*var\(--preview-width\);/s);
-        expectRule(/html\[data-layout="toc-middle"\]\s+body\.preview-active\.toc-floating-open\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-width\)\s+var\(--toc-width\)\s+minmax\(0,\s*1fr\);/s);
+        expectRule(/html\[data-layout="toc-middle"\]\s+body\.preview-active\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-width\)\s+minmax\(0,\s*1fr\);[^}]*grid-template-areas:\s*"files content";[^}]*padding-right:\s*var\(--preview-width\);/s);
         expectRule(/html\[data-layout="toc-right"\]\s+body\.preview-active\s+\.toc-pane\s*\{[^}]*right:\s*calc\(var\(--preview-width\) \+ 16px\);/s);
         expectRule(/html\[data-layout="toc-right"\]\s+body\.preview-active:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*right:\s*var\(--preview-width\);[^}]*transform:\s*translateX\(calc\(100% - 44px\)\);/s);
         expectRule(/\.content-wrapper\s*\{[^}]*position:\s*relative;[^}]*overflow:\s*auto;/s);

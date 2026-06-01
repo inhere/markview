@@ -26,9 +26,9 @@
     --layout-max-width: 960px;
     --sidebar-width: 280px;
     --sidebar-collapsed-width: 48px;
-    --toc-width: 240px;
+    --toc-width: 280px;
     --toc-min-width: 180px;
-    --toc-max-width: 360px;
+    --toc-max-width: 420px;
     --preview-width: clamp(420px, 40vw, 960px);
     --base-font-size: 16px;
 }
@@ -196,9 +196,9 @@ body.sidebar-collapsed .app-shell {
     }
 
     html[data-layout="toc-middle"] .app-shell {
-        grid-template-columns: var(--sidebar-width) var(--toc-width) minmax(0, 1fr);
+        grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
         grid-template-rows: minmax(0, 1fr);
-        grid-template-areas: "files toc content";
+        grid-template-areas: "files content";
     }
 
     html[data-layout="toc-right"] .app-shell {
@@ -236,12 +236,28 @@ body.sidebar-collapsed .app-shell {
     }
 
     html[data-layout="toc-middle"] .files-pane,
-    html[data-layout="toc-middle"] .toc-pane,
     html[data-layout="toc-right"] .files-pane {
         height: 100vh;
     }
 
-    /* toc-right keeps TOC out of the grid and turns it into a floating overlay. */
+    /* toc-middle and toc-right keep TOC out of the grid and turn it into a floating overlay. */
+    html[data-layout="toc-middle"] .toc-pane {
+        position: fixed;
+        top: 56px;
+        left: var(--sidebar-width);
+        bottom: 0;
+        z-index: 35;
+        height: auto;
+        margin: 0;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-light);
+        border-radius: 0;
+        box-shadow: none;
+        width: var(--toc-width);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
     html[data-layout="toc-right"] .toc-pane {
         position: fixed;
         top: 112px;
@@ -253,7 +269,7 @@ body.sidebar-collapsed .app-shell {
         background: var(--bg-surface);
         border: 1px solid var(--border-light);
         border-radius: 0;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+        box-shadow: none;
         transform: translateX(calc(100% - 44px));
         opacity: 1;
         pointer-events: auto;
@@ -282,11 +298,11 @@ body.sidebar-collapsed .app-shell {
     }
 
     html[data-layout="toc-middle"] body:not(.toc-floating-open) .app-shell {
-        grid-template-columns: var(--sidebar-width) 44px minmax(0, 1fr);
+        grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
     }
 
     html[data-layout="toc-middle"] body.sidebar-collapsed:not(.toc-floating-open) .app-shell {
-        grid-template-columns: var(--sidebar-collapsed-width) 44px minmax(0, 1fr);
+        grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
     }
 
     html[data-layout="toc-middle"] body:not(.toc-floating-open) .toc-pane {
@@ -311,7 +327,11 @@ body.sidebar-collapsed .app-shell {
     }
 
     html[data-layout="toc-middle"] body.sidebar-collapsed .app-shell {
-        grid-template-columns: var(--sidebar-collapsed-width) var(--toc-width) minmax(0, 1fr);
+        grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
+    }
+
+    html[data-layout="toc-middle"] body.sidebar-collapsed .toc-pane {
+        left: var(--sidebar-collapsed-width);
     }
 
     html[data-layout="toc-right"] body.sidebar-collapsed .app-shell {
@@ -2430,13 +2450,9 @@ div.mermaid {
 
 @media (min-width: 1024px) {
     html[data-layout="toc-middle"] body.preview-active .app-shell {
-        grid-template-columns: var(--sidebar-width) 44px minmax(0, 1fr);
-        grid-template-areas: "files toc content";
+        grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+        grid-template-areas: "files content";
         padding-right: var(--preview-width);
-    }
-
-    html[data-layout="toc-middle"] body.preview-active.toc-floating-open .app-shell {
-        grid-template-columns: var(--sidebar-width) var(--toc-width) minmax(0, 1fr);
     }
 
     html[data-layout="toc-right"] body.preview-active .app-shell {
@@ -2457,14 +2473,6 @@ div.mermaid {
     html[data-layout="toc-middle"] body.sidebar-collapsed.preview-active .app-shell,
     html[data-layout="toc-right"] body.sidebar-collapsed.preview-active .app-shell {
         grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
-    }
-
-    html[data-layout="toc-middle"] body.sidebar-collapsed.preview-active .app-shell {
-        grid-template-columns: var(--sidebar-collapsed-width) 44px minmax(0, 1fr);
-    }
-
-    html[data-layout="toc-middle"] body.sidebar-collapsed.preview-active.toc-floating-open .app-shell {
-        grid-template-columns: var(--sidebar-collapsed-width) var(--toc-width) minmax(0, 1fr);
     }
 }
 
