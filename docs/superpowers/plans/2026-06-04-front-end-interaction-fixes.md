@@ -100,6 +100,6 @@ Run: `go test ./...`
 
 将已完成步骤标记为 `[x]`。
 
-- [ ] **Step 4: 提交并推送**
+- [x] **Step 4: 提交并推送**
 
 Run: `git status --short && git add ... && git commit -m "fix: restore frontend interactions" && git pull --rebase && git push`
