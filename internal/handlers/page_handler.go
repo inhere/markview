@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	stdhtml "html"
 	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -17,10 +19,17 @@ import (
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
 	meta "github.com/yuin/goldmark-meta"
+	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer"
-	"github.com/yuin/goldmark/renderer/html"
+	goldhtml "github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
+)
+
+var (
+	customTagOpenPattern  = regexp.MustCompile(`^<([A-Za-z][A-Za-z0-9_-]*)(\s[^<>]*)?>\s*$`)
+	customTagClosePattern = regexp.MustCompile(`^</([A-Za-z][A-Za-z0-9_-]*)>\s*$`)
+	customTagAttrPattern  = regexp.MustCompile(`([A-Za-z_:][A-Za-z0-9_:.-]*)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>/]+))`)
 )
 
 // 全局 goldmark Markdown 解析器单例 (线程安全)
@@ -37,10 +46,11 @@ func initMdParser() {
 			// parser.WithAutoHeadingID(),
 			),
 			goldmark.WithRendererOptions(
-				html.WithHardWraps(),
-				html.WithUnsafe(), // Allow raw HTML
+				goldhtml.WithHardWraps(),
+				goldhtml.WithUnsafe(), // Allow raw HTML
 				renderer.WithNodeRenderers(
 					util.Prioritized(extension.NewTableHTMLRenderer(), 500),
+					util.Prioritized(&customTagHTMLRenderer{}, 400),
 				),
 			),
 		)
@@ -209,42 +219,203 @@ func renderMarkdownContent(filePath string) (string, error) {
 func renderMarkdownSource(mdData []byte) (string, error) {
 	initMdParser()
 	var buf bytes.Buffer
-	if err := mdParser.Convert(stripMarkdownWrapperTags(mdData), &buf); err != nil {
+	if err := mdParser.Convert(mdData, &buf); err != nil {
 		return "", err
 	}
 
 	return buf.String(), nil
 }
 
-func stripMarkdownWrapperTags(mdData []byte) []byte {
-	lines := strings.SplitAfter(string(mdData), "\n")
-	var builder strings.Builder
-	builder.Grow(len(mdData))
-	inFence := false
+type customTagHTMLRenderer struct{}
 
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(strings.TrimSuffix(line, "\n"))
-		fenceMarker := strings.TrimLeft(trimmed, " \t")
-		if strings.HasPrefix(fenceMarker, "```") || strings.HasPrefix(fenceMarker, "~~~") {
-			inFence = !inFence
+type customTag struct {
+	name       string
+	attrs      map[string]string
+	isClosing  bool
+	isStandard bool
+}
+
+func (r *customTagHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
+	reg.Register(ast.KindHTMLBlock, r.renderHTMLBlock)
+	reg.Register(ast.KindRawHTML, r.renderRawHTML)
+}
+
+func (r *customTagHTMLRenderer) renderHTMLBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	n := node.(*ast.HTMLBlock)
+	if entering {
+		if ok := renderCustomTagLine(w, string(n.Lines().Value(source)), true); ok {
+			return ast.WalkContinue, nil
 		}
 
-		if !inFence && isMarkdownWrapperTagLine(trimmed) {
-			if strings.HasSuffix(line, "\n") {
-				builder.WriteByte('\n')
-			}
+		for i := range n.Lines().Len() {
+			line := n.Lines().At(i)
+			_, _ = w.Write(line.Value(source))
+		}
+		return ast.WalkContinue, nil
+	}
+
+	if n.HasClosure() {
+		closure := n.ClosureLine
+		if ok := renderCustomTagLine(w, string(closure.Value(source)), true); ok {
+			return ast.WalkContinue, nil
+		}
+		_, _ = w.Write(closure.Value(source))
+	}
+
+	return ast.WalkContinue, nil
+}
+
+func (r *customTagHTMLRenderer) renderRawHTML(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkSkipChildren, nil
+	}
+
+	n := node.(*ast.RawHTML)
+	for i := range n.Segments.Len() {
+		segment := n.Segments.At(i)
+		if ok := renderCustomTagLine(w, string(segment.Value(source)), false); ok {
+			continue
+		}
+		_, _ = w.Write(segment.Value(source))
+	}
+
+	return ast.WalkSkipChildren, nil
+}
+
+func renderCustomTagLine(w util.BufWriter, raw string, block bool) bool {
+	tag, ok := parseCustomHTMLTag(raw)
+	if !ok || tag.isStandard {
+		return false
+	}
+
+	if tag.isClosing {
+		if block {
+			_, _ = w.WriteString("</div>\n")
+		} else {
+			_, _ = w.WriteString("</span>")
+		}
+		return true
+	}
+
+	element := "span"
+	if block {
+		element = "div"
+	}
+
+	_, _ = fmt.Fprintf(
+		w,
+		`<%s class="markdown-custom-tag markdown-custom-tag-%s" data-markview-tag="%s"`,
+		element,
+		stdhtml.EscapeString(tag.name),
+		stdhtml.EscapeString(tag.name),
+	)
+
+	for _, attr := range sortedCustomTagAttrs(tag.attrs) {
+		_, _ = fmt.Fprintf(w, ` data-markview-attr-%s="%s"`, attr.name, stdhtml.EscapeString(attr.value))
+	}
+
+	if block {
+		_, _ = w.WriteString(">\n")
+	} else {
+		_ = w.WriteByte('>')
+	}
+
+	return true
+}
+
+func parseCustomHTMLTag(raw string) (customTag, bool) {
+	trimmed := strings.TrimSpace(raw)
+	if matches := customTagClosePattern.FindStringSubmatch(trimmed); matches != nil {
+		name := strings.ToLower(matches[1])
+		return customTag{name: name, isClosing: true, isStandard: isStandardHTMLTag(name)}, true
+	}
+
+	matches := customTagOpenPattern.FindStringSubmatch(trimmed)
+	if matches == nil {
+		return customTag{}, false
+	}
+
+	name := strings.ToLower(matches[1])
+	return customTag{
+		name:       name,
+		attrs:      parseCustomTagAttrs(matches[2]),
+		isStandard: isStandardHTMLTag(name),
+	}, true
+}
+
+func parseCustomTagAttrs(raw string) map[string]string {
+	attrs := map[string]string{}
+	for _, match := range customTagAttrPattern.FindAllStringSubmatch(raw, -1) {
+		name := normalizeCustomTagAttrName(match[1])
+		if name == "" {
 			continue
 		}
 
-		builder.WriteString(line)
+		value := match[3]
+		if value == "" {
+			value = match[4]
+		}
+		if value == "" {
+			value = match[5]
+		}
+		attrs[name] = value
 	}
 
-	return []byte(builder.String())
+	return attrs
 }
 
-func isMarkdownWrapperTagLine(trimmed string) bool {
-	switch trimmed {
-	case "<domain>", "</domain>", "<decisions>", "</decisions>":
+type customTagAttr struct {
+	name  string
+	value string
+}
+
+func sortedCustomTagAttrs(attrs map[string]string) []customTagAttr {
+	names := make([]string, 0, len(attrs))
+	for name := range attrs {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	result := make([]customTagAttr, 0, len(names))
+	for _, name := range names {
+		result = append(result, customTagAttr{name: name, value: attrs[name]})
+	}
+	return result
+}
+
+func normalizeCustomTagAttrName(name string) string {
+	name = strings.ToLower(name)
+	var builder strings.Builder
+	lastDash := false
+	for _, char := range name {
+		isAlphaNum := char >= 'a' && char <= 'z' || char >= '0' && char <= '9'
+		if isAlphaNum {
+			builder.WriteRune(char)
+			lastDash = false
+			continue
+		}
+		if !lastDash {
+			builder.WriteByte('-')
+			lastDash = true
+		}
+	}
+
+	return strings.Trim(builder.String(), "-")
+}
+
+func isStandardHTMLTag(name string) bool {
+	switch name {
+	case "a", "abbr", "address", "area", "article", "aside", "audio", "b", "base", "bdi", "bdo",
+		"blockquote", "body", "br", "button", "canvas", "caption", "cite", "code", "col",
+		"colgroup", "data", "datalist", "dd", "del", "details", "dfn", "dialog", "div", "dl",
+		"dt", "em", "embed", "fieldset", "figcaption", "figure", "footer", "form", "h1", "h2",
+		"h3", "h4", "h5", "h6", "head", "header", "hr", "html", "i", "iframe", "img", "input",
+		"ins", "kbd", "label", "legend", "li", "link", "main", "map", "mark", "menu", "meta",
+		"meter", "nav", "noscript", "object", "ol", "optgroup", "option", "output", "p",
+		"picture", "pre", "progress", "q", "rp", "rt", "ruby", "s", "samp", "script", "search",
+		"section", "select", "slot", "small", "source", "span", "strong", "style", "sub",
+		"summary", "sup", "svg", "table", "tbody", "td", "template", "textarea", "tfoot",
+		"th", "thead", "time", "title", "tr", "track", "u", "ul", "var", "video", "wbr":
 		return true
 	default:
 		return false

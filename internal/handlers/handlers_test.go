@@ -242,10 +242,55 @@ Plain text.
 	assert.StrContains(t, html, "<li>item one</li>")
 	assert.StrContains(t, html, "<h3>Decision Title</h3>")
 	assert.StrContains(t, html, "<p>Plain text.</p>")
+	assert.StrContains(t, html, `<div class="markdown-custom-tag markdown-custom-tag-domain" data-markview-tag="domain">`)
+	assert.StrContains(t, html, `<div class="markdown-custom-tag markdown-custom-tag-decisions" data-markview-tag="decisions">`)
+	assert.StrContains(t, html, "</div>")
 	assert.StrNotContains(t, html, "<domain>")
 	assert.StrNotContains(t, html, "</domain>")
 	assert.StrNotContains(t, html, "<decisions>")
 	assert.StrNotContains(t, html, "</decisions>")
+}
+
+func TestRenderMarkdownSourceConvertsUnknownCustomTagsWithAttributes(t *testing.T) {
+	markdown := []byte(`<task type="auto">
+
+<name>Task 1: 完成 MODEL(数据模型)痛点差距清单分节</name>
+
+## Task Heading
+
+Content.
+
+</task>
+`)
+
+	html, err := renderMarkdownSource(markdown)
+
+	assert.NoErr(t, err)
+	assert.StrContains(t, html, `<div class="markdown-custom-tag markdown-custom-tag-task" data-markview-tag="task" data-markview-attr-type="auto">`)
+	assert.StrContains(t, html, `<span class="markdown-custom-tag markdown-custom-tag-name" data-markview-tag="name">Task 1: 完成 MODEL(数据模型)痛点差距清单分节</span>`)
+	assert.StrContains(t, html, "<h2>Task Heading</h2>")
+	assert.StrContains(t, html, "<p>Content.</p>")
+	assert.StrNotContains(t, html, "<task")
+	assert.StrNotContains(t, html, "</task>")
+	assert.StrNotContains(t, html, "<name>")
+	assert.StrNotContains(t, html, "</name>")
+}
+
+func TestRenderMarkdownSourceKeepsStandardHTMLTags(t *testing.T) {
+	markdown := []byte(`<details>
+<summary>More</summary>
+
+Markdown text.
+
+</details>
+`)
+
+	html, err := renderMarkdownSource(markdown)
+
+	assert.NoErr(t, err)
+	assert.StrContains(t, html, "<details>")
+	assert.StrContains(t, html, "<summary>More</summary>")
+	assert.StrContains(t, html, "</details>")
 }
 
 func TestRenderMarkdownSourcePreservesCustomTagsInsideCodeFence(t *testing.T) {
