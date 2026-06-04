@@ -209,11 +209,46 @@ func renderMarkdownContent(filePath string) (string, error) {
 func renderMarkdownSource(mdData []byte) (string, error) {
 	initMdParser()
 	var buf bytes.Buffer
-	if err := mdParser.Convert(mdData, &buf); err != nil {
+	if err := mdParser.Convert(stripMarkdownWrapperTags(mdData), &buf); err != nil {
 		return "", err
 	}
 
 	return buf.String(), nil
+}
+
+func stripMarkdownWrapperTags(mdData []byte) []byte {
+	lines := strings.SplitAfter(string(mdData), "\n")
+	var builder strings.Builder
+	builder.Grow(len(mdData))
+	inFence := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(strings.TrimSuffix(line, "\n"))
+		fenceMarker := strings.TrimLeft(trimmed, " \t")
+		if strings.HasPrefix(fenceMarker, "```") || strings.HasPrefix(fenceMarker, "~~~") {
+			inFence = !inFence
+		}
+
+		if !inFence && isMarkdownWrapperTagLine(trimmed) {
+			if strings.HasSuffix(line, "\n") {
+				builder.WriteByte('\n')
+			}
+			continue
+		}
+
+		builder.WriteString(line)
+	}
+
+	return []byte(builder.String())
+}
+
+func isMarkdownWrapperTagLine(trimmed string) bool {
+	switch trimmed {
+	case "<domain>", "</domain>", "<decisions>", "</decisions>":
+		return true
+	default:
+		return false
+	}
 }
 
 func renderRawMarkdown(w http.ResponseWriter, filePath string) {

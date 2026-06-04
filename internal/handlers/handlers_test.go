@@ -216,6 +216,48 @@ func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {
 	}
 }
 
+func TestRenderMarkdownSourceParsesMarkdownInsideCustomSectionTags(t *testing.T) {
+	markdown := []byte(`<domain>
+
+## Domain Title
+
+- item one
+- item two
+
+</domain>
+
+<decisions>
+
+### Decision Title
+
+Plain text.
+
+</decisions>
+`)
+
+	html, err := renderMarkdownSource(markdown)
+
+	assert.NoErr(t, err)
+	assert.StrContains(t, html, "<h2>Domain Title</h2>")
+	assert.StrContains(t, html, "<li>item one</li>")
+	assert.StrContains(t, html, "<h3>Decision Title</h3>")
+	assert.StrContains(t, html, "<p>Plain text.</p>")
+	assert.StrNotContains(t, html, "<domain>")
+	assert.StrNotContains(t, html, "</domain>")
+	assert.StrNotContains(t, html, "<decisions>")
+	assert.StrNotContains(t, html, "</decisions>")
+}
+
+func TestRenderMarkdownSourcePreservesCustomTagsInsideCodeFence(t *testing.T) {
+	markdown := []byte("```xml\n<domain>\n</domain>\n```\n")
+
+	html, err := renderMarkdownSource(markdown)
+
+	assert.NoErr(t, err)
+	assert.StrContains(t, html, "&lt;domain&gt;")
+	assert.StrContains(t, html, "&lt;/domain&gt;")
+}
+
 func TestConfigAppConfigUsesDefaultsAndConfiguredValues(t *testing.T) {
 	t.Run("defaults", func(t *testing.T) {
 		cfg := config.Config{}
