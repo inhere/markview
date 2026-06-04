@@ -88,15 +88,15 @@ Run: `bun test web/src/sidebar.test.ts web/src/mermaid.test.ts web/src/link-prev
 **Files:**
 - Modify: `docs/superpowers/plans/2026-06-04-front-end-interaction-fixes.md`
 
-- [ ] **Step 1: 运行全部前端测试**
+- [x] **Step 1: 运行全部前端测试**
 
 Run: `bun test`
 
-- [ ] **Step 2: 运行 Go 主链路测试**
+- [x] **Step 2: 运行 Go 主链路测试**
 
 Run: `go test ./...`
 
-- [ ] **Step 3: 更新计划 checkbox**
+- [x] **Step 3: 更新计划 checkbox**
 
 将已完成步骤标记为 `[x]`。
 
