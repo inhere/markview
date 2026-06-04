@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { JSDOM } from 'jsdom';
 import { bindTOCScrollSpy, highlightTOC, setupSidebarCollapse } from './sidebar';
+import { initSidebarResize } from './sidebar-resize';
+import { SIDEBAR_WIDTH_STORAGE_KEY } from './preferences';
 
 describe('sidebar scroll behavior', () => {
     test('highlightTOC reads scroll position from content wrapper', () => {
@@ -166,6 +168,66 @@ describe('sidebar scroll behavior', () => {
 
             expect(document.body.classList.contains('sidebar-collapsed')).toBe(false);
             expect(document.querySelector('.files-pane')?.classList.contains('sidebar-collapsed')).toBe(false);
+        } finally {
+            globalThis.window = previousWindow;
+            globalThis.document = previousDocument;
+            globalThis.HTMLElement = previousHTMLElement;
+        }
+    });
+
+    test('sidebar resize drag updates css variable and persists final width', () => {
+        const dom = new JSDOM(`<!doctype html><body>
+            <aside class="files-pane sidebar">
+                <div class="sidebar-resize-handle" id="sidebar-resize-handle"></div>
+            </aside>
+        </body>`, {
+            url: 'http://localhost/docs/page',
+            pretendToBeVisual: true,
+        });
+        const { document } = dom.window;
+        const previousWindow = globalThis.window;
+        const previousDocument = globalThis.document;
+        const previousHTMLElement = globalThis.HTMLElement;
+        // @ts-expect-error test env override
+        globalThis.window = dom.window;
+        // @ts-expect-error test env override
+        globalThis.document = document;
+        // @ts-expect-error test env override
+        globalThis.HTMLElement = dom.window.HTMLElement;
+
+        try {
+            const sidebar = document.querySelector('.files-pane') as HTMLElement;
+            const handle = document.getElementById('sidebar-resize-handle') as HTMLElement;
+            sidebar.getBoundingClientRect = () => ({
+                width: 280,
+                height: 800,
+                top: 0,
+                right: 280,
+                bottom: 800,
+                left: 0,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            });
+
+            initSidebarResize();
+            handle.dispatchEvent(new dom.window.MouseEvent('mousedown', {
+                bubbles: true,
+                button: 0,
+                clientX: 280,
+            }));
+            expect(document.body.classList.contains('sidebar-is-resizing')).toBe(true);
+            document.dispatchEvent(new dom.window.MouseEvent('mousemove', {
+                bubbles: true,
+                clientX: 340,
+            }));
+            document.dispatchEvent(new dom.window.MouseEvent('mouseup', { bubbles: true }));
+
+            expect(document.documentElement.style.getPropertyValue('--sidebar-width')).toBe('340px');
+            expect(dom.window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY)).toBe('340');
+            expect(handle.classList.contains('is-resizing')).toBe(false);
+            expect(document.body.style.cursor).toBe('');
+            expect(document.body.classList.contains('sidebar-is-resizing')).toBe(false);
         } finally {
             globalThis.window = previousWindow;
             globalThis.document = previousDocument;

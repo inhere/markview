@@ -95,4 +95,24 @@ describe('link preview content files', () => {
             configureLinkPreview({ previewExts: ['.json', '.jsonl', '.yaml', '.yml', '.toml'] });
         }
     });
+
+    test('enhances links idempotently after inline refresh', () => {
+        withDOM(`<!DOCTYPE html><body>
+            <article id="content"><a href="/docs/guide.md">guide</a></article>
+        </body>`, document => {
+            const content = document.getElementById('content') as HTMLElement;
+
+            enhanceLinksInContent(content);
+            enhanceLinksInContent(content);
+
+            expect(content.querySelectorAll('.link-preview-wrapper')).toHaveLength(1);
+            expect(content.querySelectorAll('.link-preview-btn')).toHaveLength(1);
+
+            content.innerHTML = '<a href="/docs/next.md">next</a>';
+            enhanceLinksInContent(content);
+
+            expect(content.querySelectorAll('.link-preview-wrapper')).toHaveLength(1);
+            expect(content.querySelectorAll('.link-preview-btn')).toHaveLength(1);
+        });
+    });
 });

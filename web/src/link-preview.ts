@@ -1,6 +1,6 @@
 // web/src/link-preview.ts
 
-import { hljs, ensureHighlightLanguages } from './highlight';
+import { ensureHighlightLanguages, safeHighlightElement } from './highlight';
 import { enhanceMermaidContent } from './mermaid';
 import { enhanceCodeBlocks } from './code-copy';
 import {
@@ -26,7 +26,7 @@ async function enhancePreviewContent(contentRoot: HTMLElement) {
         if (block.dataset.highlighted === 'yes') {
             return;
         }
-        hljs.highlightElement(block);
+        safeHighlightElement(block);
     });
 
     enhanceCodeBlocks(contentRoot);
@@ -153,6 +153,16 @@ export function enhanceLinksInContent(root: HTMLElement): void {
         if (!(anchor instanceof HTMLAnchorElement)) continue;
         if (!shouldShowPreviewButton(anchor)) continue;
 
+        const existingWrapper = anchor.closest('.link-preview-wrapper');
+        if (existingWrapper instanceof HTMLElement) {
+            if (existingWrapper.querySelector('.link-preview-btn')) {
+                continue;
+            }
+
+            existingWrapper.appendChild(createPreviewButton(anchor));
+            continue;
+        }
+
         // 为链接创建包装容器（用于定位按钮）
         const wrapper = document.createElement('span');
         wrapper.className = 'link-preview-wrapper';
@@ -160,11 +170,7 @@ export function enhanceLinksInContent(root: HTMLElement): void {
         wrapper.appendChild(anchor);
 
         // 创建预览按钮
-        const btn = document.createElement('button');
-        btn.className = 'link-preview-btn';
-        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>`;
-        btn.title = '分屏预览';
-        btn.type = 'button';
+        const btn = createPreviewButton(anchor);
 
         // hover 显示逻辑
         wrapper.addEventListener('mouseenter', () => {
@@ -174,15 +180,24 @@ export function enhanceLinksInContent(root: HTMLElement): void {
             btn.classList.remove('visible');
         });
 
-        // 点击处理
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openPreviewPanel(anchor.href, btn);
-        });
-
         wrapper.appendChild(btn);
     }
+}
+
+function createPreviewButton(anchor: HTMLAnchorElement): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.className = 'link-preview-btn';
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>`;
+    btn.title = '分屏预览';
+    btn.type = 'button';
+
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openPreviewPanel(anchor.href, btn);
+    });
+
+    return btn;
 }
 
 export function openPreviewPanel(url: string, triggerButton?: HTMLElement | null): void {

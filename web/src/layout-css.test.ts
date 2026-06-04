@@ -54,4 +54,10 @@ describe('layout CSS modes', () => {
         expectRule(/\.toc-link\s*\{[^}]*border-left:\s*3px solid transparent;/s);
         expectRule(/\.toc-link\s*\{[^}]*border-bottom:\s*none;/s);
     });
+
+    test('uses containment for heavy markdown blocks to reduce long page scroll work', () => {
+        expectRule(/\.mermaid-container\s*\{[^}]*content-visibility:\s*auto;[^}]*contain-intrinsic-size:\s*320px;/s);
+        expectRule(/\.table-scroll-container\s*\{[^}]*content-visibility:\s*auto;[^}]*contain-intrinsic-size:\s*240px;/s);
+        expectRule(/\.table-scroll-body\s*\{[^}]*overscroll-behavior:\s*contain;/s);
+    });
 });

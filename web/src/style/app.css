@@ -783,12 +783,13 @@ html[data-layout="compact"] body.sidebar-collapsed .toc-pane {
 .sidebar-resize-handle {
     position: absolute;
     top: 0;
-    right: 0;
-    width: 4px;
+    right: -4px;
+    width: 8px;
     height: 100%;
     cursor: col-resize;
     background: transparent;
     transition: background 0.15s;
+    z-index: 45;
 }
 
 .sidebar-resize-handle:hover {
@@ -797,6 +798,10 @@ html[data-layout="compact"] body.sidebar-collapsed .toc-pane {
 
 .sidebar-resize-handle.is-resizing {
     background: var(--accent-primary);
+}
+
+body.sidebar-is-resizing .sidebar {
+    transition: none;
 }
 
 .sidebar.sidebar-collapsed .sidebar-resize-handle {
@@ -1479,11 +1484,14 @@ blockquote p { margin: 0; }
     border-radius: 6px;
     overflow: hidden;
     background: var(--bg-paper);
+    content-visibility: auto;
+    contain-intrinsic-size: 240px;
 }
 
 .table-scroll-body {
     max-height: min(620px, 70vh);
     overflow: auto;
+    overscroll-behavior: contain;
 }
 
 .table-scroll-container.is-expanded .table-scroll-body {
@@ -1841,6 +1849,8 @@ img {
     border-radius: 6px;
     padding: 16px;
     background: var(--bg-surface);
+    content-visibility: auto;
+    contain-intrinsic-size: 320px;
 }
 
 /* Dark mode mermaid container - ensure consistent */
@@ -2033,6 +2043,7 @@ img {
 }
 
 .mermaid-fullscreen-btn,
+.mermaid-copy-btn,
 .mermaid-source-btn {
     background: var(--bg-surface);
     border: 1px solid var(--border-light);
@@ -2046,27 +2057,37 @@ img {
 
 /* Dark mode mermaid buttons */
 [data-color-scheme="dark"] .mermaid-fullscreen-btn,
+[data-color-scheme="dark"] .mermaid-copy-btn,
 [data-color-scheme="dark"] .mermaid-source-btn,
 [data-theme="one-dark"] .mermaid-fullscreen-btn,
+[data-theme="one-dark"] .mermaid-copy-btn,
 [data-theme="one-dark"] .mermaid-source-btn,
 [data-theme="dracula"] .mermaid-fullscreen-btn,
+[data-theme="dracula"] .mermaid-copy-btn,
 [data-theme="dracula"] .mermaid-source-btn,
 [data-theme="nord"] .mermaid-fullscreen-btn,
+[data-theme="nord"] .mermaid-copy-btn,
 [data-theme="nord"] .mermaid-source-btn {
     background: var(--bg-paper);
 }
 
 @media (prefers-color-scheme: dark) {
     [data-color-scheme="system"] .mermaid-fullscreen-btn,
+    [data-color-scheme="system"] .mermaid-copy-btn,
     [data-color-scheme="system"] .mermaid-source-btn {
         background: var(--bg-paper);
     }
 }
 
 .mermaid-fullscreen-btn:hover,
+.mermaid-copy-btn:hover,
 .mermaid-source-btn:hover {
     color: var(--accent-primary);
     border-color: var(--accent-primary);
+}
+.mermaid-copy-btn.copied {
+    color: var(--status-live);
+    border-color: var(--status-live);
 }
 div.mermaid {
     display: flex;

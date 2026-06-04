@@ -41,6 +41,68 @@ export function parseMermaidContainerIndex(containerId: string) {
     return Number.isFinite(numericIndex) ? numericIndex : null;
 }
 
+export function createMermaidCopyButton(source: string, navigatorRef: Navigator = navigator): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.className = 'mermaid-copy-btn';
+    button.type = 'button';
+    button.title = '复制 Mermaid 源码';
+    button.setAttribute('aria-label', '复制 Mermaid 源码');
+    button.innerHTML = '<svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><svg class="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+    button.addEventListener('click', async event => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        try {
+            await copyText(source, navigatorRef);
+            showMermaidCopySuccess(button);
+        } catch (error) {
+            console.error('复制 Mermaid 源码失败:', error);
+        }
+    });
+
+    return button;
+}
+
+async function copyText(text: string, navigatorRef: Navigator) {
+    if (navigatorRef.clipboard?.writeText) {
+        await navigatorRef.clipboard.writeText(text);
+        return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+}
+
+function showMermaidCopySuccess(button: HTMLElement) {
+    const copyIcon = button.querySelector('.copy-icon') as SVGElement | null;
+    const checkIcon = button.querySelector('.check-icon') as SVGElement | null;
+
+    if (copyIcon && checkIcon) {
+        copyIcon.style.display = 'none';
+        checkIcon.style.display = 'block';
+    }
+
+    button.classList.add('copied');
+    button.title = '已复制!';
+
+    setTimeout(() => {
+        if (copyIcon && checkIcon) {
+            copyIcon.style.display = 'block';
+            checkIcon.style.display = 'none';
+        }
+        button.classList.remove('copied');
+        button.title = '复制 Mermaid 源码';
+    }, 2000);
+}
+
 export function ensureD3TransitionSupport() {
     if (!d3TransitionPromise) {
         // Mermaid 的部分图形会在 hover 时调用 d3 selection.transition()，
@@ -203,10 +265,13 @@ export async function enhanceMermaidContent(contentRoot: HTMLElement) {
             sourcePanel.classList.toggle('active');
         };
 
+        const copyButton = createMermaidCopyButton(content || '');
+
         const mermaidDiv = document.createElement('div');
         mermaidDiv.className = 'mermaid';
         mermaidDiv.textContent = content;
 
+        actions.appendChild(copyButton);
         actions.appendChild(sourceButton);
         actions.appendChild(fullscreenButton);
         container.appendChild(actions);

@@ -3,6 +3,7 @@ import { select, selection } from 'd3-selection';
 import { JSDOM } from 'jsdom';
 import {
     buildMermaidContainerId,
+    createMermaidCopyButton,
     ensureD3TransitionSupport,
     parseMermaidContainerIndex,
     removeMermaidTooltipListeners,
@@ -166,6 +167,35 @@ describe('web mermaid helpers', () => {
         } finally {
             globalThis.Element = previousElement;
             globalThis.SVGElement = previousSvgElement;
+        }
+    });
+
+    test('createMermaidCopyButton copies original mermaid source', async () => {
+        const dom = new JSDOM('<!DOCTYPE html><body></body>');
+        const previousDocument = globalThis.document;
+        const previousHTMLElement = globalThis.HTMLElement;
+        const copied: string[] = [];
+        globalThis.document = dom.window.document;
+        globalThis.HTMLElement = dom.window.HTMLElement;
+
+        try {
+            const button = createMermaidCopyButton('graph TD\nA-->B', {
+                clipboard: {
+                    writeText: async (text: string) => {
+                        copied.push(text);
+                    },
+                },
+            } as Navigator);
+
+            button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(copied).toEqual(['graph TD\nA-->B']);
+            expect(button.classList.contains('copied')).toBe(true);
+            expect(button.title).toBe('已复制!');
+        } finally {
+            globalThis.document = previousDocument;
+            globalThis.HTMLElement = previousHTMLElement;
         }
     });
 });

@@ -5,7 +5,7 @@ export {};
 import './style/highlight.css';
 import './style/app.css';
 
-import { hljs, ensureHighlightLanguages } from './highlight';
+import { ensureHighlightLanguages, safeHighlightElement } from './highlight';
 import { setupLiveReloadStatus } from './live-status';
 import { enhanceMermaidContent, setupMermaidModal } from './mermaid';
 import { enhanceImagesInContent, setupImageModal } from './image-modal';
@@ -117,7 +117,7 @@ async function enhancePageContent() {
         if (block.dataset.highlighted === 'yes') {
             return;
         }
-        hljs.highlightElement(block);
+        safeHighlightElement(block);
     });
 
     enhanceCodeBlocks(contentRoot);

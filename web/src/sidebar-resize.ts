@@ -38,6 +38,7 @@ function startResize(event: MouseEvent) {
     if (handle) {
         handle.classList.add('is-resizing');
     }
+    document.body.classList.add('sidebar-is-resizing');
     
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
@@ -63,6 +64,7 @@ function endResize() {
     if (handle) {
         handle.classList.remove('is-resizing');
     }
+    document.body.classList.remove('sidebar-is-resizing');
     
     document.body.style.cursor = '';
     document.body.style.userSelect = '';

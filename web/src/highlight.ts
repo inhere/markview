@@ -39,8 +39,31 @@ export function ensureHighlightLanguages() {
     hljs.registerLanguage('dart', dart);
     hljs.registerLanguage('plaintext', plaintext);
     hljs.registerLanguage('powershell', powershell);
+    hljs.registerAliases(['js', 'jsx', 'mjs', 'cjs'], { languageName: 'javascript' });
+    hljs.registerAliases(['ts', 'tsx'], { languageName: 'typescript' });
+    hljs.registerAliases(['html', 'vue'], { languageName: 'xml' });
+    hljs.registerAliases(['sh', 'shell', 'zsh'], { languageName: 'bash' });
+    hljs.registerAliases(['yml'], { languageName: 'yaml' });
+    hljs.registerAliases(['text', 'txt'], { languageName: 'plaintext' });
+    hljs.registerAliases(['ps1'], { languageName: 'powershell' });
+    hljs.registerAliases(['conf', 'cfg'], { languageName: 'ini' });
 
     highlightReady = true;
+}
+
+export function safeHighlightElement(block: HTMLElement) {
+    ensureHighlightLanguages();
+
+    const languageClass = Array.from(block.classList)
+        .find(className => className.startsWith('language-'));
+    const languageName = languageClass?.replace('language-', '');
+
+    if (languageName && !hljs.getLanguage(languageName)) {
+        block.classList.remove(languageClass);
+        block.classList.add('language-plaintext');
+    }
+
+    hljs.highlightElement(block);
 }
 
 export { hljs };
