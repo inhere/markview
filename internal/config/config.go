@@ -22,11 +22,15 @@ var DefaultSkipDirs = []string{
 }
 
 type Config struct {
+	Version string `json:"-"` // app version
+	portStr string
+
+	// public fields
+
 	TargetDir     string
 	EntryFile     string
 	PortInt       int
 	PortSource    PortSource
-	portStr       string
 	EnableWatch   bool
 	WatchDirs     []string
 	WatchSkipDirs []string
@@ -122,7 +126,7 @@ func (c *Config) Init(targetDir, entryFile string) (err error) {
 		return fmt.Errorf("entry file %q is not exist", entryPath)
 	}
 
-	clog.Debugf("Config: Debug=%v, Watch=%v", EnableDebug, c.EnableWatch)
+	clog.Debugf("(%s) Config: Debug=%v, Watch=%v", c.Version, EnableDebug, c.EnableWatch)
 
 	if c.PortInt > 0 {
 		c.portStr = fmt.Sprintf("%d", c.PortInt)

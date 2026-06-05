@@ -33,6 +33,7 @@ type options struct {
 	BuildTime string
 }
 
+var appOptions options
 var showVersion bool
 var openBrowser = sysutil.OpenBrowser
 var cliPortFlagVisited bool
@@ -50,6 +51,7 @@ func Run(content fs.FS, version string, gitHash string, buildTime string) {
 }
 
 func newCommand(options options) *cflag.CFlags {
+	appOptions = options // save global options
 	// 初始化日志格式集中在 bootstrap，main 只负责传入资源和版本信息。
 	clog.Configure(func(p *clog.Printer) {
 		p.TimeFormat = "15:04:05"
@@ -409,6 +411,7 @@ func prepare(args []string, content fs.FS) error {
 		return err
 	}
 	config.Cfg = merged
+	config.Cfg.Version = appOptions.Version
 
 	utils.EnableDebug = runtimeDebugEnabled(dotenv)
 	config.EnableDebug = utils.EnableDebug
