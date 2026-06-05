@@ -276,6 +276,35 @@ Content.
 	assert.StrNotContains(t, html, "</name>")
 }
 
+func TestRenderMarkdownSourceConvertsCustomTagsInsideRawHTMLBlock(t *testing.T) {
+	markdown := []byte(`<tasks>
+
+<task type="auto" tdd="true">
+  <name>Task 1: 完成 MODEL(数据模型)痛点差距清单分节</name>
+  <files>app-upgrade-hub/backend/internal/dao/app_version_dao.go</files>
+  <read_first>
+    - app-upgrade-hub/backend/internal/dao/app_version_dao.go
+  </read_first>
+</task>
+
+</tasks>
+`)
+
+	html, err := renderMarkdownSource(markdown)
+
+	assert.NoErr(t, err)
+	assert.StrContains(t, html, `<div class="markdown-custom-tag markdown-custom-tag-tasks" data-markview-tag="tasks">`)
+	assert.StrContains(t, html, `<div class="markdown-custom-tag markdown-custom-tag-task" data-markview-tag="task" data-markview-attr-tdd="true" data-markview-attr-type="auto">`)
+	assert.StrContains(t, html, `<span class="markdown-custom-tag markdown-custom-tag-name" data-markview-tag="name">Task 1: 完成 MODEL(数据模型)痛点差距清单分节</span>`)
+	assert.StrContains(t, html, `<span class="markdown-custom-tag markdown-custom-tag-files" data-markview-tag="files">app-upgrade-hub/backend/internal/dao/app_version_dao.go</span>`)
+	assert.StrContains(t, html, `<div class="markdown-custom-tag markdown-custom-tag-read_first" data-markview-tag="read_first">`)
+	assert.StrNotContains(t, html, "<tasks>")
+	assert.StrNotContains(t, html, "<task")
+	assert.StrNotContains(t, html, "<name>")
+	assert.StrNotContains(t, html, "<files>")
+	assert.StrNotContains(t, html, "<read_first>")
+}
+
 func TestRenderMarkdownSourceKeepsStandardHTMLTags(t *testing.T) {
 	markdown := []byte(`<details>
 <summary>More</summary>

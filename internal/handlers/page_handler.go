@@ -19,7 +19,6 @@ import (
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
 	meta "github.com/yuin/goldmark-meta"
-	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer"
 	goldhtml "github.com/yuin/goldmark/renderer/html"
@@ -27,9 +26,10 @@ import (
 )
 
 var (
-	customTagOpenPattern  = regexp.MustCompile(`^<([A-Za-z][A-Za-z0-9_-]*)(\s[^<>]*)?>\s*$`)
-	customTagClosePattern = regexp.MustCompile(`^</([A-Za-z][A-Za-z0-9_-]*)>\s*$`)
-	customTagAttrPattern  = regexp.MustCompile(`([A-Za-z_:][A-Za-z0-9_:.-]*)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>/]+))`)
+	customTagOpenPattern   = regexp.MustCompile(`^<([A-Za-z][A-Za-z0-9_-]*)(\s[^<>]*)?>\s*$`)
+	customTagClosePattern  = regexp.MustCompile(`^</([A-Za-z][A-Za-z0-9_-]*)>\s*$`)
+	customTagAttrPattern   = regexp.MustCompile(`([A-Za-z_:][A-Za-z0-9_:.-]*)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>/]+))`)
+	customTagInlinePattern = regexp.MustCompile(`</?[A-Za-z][A-Za-z0-9_-]*(?:\s[^<>]*)?>`)
 )
 
 // 全局 goldmark Markdown 解析器单例 (线程安全)
@@ -50,7 +50,6 @@ func initMdParser() {
 				goldhtml.WithUnsafe(), // Allow raw HTML
 				renderer.WithNodeRenderers(
 					util.Prioritized(extension.NewTableHTMLRenderer(), 500),
-					util.Prioritized(&customTagHTMLRenderer{}, 400),
 				),
 			),
 		)
@@ -219,108 +218,18 @@ func renderMarkdownContent(filePath string) (string, error) {
 func renderMarkdownSource(mdData []byte) (string, error) {
 	initMdParser()
 	var buf bytes.Buffer
-	if err := mdParser.Convert(mdData, &buf); err != nil {
+	if err := mdParser.Convert(normalizeCustomMarkdownTags(mdData), &buf); err != nil {
 		return "", err
 	}
 
 	return buf.String(), nil
 }
 
-type customTagHTMLRenderer struct{}
-
 type customTag struct {
 	name       string
 	attrs      map[string]string
 	isClosing  bool
 	isStandard bool
-}
-
-func (r *customTagHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
-	reg.Register(ast.KindHTMLBlock, r.renderHTMLBlock)
-	reg.Register(ast.KindRawHTML, r.renderRawHTML)
-}
-
-func (r *customTagHTMLRenderer) renderHTMLBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
-	n := node.(*ast.HTMLBlock)
-	if entering {
-		if ok := renderCustomTagLine(w, string(n.Lines().Value(source)), true); ok {
-			return ast.WalkContinue, nil
-		}
-
-		for i := range n.Lines().Len() {
-			line := n.Lines().At(i)
-			_, _ = w.Write(line.Value(source))
-		}
-		return ast.WalkContinue, nil
-	}
-
-	if n.HasClosure() {
-		closure := n.ClosureLine
-		if ok := renderCustomTagLine(w, string(closure.Value(source)), true); ok {
-			return ast.WalkContinue, nil
-		}
-		_, _ = w.Write(closure.Value(source))
-	}
-
-	return ast.WalkContinue, nil
-}
-
-func (r *customTagHTMLRenderer) renderRawHTML(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
-	if !entering {
-		return ast.WalkSkipChildren, nil
-	}
-
-	n := node.(*ast.RawHTML)
-	for i := range n.Segments.Len() {
-		segment := n.Segments.At(i)
-		if ok := renderCustomTagLine(w, string(segment.Value(source)), false); ok {
-			continue
-		}
-		_, _ = w.Write(segment.Value(source))
-	}
-
-	return ast.WalkSkipChildren, nil
-}
-
-func renderCustomTagLine(w util.BufWriter, raw string, block bool) bool {
-	tag, ok := parseCustomHTMLTag(raw)
-	if !ok || tag.isStandard {
-		return false
-	}
-
-	if tag.isClosing {
-		if block {
-			_, _ = w.WriteString("</div>\n")
-		} else {
-			_, _ = w.WriteString("</span>")
-		}
-		return true
-	}
-
-	element := "span"
-	if block {
-		element = "div"
-	}
-
-	_, _ = fmt.Fprintf(
-		w,
-		`<%s class="markdown-custom-tag markdown-custom-tag-%s" data-markview-tag="%s"`,
-		element,
-		stdhtml.EscapeString(tag.name),
-		stdhtml.EscapeString(tag.name),
-	)
-
-	for _, attr := range sortedCustomTagAttrs(tag.attrs) {
-		_, _ = fmt.Fprintf(w, ` data-markview-attr-%s="%s"`, attr.name, stdhtml.EscapeString(attr.value))
-	}
-
-	if block {
-		_, _ = w.WriteString(">\n")
-	} else {
-		_ = w.WriteByte('>')
-	}
-
-	return true
 }
 
 func parseCustomHTMLTag(raw string) (customTag, bool) {
@@ -341,6 +250,109 @@ func parseCustomHTMLTag(raw string) (customTag, bool) {
 		attrs:      parseCustomTagAttrs(matches[2]),
 		isStandard: isStandardHTMLTag(name),
 	}, true
+}
+
+func normalizeCustomMarkdownTags(mdData []byte) []byte {
+	lines := strings.SplitAfter(string(mdData), "\n")
+	var builder strings.Builder
+	builder.Grow(len(mdData))
+	inFence := false
+
+	for _, line := range lines {
+		lineBody := strings.TrimRight(line, "\r\n")
+		fenceMarker := strings.TrimLeft(strings.TrimSpace(lineBody), " \t")
+		if strings.HasPrefix(fenceMarker, "```") || strings.HasPrefix(fenceMarker, "~~~") {
+			inFence = !inFence
+			builder.WriteString(line)
+			continue
+		}
+
+		if inFence {
+			builder.WriteString(line)
+			continue
+		}
+
+		if writeCustomBlockTagLine(&builder, lineBody) {
+			continue
+		}
+
+		builder.WriteString(rewriteInlineCustomTags(lineBody))
+		if strings.HasSuffix(line, "\n") {
+			builder.WriteByte('\n')
+		}
+	}
+
+	return []byte(builder.String())
+}
+
+func writeCustomBlockTagLine(builder *strings.Builder, line string) bool {
+	tag, ok := parseCustomHTMLTag(line)
+	if !ok || tag.isStandard {
+		return false
+	}
+
+	if tag.isClosing {
+		builder.WriteByte('\n')
+		builder.WriteString("</div>\n")
+		return true
+	}
+
+	builder.WriteString(renderCustomTagOpen(tag, "div"))
+	builder.WriteString("\n\n")
+	return true
+}
+
+func rewriteInlineCustomTags(line string) string {
+	matches := customTagInlinePattern.FindAllStringIndex(line, -1)
+	if len(matches) == 0 {
+		return line
+	}
+
+	var builder strings.Builder
+	builder.Grow(len(line))
+	last := 0
+	changed := false
+
+	for _, match := range matches {
+		raw := line[match[0]:match[1]]
+		tag, ok := parseCustomHTMLTag(raw)
+		if !ok || tag.isStandard {
+			continue
+		}
+
+		builder.WriteString(line[last:match[0]])
+		if tag.isClosing {
+			builder.WriteString("</span>")
+		} else {
+			builder.WriteString(renderCustomTagOpen(tag, "span"))
+		}
+		last = match[1]
+		changed = true
+	}
+
+	if !changed {
+		return line
+	}
+
+	builder.WriteString(line[last:])
+	return builder.String()
+}
+
+func renderCustomTagOpen(tag customTag, element string) string {
+	var builder strings.Builder
+	_, _ = fmt.Fprintf(
+		&builder,
+		`<%s class="markdown-custom-tag markdown-custom-tag-%s" data-markview-tag="%s"`,
+		element,
+		stdhtml.EscapeString(tag.name),
+		stdhtml.EscapeString(tag.name),
+	)
+
+	for _, attr := range sortedCustomTagAttrs(tag.attrs) {
+		_, _ = fmt.Fprintf(&builder, ` data-markview-attr-%s="%s"`, attr.name, stdhtml.EscapeString(attr.value))
+	}
+	builder.WriteByte('>')
+	return builder.String()
 }
 
 func parseCustomTagAttrs(raw string) map[string]string {
