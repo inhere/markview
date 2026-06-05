@@ -119,11 +119,11 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(strings.ToLower(filePath), ".md") {
 		queryParam := r.URL.Query().Get("q")
 		switch queryParam {
-		case queryTypeMain:
+		case queryTypeMain: // 只渲染 markdown 内容，不带其他部分
 			renderMainContent(w, filePath)
 		case queryTypeRaw: // 直接返回原始 markdown 内容
 			renderRawMarkdown(w, filePath)
-		default:
+		default: // 返回完整 html 页面
 			renderMarkdown(w, filePath)
 		}
 		return
@@ -179,7 +179,7 @@ func renderFullPage(w http.ResponseWriter, mainData *PageData) {
 	}
 
 	setPageCacheHeaders(w)
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	t.Execute(w, data)
 }
 
@@ -470,7 +470,7 @@ func renderPageMainContent(w http.ResponseWriter, mainData *PageData) {
 	}
 
 	setPageCacheHeaders(w)
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write(mainContentBuf.Bytes())
 }
 
