@@ -50,6 +50,13 @@ describe('layout CSS modes', () => {
         expectRule(/\.content-search-wrapper\s*\{[^}]*position:\s*absolute;[^}]*left:\s*30px;/s);
     });
 
+    test('keeps toolbar version collapsed until settings are open and emphasizes sidebar collapse button', () => {
+        expectRule(/\.toolbar-version\s*\{[^}]*display:\s*none;/s);
+        expectRule(/\.toolbar\.expanded\s+\.toolbar-version\s*\{[^}]*display:\s*inline-flex;/s);
+        expectRule(/\.sidebar-collapse-btn\s*\{[^}]*width:\s*28px;[^}]*height:\s*28px;[^}]*border:\s*1px solid var\(--border-light\);[^}]*color:\s*var\(--text-heading\);/s);
+        expectRule(/\.sidebar-collapse-btn svg\s*\{[^}]*width:\s*17px;[^}]*height:\s*17px;[^}]*stroke-width:\s*2\.7;/s);
+    });
+
     test('keeps toc links clean without bottom borders', () => {
         expectRule(/\.toc-link\s*\{[^}]*border-left:\s*3px solid transparent;/s);
         expectRule(/\.toc-link\s*\{[^}]*border-bottom:\s*none;/s);
@@ -71,7 +78,7 @@ describe('layout CSS modes', () => {
         expectRule(/@media \(min-width:\s*1024px\)\s*\{[\s\S]*html,\s*body\s*\{[^}]*height:\s*100%;[^}]*overflow:\s*hidden;/);
         expectRule(/\.content-wrapper\s*\{[^}]*overflow:\s*auto;/s);
         expectRule(/\.sidebar\s*\{[^}]*position:\s*relative;/s);
-        expectRule(/\.sidebar-resize-handle\s*\{[^}]*right:\s*0;[^}]*width:\s*8px;/s);
+        expectRule(/\.sidebar-resize-handle\s*\{[^}]*right:\s*0;[^}]*width:\s*4px;/s);
         expect(cssText).not.toMatch(/\.sidebar-resize-handle\s*\{[^}]*right:\s*-[0-9]/s);
         expectRule(/@media \(max-width:\s*1023px\)\s*\{[\s\S]*html,\s*body\s*\{[^}]*height:\s*auto;[^}]*overflow:\s*visible;/);
     });
