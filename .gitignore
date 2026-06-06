@@ -11,3 +11,4 @@ tmp/
 .env
 .worktrees/
 markview
+.xenv.toml
