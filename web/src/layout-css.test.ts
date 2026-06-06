@@ -70,6 +70,7 @@ describe('layout CSS modes', () => {
     test('keeps desktop scrolling inside panes without root page scrollbars', () => {
         expectRule(/@media \(min-width:\s*1024px\)\s*\{[\s\S]*html,\s*body\s*\{[^}]*height:\s*100%;[^}]*overflow:\s*hidden;/);
         expectRule(/\.content-wrapper\s*\{[^}]*overflow:\s*auto;/s);
+        expectRule(/\.sidebar\s*\{[^}]*position:\s*relative;/s);
         expectRule(/\.sidebar-resize-handle\s*\{[^}]*right:\s*0;[^}]*width:\s*8px;/s);
         expect(cssText).not.toMatch(/\.sidebar-resize-handle\s*\{[^}]*right:\s*-[0-9]/s);
         expectRule(/@media \(max-width:\s*1023px\)\s*\{[\s\S]*html,\s*body\s*\{[^}]*height:\s*auto;[^}]*overflow:\s*visible;/);

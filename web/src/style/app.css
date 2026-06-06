@@ -570,6 +570,7 @@ body.sidebar-collapsed .app-shell {
 
 /* --- Sidebar: Files Pane --- */
 .sidebar {
+    position: relative;
     width: 100%;
     height: 100%;
     background: var(--bg-surface);
