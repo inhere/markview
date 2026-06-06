@@ -1483,7 +1483,7 @@ blockquote {
 blockquote p { margin: 0; }
 
 .table-scroll-container {
-    width: 100%;
+    width: fit-content;
     max-width: 100%;
     margin: 24px 0;
     border: 1px solid var(--border-light);

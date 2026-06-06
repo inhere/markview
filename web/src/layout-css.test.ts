@@ -61,8 +61,8 @@ describe('layout CSS modes', () => {
         expectRule(/\.table-scroll-body\s*\{[^}]*overflow-x:\s*auto;[^}]*overflow-y:\s*hidden;[^}]*overscroll-behavior:\s*auto;/s);
     });
 
-    test('lets markdown tables use available width without trapping page wheel scroll', () => {
-        expectRule(/\.table-scroll-container\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*100%;/s);
+    test('keeps markdown table frames content-sized without trapping page wheel scroll', () => {
+        expectRule(/\.table-scroll-container\s*\{[^}]*width:\s*fit-content;[^}]*max-width:\s*100%;/s);
         expectRule(/\.table-scroll-body\s*\{[^}]*overflow-x:\s*auto;[^}]*overflow-y:\s*hidden;[^}]*overscroll-behavior:\s*auto;/s);
         expect(cssText).not.toMatch(/\.table-scroll-body\s*\{[^}]*overscroll-behavior:\s*contain;/s);
     });
