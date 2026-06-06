@@ -186,6 +186,12 @@ body.sidebar-collapsed .app-shell {
 }
 
 @media (min-width: 1024px) {
+    html,
+    body {
+        height: 100%;
+        overflow: hidden;
+    }
+
     /* Desktop layouts share one DOM tree and switch via grid areas only. */
     html[data-layout="compact"] .app-shell {
         grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
@@ -783,7 +789,7 @@ html[data-layout="compact"] body.sidebar-collapsed .toc-pane {
 .sidebar-resize-handle {
     position: absolute;
     top: 0;
-    right: -4px;
+    right: 0;
     width: 8px;
     height: 100%;
     cursor: col-resize;
@@ -2498,6 +2504,12 @@ div.mermaid {
 }
 
 @media (max-width: 1023px) {
+    html,
+    body {
+        height: auto;
+        overflow: visible;
+    }
+
     .app-shell {
         display: block;
         height: auto;
