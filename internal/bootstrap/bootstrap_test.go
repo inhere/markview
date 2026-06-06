@@ -36,6 +36,25 @@ func TestStaticHandlerSetsRevalidateCacheHeaders(t *testing.T) {
 	}
 }
 
+func TestStaticHandlerServesSourceCSSBeforeBuiltDistCSS(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/static/app.css", nil)
+	rec := httptest.NewRecorder()
+	content := fstest.MapFS{
+		"web/dist/app.css":                {Data: []byte("body{color:red}")},
+		"web/src/style/highlight.css":     {Data: []byte(".hljs{color:blue}")},
+		"web/src/style/app.css":           {Data: []byte(".sidebar{position:relative}")},
+	}
+
+	newStaticHandler(content).ServeHTTP(rec, req)
+
+	assert.Eq(t, http.StatusOK, rec.Code)
+	body := rec.Body.String()
+	assert.StrContains(t, body, ".hljs{color:blue}")
+	assert.StrContains(t, body, ".sidebar{position:relative}")
+	assert.NotContains(t, body, "body{color:red}")
+	assert.StrContains(t, rec.Header().Get("Content-Type"), "text/css")
+}
+
 func TestBeforeServerRunOpensBrowserByDefault(t *testing.T) {
 	origNoBrowser := config.Cfg.NoBrowser
 	origOpenBrowser := openBrowser

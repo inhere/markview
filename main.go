@@ -6,7 +6,7 @@ import (
 	"github.com/inhere/markview/internal/bootstrap"
 )
 
-//go:embed web/template.html web/template-main.html web/dist
+//go:embed web/template.html web/template-main.html web/dist web/src/style/highlight.css web/src/style/app.css
 var content embed.FS
 
 // Build-time variables injected via -ldflags

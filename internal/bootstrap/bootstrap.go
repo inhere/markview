@@ -395,8 +395,28 @@ func newStaticHandler(content fs.FS) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		utils.Debugf("Request: %s handle static file", r.URL.Path)
 		w.Header().Set("Cache-Control", "public, max-age=0, must-revalidate")
+		if r.URL.Path == "/static/app.css" && serveSourceCSS(content, w) {
+			return
+		}
 		distHandler.ServeHTTP(w, r)
 	})
+}
+
+func serveSourceCSS(content fs.FS, w http.ResponseWriter) bool {
+	highlightCSS, err := fs.ReadFile(content, "web/src/style/highlight.css")
+	if err != nil {
+		return false
+	}
+	appCSS, err := fs.ReadFile(content, "web/src/style/app.css")
+	if err != nil {
+		return false
+	}
+
+	w.Header().Set("Content-Type", "text/css; charset=utf-8")
+	_, _ = w.Write(highlightCSS)
+	_, _ = w.Write([]byte("\n"))
+	_, _ = w.Write(appCSS)
+	return true
 }
 
 func prepare(args []string, content fs.FS) error {
