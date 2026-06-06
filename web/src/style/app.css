@@ -461,6 +461,14 @@ body.sidebar-collapsed .app-shell {
     margin-left: 8px;
     display: none;
 }
+.toolbar-version {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    margin-left: 8px;
+    white-space: nowrap;
+    opacity: 0.78;
+}
 .toolbar-content {
     display: none;
     flex-direction: column;

@@ -24,6 +24,7 @@
             </svg>
           </button>
           <span class="toolbar-title">Settings</span>
+          {{ if .AppVersion }}<span class="toolbar-version">{{ .AppVersion }}</span>{{ end }}
         </div>
         <div class="toolbar-content">
             <div class="toolbar-row">

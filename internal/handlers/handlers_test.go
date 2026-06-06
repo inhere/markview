@@ -403,6 +403,7 @@ func TestRenderFullPageUsesSplitPaneLayoutSkeleton(t *testing.T) {
 	config.Cfg = config.Config{
 		TargetDir: t.TempDir(),
 		UILayout:  config.UILayoutCompact,
+		Version:   "0.5.1-1-gb54056c",
 	}
 	assert.NoErr(t, os.WriteFile(filepath.Join(config.Cfg.TargetDir, "README.md"), []byte("# Test"), 0o644))
 	IfsReader = func(path string) ([]byte, error) {
@@ -431,6 +432,7 @@ func TestRenderFullPageUsesSplitPaneLayoutSkeleton(t *testing.T) {
 	assert.StrContains(t, body, `class="content-inner"`)
 	assert.StrContains(t, body, `data-layout-mode="compact"`)
 	assert.StrContains(t, body, `data-panel="toc"`)
+	assert.StrContains(t, body, `class="toolbar-version">0.5.1-1-gb54056c</span>`)
 	assert.True(t, strings.Index(body, `id="files-panel"`) < strings.Index(body, `id="toc-panel"`))
 	assert.True(t, strings.Index(body, `id="toc-panel"`) < strings.Index(body, `class="content-wrapper"`))
 }

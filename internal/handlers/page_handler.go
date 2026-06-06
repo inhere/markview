@@ -69,6 +69,7 @@ type PageData struct {
 	CurrentFilePathJSON template.JS
 	AppConfigJSON       template.JS
 	CurrentFilePath     string
+	AppVersion          string
 }
 
 // IfsReader 从 embed.FS 读取文件内容
@@ -176,6 +177,7 @@ func renderFullPage(w http.ResponseWriter, mainData *PageData) {
 		MainContent:   template.HTML(mainContentBuf.String()),
 		FileTreeJSON:  utils.MustMarshalJSON(fileTree),
 		AppConfigJSON: utils.MustMarshalJSON(config.Cfg.AppConfig()),
+		AppVersion:    config.Cfg.Version,
 	}
 
 	setPageCacheHeaders(w)
