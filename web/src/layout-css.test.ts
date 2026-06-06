@@ -58,7 +58,13 @@ describe('layout CSS modes', () => {
     test('uses containment for heavy markdown blocks to reduce long page scroll work', () => {
         expectRule(/\.mermaid-container\s*\{[^}]*content-visibility:\s*auto;[^}]*contain-intrinsic-size:\s*320px;/s);
         expectRule(/\.table-scroll-container\s*\{[^}]*content-visibility:\s*auto;[^}]*contain-intrinsic-size:\s*240px;/s);
-        expectRule(/\.table-scroll-body\s*\{[^}]*overscroll-behavior:\s*contain;/s);
+        expectRule(/\.table-scroll-body\s*\{[^}]*overflow-x:\s*auto;[^}]*overflow-y:\s*hidden;[^}]*overscroll-behavior:\s*auto;/s);
+    });
+
+    test('lets markdown tables use available width without trapping page wheel scroll', () => {
+        expectRule(/\.table-scroll-container\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*100%;/s);
+        expectRule(/\.table-scroll-body\s*\{[^}]*overflow-x:\s*auto;[^}]*overflow-y:\s*hidden;[^}]*overscroll-behavior:\s*auto;/s);
+        expect(cssText).not.toMatch(/\.table-scroll-body\s*\{[^}]*overscroll-behavior:\s*contain;/s);
     });
 
     test('keeps desktop scrolling inside panes without root page scrollbars', () => {
