@@ -332,6 +332,16 @@ func TestRenderMarkdownSourcePreservesCustomTagsInsideCodeFence(t *testing.T) {
 	assert.StrContains(t, html, "&lt;/domain&gt;")
 }
 
+func TestRenderMarkdownSourcePreservesCustomTagsInsideInlineCode(t *testing.T) {
+	markdown := []byte("Use `bd show <id>` to inspect an issue.\n")
+
+	html, err := renderMarkdownSource(markdown)
+
+	assert.NoErr(t, err)
+	assert.StrContains(t, html, "<code>bd show &lt;id&gt;</code>")
+	assert.StrNotContains(t, html, "markdown-custom-tag-id")
+}
+
 func TestConfigAppConfigUsesDefaultsAndConfiguredValues(t *testing.T) {
 	t.Run("defaults", func(t *testing.T) {
 		cfg := config.Config{}

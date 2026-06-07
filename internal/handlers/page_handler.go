@@ -310,12 +310,17 @@ func rewriteInlineCustomTags(line string) string {
 		return line
 	}
 
+	codeRanges := inlineCodeRanges(line)
 	var builder strings.Builder
 	builder.Grow(len(line))
 	last := 0
 	changed := false
 
 	for _, match := range matches {
+		if rangeContainsIndex(codeRanges, match[0]) {
+			continue
+		}
+
 		raw := line[match[0]:match[1]]
 		tag, ok := parseCustomHTMLTag(raw)
 		if !ok || tag.isStandard {
@@ -338,6 +343,56 @@ func rewriteInlineCustomTags(line string) string {
 
 	builder.WriteString(line[last:])
 	return builder.String()
+}
+
+func inlineCodeRanges(line string) [][2]int {
+	ranges := make([][2]int, 0)
+	for pos := 0; pos < len(line); {
+		if line[pos] != '`' {
+			pos++
+			continue
+		}
+
+		tickCount := countBackticks(line, pos)
+		end := findClosingBackticks(line, pos+tickCount, tickCount)
+		if end == -1 {
+			pos += tickCount
+			continue
+		}
+
+		ranges = append(ranges, [2]int{pos, end + tickCount})
+		pos = end + tickCount
+	}
+	return ranges
+}
+
+func countBackticks(line string, pos int) int {
+	count := 0
+	for pos+count < len(line) && line[pos+count] == '`' {
+		count++
+	}
+	return count
+}
+
+func findClosingBackticks(line string, start int, tickCount int) int {
+	for pos := start; pos < len(line); pos++ {
+		if line[pos] != '`' {
+			continue
+		}
+		if countBackticks(line, pos) == tickCount {
+			return pos
+		}
+	}
+	return -1
+}
+
+func rangeContainsIndex(ranges [][2]int, index int) bool {
+	for _, value := range ranges {
+		if index >= value[0] && index < value[1] {
+			return true
+		}
+	}
+	return false
 }
 
 func renderCustomTagOpen(tag customTag, element string) string {
