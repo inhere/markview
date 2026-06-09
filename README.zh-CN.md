@@ -16,7 +16,7 @@ MarkView 是一个零配置的 Markdown 预览服务器，使用 Go 提供后端
 
 ## 功能特性
 
-- **🚀 Zero Config**：在任意目录直接启动，默认打开 `README.md`
+- **🚀 Zero Config**：在任意目录直接启动，默认打开 `README.md`；不存在时展示目录列表
 - **⚡ 单文件服务**：Go 二进制内嵌 `web/dist` 和模板，无需额外静态资源部署
 - **🔄 Live Reload**：监听 Markdown 变更，通过 SSE 局部刷新页面
 - **🔍 全文搜索**：
@@ -60,7 +60,7 @@ eget install inhere/markview
 下载并运行 `markview`：
 
 ```bash
-# 预览当前目录(可选指定port, 默认 6100)
+# 预览当前目录（可选指定 port；未指定时自动选择项目端口）
 markview [-p PORT]
 
 # 预览指定目录（默认为当前目录）
@@ -70,7 +70,7 @@ markview "path/to/docs"
 markview "path/to/docs" "intro.md"
 ```
 
-默认会启动在 `http://localhost:6100`。
+未指定端口时，MarkView 会自动选择并记住项目端口；可用时优先使用 `6100`。
 
 > 示例文档见 [example/](example/)。
 

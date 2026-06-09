@@ -99,6 +99,10 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 
 	info, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
+		if urlPath == "/" {
+			renderDirectoryListing(w, r, targetDir)
+			return
+		}
 		http.Error(w, "File Not Found: "+cleanPath, 404)
 		return
 	}

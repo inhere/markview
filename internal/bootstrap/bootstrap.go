@@ -69,13 +69,13 @@ func newCommand(options options) *cflag.CFlags {
   default-entry  Default markdown file to open (default: %s)
 
 <cyan>Environment:</>
-  MKVIEW_PORT    HTTP port to listen on (default: %s)
+  MKVIEW_PORT    HTTP port to listen on (unset: auto, prefers %s)
   MKVIEW_ENTRY   Default markdown file to open (default: %s)`,
 		config.DefaultEntry, config.DefaultPort, config.DefaultEntry,
 	)
 
 	cmd.IntVar(&config.Cfg.PortInt, "port", 0,
-		"HTTP port to listen on, if < 0, use random port;;p",
+		"HTTP port to listen on;;p",
 	)
 	cmd.BoolVar(&config.Cfg.Private, "private", false,
 		"Only listen on localhost (127.0.0.1), not publicly accessible",
@@ -153,19 +153,6 @@ func run(c *cflag.CFlags, content fs.FS) error {
 		return nil
 	}
 
-	if config.Cfg.PortInt < 0 {
-		listener, err := net.Listen("tcp", mainServer.Addr)
-		if err != nil {
-			log.Fatal("Failed to create listener:", err)
-		}
-
-		actualPort := listener.Addr().(*net.TCPAddr).Port
-		config.Cfg.SetPort(actualPort)
-		beforeServerRun(actualPort, config.Cfg.Private)
-		log.Fatal(mainServer.Serve(listener))
-		return nil
-	}
-
 	beforeServerRun(config.Cfg.PortInt, config.Cfg.Private)
 	log.Fatal(mainServer.ListenAndServe())
 	return nil
@@ -204,8 +191,7 @@ func markCliFlagVisits(c *cflag.CFlags) {
 func shouldUseProjectPortRegistry() bool {
 	// 只有自动端口场景使用项目端口记忆，显式固定端口和 ENV 端口保持完全可预期。
 	return config.Cfg.PortSource == config.PortSourceUnset ||
-		config.Cfg.PortSource == config.PortSourceRegistry ||
-		(config.Cfg.PortSource == config.PortSourceCLI && config.Cfg.PortInt < 0)
+		config.Cfg.PortSource == config.PortSourceRegistry
 }
 
 func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
@@ -229,8 +215,7 @@ func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
 		host = "127.0.0.1"
 	}
 	preferDefault := config.Cfg.PortSource == config.PortSourceUnset
-	useSavedPort := !(config.Cfg.PortSource == config.PortSourceCLI && config.Cfg.PortInt < 0)
-	listener, actualPort, err := listenProjectPortFromRegistry(host, targetDir, registry, preferDefault, useSavedPort)
+	listener, actualPort, err := listenProjectPortFromRegistry(host, targetDir, registry, preferDefault)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -248,9 +233,9 @@ func listenAndRememberProjectPort(targetDir string) (net.Listener, int, error) {
 	return listener, actualPort, nil
 }
 
-func listenProjectPortFromRegistry(host string, targetDir string, registry projects.Registry, preferDefault bool, useSavedPort bool) (net.Listener, int, error) {
-	reservedPorts := reservedProjectPorts(registry, targetDir, !useSavedPort)
-	if savedPort, ok := projects.LookupPort(registry, targetDir); useSavedPort && ok {
+func listenProjectPortFromRegistry(host string, targetDir string, registry projects.Registry, preferDefault bool) (net.Listener, int, error) {
+	reservedPorts := reservedProjectPorts(registry, targetDir, false)
+	if savedPort, ok := projects.LookupPort(registry, targetDir); ok {
 		// 已保存端口优先；若其他项目也记录了该端口或端口被占用，则继续向后找可用端口。
 		if listener, port, err := listenNextAvailable(host, savedPort, 100, reservedPorts); err == nil {
 			return listener, port, nil

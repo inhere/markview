@@ -203,10 +203,10 @@ func TestShouldUseProjectPortRegistry(t *testing.T) {
 	}{
 		{name: "unset port uses registry", source: config.PortSourceUnset, port: 6100, shouldUse: true},
 		{name: "registry port uses registry", source: config.PortSourceRegistry, port: 6100, shouldUse: true},
-		{name: "CLI random uses registry", source: config.PortSourceCLI, port: -1, shouldUse: true},
+		{name: "CLI negative skips registry", source: config.PortSourceCLI, port: -1, shouldUse: false},
 		{name: "CLI fixed skips registry", source: config.PortSourceCLI, port: 8080, shouldUse: false},
 		{name: "ENV fixed skips registry", source: config.PortSourceEnv, port: 8080, shouldUse: false},
-		{name: "ENV random skips registry", source: config.PortSourceEnv, port: -1, shouldUse: false},
+		{name: "ENV negative skips registry", source: config.PortSourceEnv, port: -1, shouldUse: false},
 	}
 
 	for _, tt := range tests {
@@ -236,7 +236,7 @@ func TestProjectFlagKeepsPortRegistryRules(t *testing.T) {
 		shouldUse bool
 	}{
 		{name: "project without explicit port uses registry", args: []string{"-P", "docs"}, shouldUse: true},
-		{name: "project with CLI random uses registry", args: []string{"-P", "docs", "-p", "-1"}, shouldUse: true},
+		{name: "project with CLI negative port skips registry", args: []string{"-P", "docs", "-p", "-1"}, shouldUse: false},
 		{name: "project with CLI fixed port skips registry", args: []string{"-P", "docs", "-p", "8080"}, shouldUse: false},
 		{name: "project with ENV fixed port skips registry", args: []string{"-P", "docs"}, envPort: "8080", shouldUse: false},
 	}
@@ -410,6 +410,26 @@ func TestPrepareCliPortOverridesProjectConfigPort(t *testing.T) {
 	})
 }
 
+func TestPrepareRejectsNegativeCliPort(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, "README.md"), []byte("# Test"), 0644))
+
+	origCfg := config.Cfg
+	t.Cleanup(func() { config.Cfg = origCfg })
+
+	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
+		cmd := newCommand(testOptions())
+		cmd.Func = nil
+		assert.NoErr(t, cmd.Parse([]string{"--port", "-1", targetDir}))
+		markPortFlagVisited(cmd)
+
+		err := prepare(cmd.RemainArgs(), testContentFS())
+
+		assert.Err(t, err)
+		assert.StrContains(t, err.Error(), "must be greater than 0")
+	})
+}
+
 func TestPrepareDoesNotReusePreviousCliPortSource(t *testing.T) {
 	projectA := t.TempDir()
 	projectB := t.TempDir()
@@ -558,7 +578,7 @@ func TestListenProjectPortFromRegistryUsesSavedPort(t *testing.T) {
 	err = projects.Upsert(registry, targetDir, savedPort, nowForTest())
 	assert.NoErr(t, err)
 
-	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true, true)
+	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
@@ -584,7 +604,7 @@ func TestListenProjectPortFromRegistrySkipsPortsSavedByOtherProjects(t *testing.
 	assert.NoErr(t, projects.Upsert(registry, targetDir, ports[0], nowForTest()))
 	assert.NoErr(t, projects.Upsert(registry, otherDir, ports[0], nowForTest()))
 
-	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true, true)
+	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", targetDir, registry, true)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
@@ -619,7 +639,7 @@ func TestListenProjectPortFromRegistryFallsThroughFromDefaultPort(t *testing.T) 
 	}
 	defer occupied.Close()
 
-	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", t.TempDir(), projects.Registry{}, true, true)
+	listener, actualPort, err := listenProjectPortFromRegistry("127.0.0.1", t.TempDir(), projects.Registry{}, true)
 	assert.NoErr(t, err)
 	defer listener.Close()
 
@@ -644,31 +664,6 @@ func TestListenAndRememberProjectPortUsesHookRegistryPath(t *testing.T) {
 
 		assert.True(t, actualPort > savedPort)
 		assert.True(t, actualPort < savedPort+100)
-		loaded, err := projects.Load(path)
-		assert.NoErr(t, err)
-		record, ok := loaded[projectsMustKey(t, targetDir)]
-		assert.True(t, ok)
-		assert.Eq(t, actualPort, record.Port)
-	})
-}
-
-func TestListenAndRememberProjectPortKeepsCliRandomFromReusingSavedPort(t *testing.T) {
-	targetDir := t.TempDir()
-	ports, closePorts := reserveConsecutivePorts(t, 1)
-	closePorts()
-	savedPort := ports[0]
-
-	origCfg := config.Cfg
-	t.Cleanup(func() { config.Cfg = origCfg })
-	config.Cfg = config.Config{PortInt: -1, PortSource: config.PortSourceCLI, Private: true}
-	setUserRegistryHome(t)
-
-	withTempProjectRegistry(t, registryForTest(t, targetDir, "markview", savedPort), func(path string) {
-		listener, actualPort, err := listenAndRememberProjectPort(targetDir)
-		assert.NoErr(t, err)
-		defer listener.Close()
-
-		assert.NotEq(t, savedPort, actualPort)
 		loaded, err := projects.Load(path)
 		assert.NoErr(t, err)
 		record, ok := loaded[projectsMustKey(t, targetDir)]

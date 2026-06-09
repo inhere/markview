@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"path/filepath"
 	"strconv"
 
 	"github.com/gookit/goutil/envutil"
@@ -76,10 +75,6 @@ func (c *Config) PortStr() string {
 // SetPort sets the port integer.
 func (c *Config) SetPort(port int) {
 	c.PortInt = port
-	if port < 0 {
-		c.portStr = "0"
-		return
-	}
 	c.portStr = fmt.Sprintf("%d", port)
 }
 
@@ -121,32 +116,27 @@ func (c *Config) Init(targetDir, entryFile string) (err error) {
 	if !fsutil.IsDir(c.TargetDir) {
 		return fmt.Errorf("target %q is not a directory", c.TargetDir)
 	}
-	entryPath := filepath.Join(c.TargetDir, c.EntryFile)
-	if !fsutil.IsFile(entryPath) {
-		return fmt.Errorf("entry file %q is not exist", entryPath)
-	}
 
 	clog.Debugf("(%s) Config: Debug=%v, Watch=%v", c.Version, EnableDebug, c.EnableWatch)
 
 	if c.PortInt > 0 {
 		c.portStr = fmt.Sprintf("%d", c.PortInt)
-	} else if c.PortInt < 0 {
-		c.portStr = "0" // 0 表示随机端口, 后续会根据随机端口更新
-	} else {
-		if c.PortSource == "" || c.PortSource == PortSourceUnset {
-			c.PortSource = PortSourceUnset
-			c.portStr = DefaultPort
-			c.PortInt, err = strconv.Atoi(c.portStr)
-			if err != nil {
-				return fmt.Errorf("default port %q is not a valid integer", c.portStr)
-			}
-			return nil
-		}
-		c.PortInt, err = strconv.Atoi(c.portStr)
-		if err != nil {
-			return fmt.Errorf("port %q is not a valid integer", c.portStr)
-		}
+		return nil
 	}
 
-	return nil
+	if c.PortInt < 0 {
+		return fmt.Errorf("port %d must be greater than 0", c.PortInt)
+	}
+
+	if c.PortSource == "" || c.PortSource == PortSourceUnset {
+		c.PortSource = PortSourceUnset
+		c.portStr = DefaultPort
+		c.PortInt, err = strconv.Atoi(c.portStr)
+		if err != nil {
+			return fmt.Errorf("default port %q is not a valid integer", c.portStr)
+		}
+		return nil
+	}
+
+	return fmt.Errorf("port %d must be greater than 0", c.PortInt)
 }

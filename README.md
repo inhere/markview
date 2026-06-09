@@ -16,7 +16,7 @@ It focuses on local documentation reading: fast startup, live updates, clear sid
 
 ## Features
 
-- **🚀 Zero Config**: run it in any directory and open `README.md` by default
+- **🚀 Zero Config**: run it in any directory, open `README.md` by default, or show a directory listing when it is missing
 - **⚡ Single-binary delivery**: the Go binary embeds `web/dist` and the HTML template, so no separate static deployment is required
 - **🔄 Live Reload**: watches Markdown changes and updates the page through SSE
 - **🔍 Full-text search**:
@@ -60,7 +60,7 @@ eget install inhere/markview
 Download and run `markview`:
 
 ```bash
-# Preview the current directory (optional port, default 6100)
+# Preview the current directory (optional port; unset uses automatic project port)
 markview [-p PORT]
 
 # Preview a specific directory (default is current directory)
@@ -70,7 +70,7 @@ markview "path/to/docs"
 markview "path/to/docs" "intro.md"
 ```
 
-By default, the server starts at `http://localhost:6100`.
+When no port is specified, MarkView automatically chooses and remembers a project port, preferring `6100` when available.
 
 > Example documents are available in [example/](example/).
 

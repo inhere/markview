@@ -50,7 +50,7 @@ func TestMergeRuntimeConfigUsesConfigPortSource(t *testing.T) {
 	assert.Eq(t, PortSourceConfig, result.PortSource)
 }
 
-func TestMergeRuntimeConfigKeepsRandomPortStringForNegativeCLI(t *testing.T) {
+func TestMergeRuntimeConfigDoesNotRewriteNegativeCLIToRandomPort(t *testing.T) {
 	cliPort := -1
 
 	result, err := MergeRuntimeConfig(MergeInput{
@@ -60,7 +60,7 @@ func TestMergeRuntimeConfigKeepsRandomPortStringForNegativeCLI(t *testing.T) {
 	assert.NoErr(t, err)
 	assert.Eq(t, -1, result.PortInt)
 	assert.Eq(t, PortSourceCLI, result.PortSource)
-	assert.Eq(t, "0", result.PortStr())
+	assert.Eq(t, "-1", result.PortStr())
 }
 
 func TestMergeRuntimeConfigUsesRegistryBeforeGlobalPort(t *testing.T) {

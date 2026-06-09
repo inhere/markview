@@ -180,6 +180,41 @@ func TestHandleRequestRendersDirectoryListingWithoutEntryFile(t *testing.T) {
 	assert.StrContains(t, body, `plain<`)
 }
 
+func TestHandleRequestRendersRootDirectoryListingWhenEntryFileMissing(t *testing.T) {
+	origCfg := config.Cfg
+	origIfsReader := IfsReader
+	t.Cleanup(func() {
+		config.Cfg = origCfg
+		IfsReader = origIfsReader
+	})
+
+	IfsReader = func(path string) ([]byte, error) {
+		if path == "web/template-main.html" {
+			return []byte(`{{.Content}}`), nil
+		}
+		if path == "web/template.html" {
+			return []byte(`<html>{{.MainContent}}</html>`), nil
+		}
+		return nil, os.ErrNotExist
+	}
+
+	root := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(root, "guide.md"), []byte("# Guide"), 0o644))
+	config.Cfg = config.Config{
+		TargetDir:     root,
+		EntryFile:     "README.md",
+		WatchSkipDirs: append([]string(nil), config.DefaultSkipDirs...),
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+
+	HandleRequest(rec, req)
+
+	assert.Eq(t, http.StatusOK, rec.Code)
+	assert.StrContains(t, rec.Body.String(), `href="/guide.md"`)
+}
+
 func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {
 	IfsReader = func(path string) ([]byte, error) {
 		if path == "web/template-main.html" {
