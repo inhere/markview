@@ -51,6 +51,7 @@ run: build
 # ─── Cross Compilation ────────────────────────────────────────────────────────
 
 DIST_DIR := dist
+DESCRIPTION := "Markdown live preview server write by Go"
 
 ## build-all: cross-compile for all platforms
 build-all: web build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows latest-yaml
@@ -62,6 +63,7 @@ latest-yaml:
 		echo "name: $(APP)"; \
 		echo "version: $(VERSION)"; \
 		echo "released_at: $(BUILD_TIME)"; \
+		echo "description: $(DESCRIPTION)"; \
 	} > $(DIST_DIR)/latest.yaml
 	@echo "   → $(DIST_DIR)/latest.yaml"
 
