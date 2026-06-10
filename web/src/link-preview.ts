@@ -10,6 +10,7 @@ import {
 import { escapeHtml } from './util';
 import {
     DEFAULT_APP_CONFIG,
+    normalizeIframeHosts,
     normalizePreviewExts,
 } from './app-config';
 
@@ -40,9 +41,11 @@ const STATIC_RESOURCE_EXTENSIONS = [
 ];
 
 let previewableContentExtensions = normalizePreviewExts(DEFAULT_APP_CONFIG.previewExts);
+let allowedIframeHosts = normalizeIframeHosts(DEFAULT_APP_CONFIG.iframeHosts);
 
-export function configureLinkPreview(options: { previewExts: unknown }): void {
+export function configureLinkPreview(options: { previewExts: unknown; iframeHosts?: unknown }): void {
     previewableContentExtensions = normalizePreviewExts(options.previewExts);
+    allowedIframeHosts = normalizeIframeHosts(options.iframeHosts);
 }
 
 export function isPreviewableContentPath(pathname: string, previewExts = previewableContentExtensions): boolean {
@@ -79,6 +82,10 @@ export function buildHTMLFilePreview(url: string): string {
     return `<iframe class="preview-html-frame" src="${escapeHtml(url)}" title="HTML preview"></iframe>`;
 }
 
+export function isAllowedIframeURL(url: URL, iframeHosts = allowedIframeHosts): boolean {
+    return normalizeIframeHosts(iframeHosts).includes(url.host.toLowerCase());
+}
+
 function shouldShowPreviewButton(anchor: HTMLAnchorElement): boolean {
     const href = anchor.getAttribute('href');
     if (!href) return false;
@@ -88,7 +95,7 @@ function shouldShowPreviewButton(anchor: HTMLAnchorElement): boolean {
 
     const url = new URL(anchor.href, window.location.href);
     if (url.origin !== window.location.origin) {
-        return false;
+        return isAllowedIframeURL(url);
     }
 
     const pathname = url.pathname;
@@ -275,9 +282,10 @@ async function loadInternalContent(url: string): Promise<void> {
 
     try {
         const targetUrl = new URL(url, window.location.href);
+        const isExternalIframePreview = targetUrl.origin !== window.location.origin && isAllowedIframeURL(targetUrl);
         const isContentPreview = isPreviewableContentPath(targetUrl.pathname);
         const isHTMLPreview = isHTMLPreviewPath(targetUrl.pathname);
-        if (!isContentPreview) {
+        if (!isContentPreview && !isExternalIframePreview) {
             targetUrl.searchParams.set('q', 'main');
         }
 
@@ -285,7 +293,7 @@ async function loadInternalContent(url: string): Promise<void> {
         let docTitle = decodeURIComponent(targetUrl.pathname.split('/').filter(Boolean).pop() || url);
         let bodyPadding = '20px';
 
-        if (isHTMLPreview) {
+        if (isHTMLPreview || isExternalIframePreview) {
             contentHTML = buildHTMLFilePreview(targetUrl.toString());
             bodyPadding = '0';
         } else {

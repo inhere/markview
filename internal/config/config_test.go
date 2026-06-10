@@ -61,12 +61,17 @@ func TestConfigInitRejectsNegativePort(t *testing.T) {
 }
 
 func TestConfigAppConfigCopiesPreviewExtsFromConfig(t *testing.T) {
-	cfg := Config{PreviewExts: []string{".md", ".txt"}}
+	cfg := Config{
+		PreviewExts: []string{".md", ".txt"},
+		IframeHosts: []string{"intranet.local"},
+	}
 
 	appConfig := cfg.AppConfig()
 	appConfig.PreviewExts[0] = ".changed"
+	appConfig.IframeHosts[0] = "changed.local"
 
 	assert.Eq(t, []string{".md", ".txt"}, cfg.PreviewExts)
+	assert.Eq(t, []string{"intranet.local"}, cfg.IframeHosts)
 }
 
 func TestConfigAppConfigCopiesDefaultPreviewExts(t *testing.T) {

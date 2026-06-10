@@ -390,12 +390,14 @@ func TestConfigAppConfigUsesDefaultsAndConfiguredValues(t *testing.T) {
 	t.Run("configured values", func(t *testing.T) {
 		cfg := config.Config{
 			PreviewExts: []string{".md", ".json", ".ini"},
+			IframeHosts: []string{"intranet.local"},
 			UILayout:    config.UILayoutTOCRight,
 		}
 
 		appConfig := cfg.AppConfig()
 
 		assert.Eq(t, []string{".md", ".json", ".ini"}, appConfig.PreviewExts)
+		assert.Eq(t, []string{"intranet.local"}, appConfig.IframeHosts)
 		assert.Eq(t, config.UILayoutTOCRight, appConfig.Layout)
 	})
 }
@@ -411,6 +413,7 @@ func TestRenderFullPageInjectsAppConfigJSON(t *testing.T) {
 	config.Cfg = config.Config{
 		TargetDir:   t.TempDir(),
 		PreviewExts: []string{".md", ".json", ".ini"},
+		IframeHosts: []string{"intranet.local"},
 		UILayout:    config.UILayoutTOCRight,
 	}
 	assert.NoErr(t, os.WriteFile(filepath.Join(config.Cfg.TargetDir, "README.md"), []byte("# Test"), 0o644))
@@ -434,6 +437,7 @@ func TestRenderFullPageInjectsAppConfigJSON(t *testing.T) {
 	body := rec.Body.String()
 	assert.StrContains(t, body, `id="app-config-data"`)
 	assert.StrContains(t, body, `"previewExts":[".md",".json",".ini"]`)
+	assert.StrContains(t, body, `"iframeHosts":["intranet.local"]`)
 	assert.StrContains(t, body, `"layout":"toc-right"`)
 }
 

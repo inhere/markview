@@ -22,11 +22,13 @@ describe('app config', () => {
     test('normalizes injected preview extensions and layout', () => {
         const config = readAppConfig(documentWithConfig(JSON.stringify({
             previewExts: [' ini ', ' .JSON ', ' json ', '', 123, '.Env'],
+            iframeHosts: [' Intranet.local ', 'http://192.168.1.20:8080/app', '', 42, 'intranet.local'],
             layout: 'toc-right',
         })));
 
         expect(config).toEqual({
             previewExts: ['.ini', '.json', '.env'],
+            iframeHosts: ['intranet.local', '192.168.1.20:8080'],
             layout: 'toc-right',
         });
     });
@@ -57,6 +59,7 @@ describe('app config', () => {
     test('uses compact layout when injected layout is missing', () => {
         expect(normalizeAppConfig({ previewExts: ['json'] })).toEqual({
             previewExts: ['.json'],
+            iframeHosts: [],
             layout: 'compact',
         });
     });

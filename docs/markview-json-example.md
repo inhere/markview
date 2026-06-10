@@ -26,6 +26,7 @@
   },
   "ui": {
     "preview_exts": "append:.ini,.conf",
+    "iframe_hosts": "intranet.local,192.168.1.20:8080",
     "layout": "compact"
   }
 }
@@ -63,6 +64,10 @@ override:.md,.txt
 
 默认扩展名为 `.md,.json,.jsonl,.yaml,.yml,.toml,.html`。其中 `.html` 会在右侧预览面板中通过 iframe 渲染页面，其余内容文件默认以代码形式展示。未写点号的扩展名会自动补成 `.ext`，并统一转成小写。
 
+`iframe_hosts`: 允许用 iframe 在右侧预览面板中打开的外部地址 host 白名单，多个 host 用英文逗号分隔。匹配规则使用浏览器 URL 的 `host`，包含端口但不包含协议和路径。例如 `http://192.168.1.20:8080/app` 对应 `192.168.1.20:8080`，`http://intranet.local/app` 对应 `intranet.local`。
+
+未配置 `iframe_hosts` 时，MarkView 不会给外部链接显示预览按钮。即使 host 已加入白名单，目标站点仍可能因为 `X-Frame-Options` 或 `Content-Security-Policy: frame-ancestors` 拒绝被 iframe 嵌入。
+
 `layout`: 页面布局模式，支持以下值：
 
 - `compact`: 默认布局，文件树和 TOC 合并在左侧，内容在右侧
@@ -83,7 +88,7 @@ MKVIEW_WATCH_SKIP_DIR=append:.cache,coverage
 MKVIEW_INCLUDE_DIR=.docs,.wiki
 ```
 
-环境变量只覆盖运行时服务配置，不包含 `ui.preview_exts` 和 `ui.layout`。如果需要调整预览扩展名或布局，请使用 `markview.json`。
+环境变量只覆盖运行时服务配置，不包含 `ui.preview_exts`、`ui.iframe_hosts` 和 `ui.layout`。如果需要调整预览扩展名、外部 iframe host 白名单或布局，请使用 `markview.json`。
 
 ## 配置优先级
 

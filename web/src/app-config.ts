@@ -2,11 +2,13 @@ export type AppLayout = 'compact' | 'toc-middle' | 'toc-right';
 
 export interface AppConfig {
     previewExts: string[];
+    iframeHosts: string[];
     layout: AppLayout;
 }
 
 export const DEFAULT_APP_CONFIG: AppConfig = {
     previewExts: ['.md', '.json', '.jsonl', '.yaml', '.yml', '.toml', '.html'],
+    iframeHosts: [],
     layout: 'compact',
 };
 
@@ -35,6 +37,49 @@ export function normalizePreviewExts(value: unknown): string[] {
     return previewExts.length > 0 ? previewExts : [...DEFAULT_APP_CONFIG.previewExts];
 }
 
+export function normalizeIframeHosts(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    const seenHosts = new Set<string>();
+    return value
+        .filter((item): item is string => typeof item === 'string')
+        .map(item => normalizeIframeHost(item))
+        .filter(Boolean)
+        .filter(host => {
+            if (seenHosts.has(host)) {
+                return false;
+            }
+            seenHosts.add(host);
+            return true;
+        });
+}
+
+function normalizeIframeHost(value: string): string {
+    let rawValue = value.trim().toLowerCase();
+    if (!rawValue) {
+        return '';
+    }
+
+    try {
+        if (rawValue.includes('://')) {
+            return new URL(rawValue).host;
+        }
+        if (rawValue.startsWith('//')) {
+            return new URL(`http:${rawValue}`).host;
+        }
+    } catch {
+        return '';
+    }
+
+    const slashIndex = rawValue.indexOf('/');
+    if (slashIndex >= 0) {
+        rawValue = rawValue.slice(0, slashIndex);
+    }
+    return rawValue;
+}
+
 function normalizeLayout(value: unknown): AppLayout {
     if (typeof value === 'string' && VALID_LAYOUTS.has(value as AppLayout)) {
         return value as AppLayout;
@@ -44,12 +89,17 @@ function normalizeLayout(value: unknown): AppLayout {
 
 export function normalizeAppConfig(value: unknown): AppConfig {
     if (!value || typeof value !== 'object') {
-        return { ...DEFAULT_APP_CONFIG, previewExts: [...DEFAULT_APP_CONFIG.previewExts] };
+        return {
+            ...DEFAULT_APP_CONFIG,
+            previewExts: [...DEFAULT_APP_CONFIG.previewExts],
+            iframeHosts: [...DEFAULT_APP_CONFIG.iframeHosts],
+        };
     }
 
     const rawConfig = value as Record<string, unknown>;
     return {
         previewExts: normalizePreviewExts(rawConfig.previewExts),
+        iframeHosts: normalizeIframeHosts(rawConfig.iframeHosts),
         layout: normalizeLayout(rawConfig.layout),
     };
 }

@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,6 +25,7 @@ type ServerFileConfig struct {
 
 type UIFileConfig struct {
 	PreviewExts *string `json:"preview_exts"`
+	IframeHosts *string `json:"iframe_hosts"`
 	Layout      *string `json:"layout"`
 }
 
@@ -152,4 +154,34 @@ func appendUniqueString(items []string, item string) []string {
 		}
 	}
 	return append(items, item)
+}
+
+func NormalizeHostListSetting(setting string) []string {
+	result := make([]string, 0)
+	for _, item := range strings.Split(setting, ",") {
+		host := normalizeIframeHost(item)
+		if host == "" {
+			continue
+		}
+		result = appendUniqueString(result, host)
+	}
+	return result
+}
+
+func normalizeIframeHost(value string) string {
+	value = strings.TrimSpace(strings.ToLower(value))
+	if value == "" {
+		return ""
+	}
+	if strings.Contains(value, "://") {
+		if parsed, err := url.Parse(value); err == nil {
+			return parsed.Host
+		}
+		return ""
+	}
+	value = strings.TrimPrefix(value, "//")
+	if slash := strings.Index(value, "/"); slash >= 0 {
+		value = value[:slash]
+	}
+	return strings.TrimSpace(value)
 }

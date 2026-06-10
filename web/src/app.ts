@@ -424,7 +424,10 @@ function setupOnce() {
     const appConfig = readAppConfig();
     const initialLayout = resolveLayoutMode(readStoredLayoutMode(), appConfig.layout);
     applyLayoutMode(initialLayout);
-    configureLinkPreview({ previewExts: appConfig.previewExts });
+    configureLinkPreview({
+        previewExts: appConfig.previewExts,
+        iframeHosts: appConfig.iframeHosts,
+    });
 
     setupToolbar(appConfig, initialLayout);
     setupInlineNavigation();

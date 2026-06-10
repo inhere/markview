@@ -6,6 +6,7 @@ import {
     configureLinkPreview,
     detectPreviewFileLanguage,
     enhanceLinksInContent,
+    isAllowedIframeURL,
     isPreviewableContentPath,
 } from './link-preview';
 
@@ -100,6 +101,44 @@ describe('link preview content files', () => {
             expect(content.querySelector('.link-preview-wrapper')).not.toBeNull();
             expect(content.querySelector('.link-preview-btn')).not.toBeNull();
         });
+    });
+
+    test('only allows configured external iframe hosts', () => {
+        configureLinkPreview({
+            previewExts: ['.json', '.jsonl', '.yaml', '.yml', '.toml', '.html'],
+            iframeHosts: ['intranet.local', '192.168.1.20:8080'],
+        });
+        try {
+            expect(isAllowedIframeURL(new URL('http://intranet.local/app'))).toBe(true);
+            expect(isAllowedIframeURL(new URL('http://192.168.1.20:8080/app'))).toBe(true);
+            expect(isAllowedIframeURL(new URL('http://example.com/app'))).toBe(false);
+        } finally {
+            configureLinkPreview({ previewExts: ['.json', '.jsonl', '.yaml', '.yml', '.toml', '.html'] });
+        }
+    });
+
+    test('adds preview button only for allowed external iframe links', () => {
+        configureLinkPreview({
+            previewExts: ['.json', '.jsonl', '.yaml', '.yml', '.toml', '.html'],
+            iframeHosts: ['intranet.local'],
+        });
+        try {
+            withDOM(`<!DOCTYPE html><body>
+                <article id="content">
+                    <a href="http://intranet.local/app">intranet</a>
+                    <a href="http://example.com/app">external</a>
+                </article>
+            </body>`, document => {
+                const content = document.getElementById('content') as HTMLElement;
+
+                enhanceLinksInContent(content);
+
+                expect(content.querySelectorAll('.link-preview-wrapper')).toHaveLength(1);
+                expect(content.querySelector('.link-preview-wrapper')?.textContent).toContain('intranet');
+            });
+        } finally {
+            configureLinkPreview({ previewExts: ['.json', '.jsonl', '.yaml', '.yml', '.toml', '.html'] });
+        }
     });
 
     test('adds preview button for configured content extensions', () => {

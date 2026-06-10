@@ -86,7 +86,7 @@ func TestLoadFileConfigParsesPointerValues(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "markview.json")
 	assert.NoErr(t, os.WriteFile(path, []byte(`{
 		"server": {"port": 0, "private": false, "watch": false, "include_dir": ".docs,.wiki"},
-		"ui": {"preview_exts": "append:.ini", "layout": "toc-right"}
+		"ui": {"preview_exts": "append:.ini", "layout": "toc-right", "iframe_hosts": "192.168.1.20:8080,intranet.local"}
 	}`), 0o644))
 
 	cfg, err := LoadFileConfig(path)
@@ -98,6 +98,7 @@ func TestLoadFileConfigParsesPointerValues(t *testing.T) {
 	assert.Eq(t, ".docs,.wiki", *cfg.Server.IncludeDir)
 	assert.Eq(t, "append:.ini", *cfg.UI.PreviewExts)
 	assert.Eq(t, "toc-right", *cfg.UI.Layout)
+	assert.Eq(t, "192.168.1.20:8080,intranet.local", *cfg.UI.IframeHosts)
 }
 
 func TestLoadFileConfigReturnsPathInJSONError(t *testing.T) {

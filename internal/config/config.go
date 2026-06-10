@@ -37,11 +37,13 @@ type Config struct {
 	Private       bool
 	NoBrowser     bool
 	PreviewExts   []string
+	IframeHosts   []string
 	UILayout      string
 }
 
 type AppConfig struct {
 	PreviewExts []string `json:"previewExts"`
+	IframeHosts []string `json:"iframeHosts"`
 	Layout      string   `json:"layout"`
 }
 
@@ -99,6 +101,7 @@ func (c *Config) AppConfig() AppConfig {
 	}
 	return AppConfig{
 		PreviewExts: append([]string(nil), previewExts...),
+		IframeHosts: append([]string(nil), c.IframeHosts...),
 		Layout:      layout,
 	}
 }

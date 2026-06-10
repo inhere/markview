@@ -16,13 +16,14 @@ func TestMergeRuntimeConfigPriority(t *testing.T) {
 	globalPort := 6201
 	projectPreview := "append:.ini"
 	projectLayout := "toc-middle"
+	projectIframeHosts := "192.168.1.20:8080, intranet.local"
 
 	result, err := MergeRuntimeConfig(MergeInput{
 		Global:       FileConfig{Server: ServerFileConfig{Port: &globalPort}},
 		RegistryPort: intPtr(6202),
 		Project: FileConfig{
 			Server: ServerFileConfig{Port: &projectPort, Private: &private, Watch: &watch, WatchDir: &watchDir},
-			UI:     UIFileConfig{PreviewExts: &projectPreview, Layout: &projectLayout},
+			UI:     UIFileConfig{PreviewExts: &projectPreview, Layout: &projectLayout, IframeHosts: &projectIframeHosts},
 		},
 		Env: EnvConfig{Port: &envPort},
 		CLI: CLIConfig{Port: &cliPort},
@@ -36,6 +37,7 @@ func TestMergeRuntimeConfigPriority(t *testing.T) {
 	assert.Eq(t, []string{"docs", "example"}, result.WatchDirs)
 	assert.Eq(t, []string{".md", ".json", ".jsonl", ".yaml", ".yml", ".toml", ".html", ".ini"}, result.PreviewExts)
 	assert.Eq(t, UILayoutTOCMiddle, result.UILayout)
+	assert.Eq(t, []string{"192.168.1.20:8080", "intranet.local"}, result.IframeHosts)
 }
 
 func TestMergeRuntimeConfigUsesConfigPortSource(t *testing.T) {

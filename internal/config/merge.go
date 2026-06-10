@@ -90,6 +90,9 @@ func applyFileConfig(cfg *Config, fileCfg FileConfig, portSource PortSource) err
 		}
 		cfg.PreviewExts = exts
 	}
+	if fileCfg.UI.IframeHosts != nil {
+		cfg.IframeHosts = NormalizeHostListSetting(*fileCfg.UI.IframeHosts)
+	}
 	if fileCfg.UI.Layout != nil {
 		layout, err := NormalizeUILayout(*fileCfg.UI.Layout)
 		if err != nil {
