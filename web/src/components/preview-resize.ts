@@ -21,6 +21,9 @@ export function initPreviewResize() {
     handle.addEventListener('mousedown', startResize);
     document.addEventListener('mousemove', doResize);
     document.addEventListener('mouseup', endResize);
+    window.addEventListener('mousemove', doResize);
+    window.addEventListener('mouseup', endResize);
+    window.addEventListener('blur', endResize);
 }
 
 function startResize(event: MouseEvent) {
@@ -44,6 +47,10 @@ function startResize(event: MouseEvent) {
 
 function doResize(event: MouseEvent) {
     if (!isResizing) return;
+    if (event.buttons === 0) {
+        endResize();
+        return;
+    }
 
     const deltaX = startX - event.clientX;
     setPreviewWidth(startWidth + deltaX, false);

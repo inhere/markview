@@ -61,6 +61,7 @@ describe('layout CSS modes', () => {
         expectRule(/\.preview-resize-handle\s*\{[^}]*left:\s*0;[^}]*width:\s*6px;[^}]*cursor:\s*col-resize;/s);
         expectRule(/\.preview-resize-handle:hover,\s*\.preview-resize-handle\.is-resizing\s*\{[^}]*background:\s*var\(--accent-border\);/s);
         expectRule(/body\.preview-is-resizing\s+\.preview-panel\s*\{[^}]*transition:\s*none;/s);
+        expectRule(/body\.preview-is-resizing\s+\.preview-content\s*\{[^}]*pointer-events:\s*none;/s);
     });
 
     test('keeps toolbar version collapsed until settings are open and emphasizes sidebar collapse button', () => {

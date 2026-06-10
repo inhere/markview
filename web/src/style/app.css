@@ -1987,6 +1987,10 @@ body.preview-is-resizing .preview-panel {
     transition: none;
 }
 
+body.preview-is-resizing .preview-content {
+    pointer-events: none;
+}
+
 .preview-header {
     height: 40px;
     padding: 0 12px;
