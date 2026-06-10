@@ -7,6 +7,7 @@
 - [基础排版](./basics.md)
 - [Mermaid 图表](./mermaid.md)
 - [长文档与目录](./guide.md)
+- [HTML iframe 预览](./demo.html)
 
 ## 使用方式
 

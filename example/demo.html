@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MarkView HTML Preview Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #eef2f7;
+      color: #122033;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #eef2f7 0%, #ffffff 100%);
+    }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+    }
+
+    .phone {
+      width: min(390px, 100%);
+      min-height: 720px;
+      border-radius: 28px;
+      background: #ffffff;
+      box-shadow: 0 28px 80px rgba(15, 23, 42, 0.18);
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+    }
+
+    .status {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .topbar {
+      height: 56px;
+      display: grid;
+      grid-template-columns: 48px 1fr 48px;
+      align-items: center;
+      padding: 0 18px;
+      border-bottom: 1px solid #eef2f7;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      text-align: center;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .icon {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      color: #64748b;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .add {
+      color: #16a34a;
+      background: #dcfce7;
+      justify-self: end;
+      box-shadow: 0 8px 24px rgba(22, 163, 74, 0.2);
+    }
+
+    .content {
+      padding: 24px 22px 32px;
+    }
+
+    .hero {
+      border-radius: 18px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .hero h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .hero p {
+      margin: 0;
+      color: #64748b;
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: 40px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .badge {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 800;
+    }
+
+    .item strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .item span {
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .pill {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="phone" aria-label="HTML preview demo">
+      <div class="status">
+        <span>16:10</span>
+        <span>5G 100%</span>
+      </div>
+      <div class="topbar">
+        <span class="icon" aria-hidden="true">&#8249;</span>
+        <h1>表单中心</h1>
+        <span class="icon add" aria-hidden="true">+</span>
+      </div>
+      <div class="content">
+        <article class="hero">
+          <h2>iframe 高度测试页面</h2>
+          <p>这个 HTML 文件用于验证 MarkView 右侧预览面板是否能把 iframe 拉满剩余高度，而不是只显示页面顶部一小段。</p>
+        </article>
+        <div class="list">
+          <article class="item">
+            <span class="badge">A</span>
+            <div><strong>审批管理</strong><span>移动端表单页面示例</span></div>
+            <span class="pill">HTML</span>
+          </article>
+          <article class="item">
+            <span class="badge">B</span>
+            <div><strong>资源加载</strong><span>相对样式和内容在 iframe 中渲染</span></div>
+            <span class="pill">iframe</span>
+          </article>
+          <article class="item">
+            <span class="badge">C</span>
+            <div><strong>长高度</strong><span>页面高度超过预览面板时可滚动查看</span></div>
+            <span class="pill">scroll</span>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

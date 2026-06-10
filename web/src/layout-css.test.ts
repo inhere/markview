@@ -50,6 +50,12 @@ describe('layout CSS modes', () => {
         expectRule(/\.content-search-wrapper\s*\{[^}]*position:\s*absolute;[^}]*left:\s*30px;/s);
     });
 
+    test('lets html iframe previews fill the preview panel height', () => {
+        expectRule(/\.preview-content\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*min-height:\s*0;/s);
+        expectRule(/\.preview-body\s*\{[^}]*flex:\s*1;[^}]*min-height:\s*0;/s);
+        expectRule(/\.preview-body\s+\.preview-html-frame\s*\{[^}]*display:\s*block;[^}]*width:\s*100%;[^}]*height:\s*100%;/s);
+    });
+
     test('keeps toolbar version collapsed until settings are open and emphasizes sidebar collapse button', () => {
         expectRule(/\.toolbar-version\s*\{[^}]*display:\s*none;/s);
         expectRule(/\.toolbar\.expanded\s+\.toolbar-version\s*\{[^}]*display:\s*inline-flex;/s);
