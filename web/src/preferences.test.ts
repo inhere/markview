@@ -4,14 +4,21 @@ import {
     DEFAULT_LAYOUT_MODE,
     DEFAULT_FONT_SIZE,
     DEFAULT_LAYOUT_WIDTH,
+    DEFAULT_PREVIEW_WIDTH,
     LAYOUT_MODE_STORAGE_KEY,
     MAX_FONT_SIZE,
+    MAX_PREVIEW_WIDTH,
     MIN_FONT_SIZE,
+    MIN_PREVIEW_WIDTH,
+    normalizePreviewWidth,
     normalizeFontSize,
     normalizeLayoutMode,
     normalizeLayoutWidth,
+    persistPreviewWidth,
     persistLayoutMode,
+    PREVIEW_WIDTH_STORAGE_KEY,
     readStoredLayoutMode,
+    readPreviewPreferences,
     readStoredPreferences,
     resolveLayoutMode,
 } from './preferences';
@@ -27,6 +34,14 @@ describe('web preferences', () => {
         expect(normalizeFontSize('999')).toBe(MAX_FONT_SIZE);
         expect(normalizeFontSize('1')).toBe(MIN_FONT_SIZE);
         expect(normalizeFontSize('oops')).toBe(DEFAULT_FONT_SIZE);
+    });
+
+    test('normalizePreviewWidth accepts stored pixels and clamps out of range values', () => {
+        expect(normalizePreviewWidth('720')).toBe(720);
+        expect(normalizePreviewWidth('99999')).toBe(MAX_PREVIEW_WIDTH);
+        expect(normalizePreviewWidth('1')).toBe(MIN_PREVIEW_WIDTH);
+        expect(normalizePreviewWidth('oops')).toBeNull();
+        expect(DEFAULT_PREVIEW_WIDTH).toBe(560);
     });
 
     test('readStoredPreferences restores stored values', () => {
@@ -125,5 +140,25 @@ describe('web preferences', () => {
         });
 
         expect(storage.get(LAYOUT_MODE_STORAGE_KEY)).toBe('toc-middle');
+    });
+
+    test('readPreviewPreferences and persistPreviewWidth use preview width storage', () => {
+        const storage = new Map<string, string>([
+            [PREVIEW_WIDTH_STORAGE_KEY, '700'],
+        ]);
+
+        expect(readPreviewPreferences({
+            getItem(key: string) {
+                return storage.get(key) ?? null;
+            },
+        }).previewWidth).toBe(700);
+
+        persistPreviewWidth(900, {
+            setItem(key: string, value: string) {
+                storage.set(key, value);
+            },
+        });
+
+        expect(storage.get(PREVIEW_WIDTH_STORAGE_KEY)).toBe('900');
     });
 });

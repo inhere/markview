@@ -1963,6 +1963,28 @@ img {
     flex-direction: column;
     z-index: 50;
     box-shadow: -4px 0 12px rgba(0,0,0,0.08);
+    transition: width 0.12s ease;
+}
+
+.preview-resize-handle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: col-resize;
+    background: transparent;
+    z-index: 2;
+    transition: background 0.15s ease;
+}
+
+.preview-resize-handle:hover,
+.preview-resize-handle.is-resizing {
+    background: var(--accent-border);
+}
+
+body.preview-is-resizing .preview-panel {
+    transition: none;
 }
 
 .preview-header {
@@ -2551,8 +2573,12 @@ div.mermaid {
         overflow: visible;
     }
 
-    .preview-panel {
+    body.preview-active .preview-panel {
         width: 100%;
+    }
+
+    .preview-resize-handle {
+        display: none;
     }
 }
 

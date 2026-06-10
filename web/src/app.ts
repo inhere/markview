@@ -22,6 +22,7 @@ import {
     persistFontSize,
     persistLayoutWidth,
     readStoredLayoutMode,
+    readPreviewPreferences,
     readStoredPreferences,
     readSidebarPreferences,
     resolveLayoutMode,
@@ -45,6 +46,10 @@ import {
     applyInitialSidebarWidth,
     initSidebarResize,
 } from './sidebar-resize';
+import {
+    applyInitialPreviewWidth,
+    initPreviewResize,
+} from './preview-resize';
 import {
     buildContentBaseURL,
     getContentScrollTop,
@@ -439,6 +444,9 @@ function setupOnce() {
     const sidebarPrefs = readSidebarPreferences();
     applyInitialSidebarWidth(sidebarPrefs.sidebarWidth);
     initSidebarResize();
+    const previewPrefs = readPreviewPreferences();
+    applyInitialPreviewWidth(previewPrefs.previewWidth);
+    initPreviewResize();
     setupSidebarCollapse();
     bindTOCScrollSpy(() => {
         highlightTOC();

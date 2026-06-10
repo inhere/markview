@@ -10,10 +10,14 @@ export const TOOLBAR_COLLAPSED_STORAGE_KEY = 'markview:toolbar-collapsed';
 export const SIDEBAR_COLLAPSED_STORAGE_KEY = 'markview:sidebar-collapsed';
 export const SIDEBAR_WIDTH_STORAGE_KEY = 'markview:sidebar-width';
 export const FILES_COLLAPSED_STORAGE_KEY = 'markview:files-collapsed';
+export const PREVIEW_WIDTH_STORAGE_KEY = 'markview:preview-width';
 
 export const DEFAULT_SIDEBAR_WIDTH = 280;
 export const MIN_SIDEBAR_WIDTH = 200;
 export const MAX_SIDEBAR_WIDTH = 800;
+export const DEFAULT_PREVIEW_WIDTH = 560;
+export const MIN_PREVIEW_WIDTH = 360;
+export const MAX_PREVIEW_WIDTH = 1200;
 
 export const LAYOUT_WIDTH_OPTIONS = ['768px', '960px', '1200px', '100%'] as const;
 export type LayoutWidth = (typeof LAYOUT_WIDTH_OPTIONS)[number];
@@ -222,5 +226,30 @@ export function persistSidebarCollapsed(value: boolean, storage: StorageWriter =
 export function persistFilesCollapsed(value: boolean, storage: StorageWriter = window.localStorage) {
     try {
         storage.setItem(FILES_COLLAPSED_STORAGE_KEY, String(value));
+    } catch {}
+}
+
+export function normalizePreviewWidth(value: string | null | undefined): number | null {
+    if (!value) return null;
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isNaN(parsed)) return null;
+    return Math.min(MAX_PREVIEW_WIDTH, Math.max(MIN_PREVIEW_WIDTH, parsed));
+}
+
+export function readPreviewPreferences(storage: StorageReader = window.localStorage) {
+    try {
+        return {
+            previewWidth: normalizePreviewWidth(storage.getItem(PREVIEW_WIDTH_STORAGE_KEY)),
+        };
+    } catch {
+        return {
+            previewWidth: null,
+        };
+    }
+}
+
+export function persistPreviewWidth(value: number, storage: StorageWriter = window.localStorage) {
+    try {
+        storage.setItem(PREVIEW_WIDTH_STORAGE_KEY, String(Math.round(Math.min(MAX_PREVIEW_WIDTH, Math.max(MIN_PREVIEW_WIDTH, value)))));
     } catch {}
 }

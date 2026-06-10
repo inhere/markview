@@ -34,6 +34,7 @@ describe('layout CSS modes', () => {
         expectRule(/@media \(max-width:\s*1023px\)\s*\{[\s\S]*\.files-pane,\s*\.toc-pane\s*\{[^}]*display:\s*none;/);
         expectRule(/body\.sidebar-collapsed\s+\.files-pane\s*\{[^}]*width:\s*var\(--sidebar-collapsed-width\);/s);
         expectRule(/html\[data-layout="toc-middle"\]\s+body\.sidebar-collapsed\s+\.toc-pane\s*\{[^}]*left:\s*var\(--sidebar-collapsed-width\);/s);
+        expectRule(/@media \(max-width:\s*1023px\)\s*\{[\s\S]*body\.preview-active\s+\.preview-panel\s*\{[^}]*width:\s*100%;/);
         expect(cssText).not.toMatch(/(?:^|})\s*body\.sidebar-collapsed\s+\.toc-pane\s*\{\s*display:\s*none;/);
     });
 
@@ -54,6 +55,12 @@ describe('layout CSS modes', () => {
         expectRule(/\.preview-content\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*min-height:\s*0;/s);
         expectRule(/\.preview-body\s*\{[^}]*flex:\s*1;[^}]*min-height:\s*0;/s);
         expectRule(/\.preview-body\s+\.preview-html-frame\s*\{[^}]*display:\s*block;[^}]*width:\s*100%;[^}]*height:\s*100%;/s);
+    });
+
+    test('defines a left edge resize handle for the preview panel', () => {
+        expectRule(/\.preview-resize-handle\s*\{[^}]*left:\s*0;[^}]*width:\s*6px;[^}]*cursor:\s*col-resize;/s);
+        expectRule(/\.preview-resize-handle:hover,\s*\.preview-resize-handle\.is-resizing\s*\{[^}]*background:\s*var\(--accent-border\);/s);
+        expectRule(/body\.preview-is-resizing\s+\.preview-panel\s*\{[^}]*transition:\s*none;/s);
     });
 
     test('keeps toolbar version collapsed until settings are open and emphasizes sidebar collapse button', () => {
