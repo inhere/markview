@@ -69,8 +69,13 @@ func newCommand(options options) *cflag.CFlags {
   default-entry  Default markdown file to open (default: %s)
 
 <cyan>Environment:</>
-  MKVIEW_PORT    HTTP port to listen on (unset: auto, prefers %s)
-  MKVIEW_ENTRY   Default markdown file to open (default: %s)`,
+  MKVIEW_PORT            HTTP port to listen on (unset: auto, prefers %s)
+  MKVIEW_ENTRY           Default markdown file to open (default: %s)
+  MKVIEW_DEBUG           Enable debug logs (true/false, default: false)
+  MKVIEW_WATCH           Watch files and live reload (true/false, default: true)
+  MKVIEW_WATCH_DIR       Directories to watch, comma separated (default: target dir)
+  MKVIEW_WATCH_SKIP_DIR  Directories to skip while watching; supports append:/override:
+  MKVIEW_INCLUDE_DIR     Skipped directories to include in file tree, comma separated`,
 		config.DefaultEntry, config.DefaultPort, config.DefaultEntry,
 	)
 

@@ -120,6 +120,24 @@ func TestProjectFlagParse(t *testing.T) {
 	}
 }
 
+func TestCommandHelpListsSupportedEnvironmentVariables(t *testing.T) {
+	help := newCommand(testOptions()).LongHelp
+
+	for _, name := range []string{
+		config.EnvPort,
+		config.EnvEntry,
+		config.EnvDebug,
+		config.EnvWatch,
+		config.EnvWatchDir,
+		config.EnvWatchSkipDir,
+		config.EnvIncludeDir,
+	} {
+		t.Run(name, func(t *testing.T) {
+			assert.StrContains(t, help, name)
+		})
+	}
+}
+
 func TestResolveSelectedProjectTarget(t *testing.T) {
 	t.Run("resolves project by name", func(t *testing.T) {
 		projectDir := t.TempDir()

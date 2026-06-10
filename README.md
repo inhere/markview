@@ -102,6 +102,8 @@ Using project config, create `markview.local.json`, `.markview.json`, or `markvi
 }
 ```
 
+See [docs/markview-json-example.md](docs/markview-json-example.md) for a complete `markview.json` example.
+
 `server.include_dir` and `MKVIEW_INCLUDE_DIR` allow selected skipped directories, including dot-prefixed documentation directories, to appear in the file tree. `.git` and `node_modules` are always skipped.
 
 Using CLI options:

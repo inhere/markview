@@ -102,6 +102,8 @@ $env:MKVIEW_INCLUDE_DIR = ".docs"; markview
 }
 ```
 
+完整 `markview.json` 示例见 [docs/markview-json-example.md](docs/markview-json-example.md)。
+
 `server.include_dir` 和 `MKVIEW_INCLUDE_DIR` 用于放行被跳过的目录，包括点开头的文档目录，让它们显示在 file-tree 中。`.git` 和 `node_modules` 会始终跳过。
 
 使用CLI选项：
