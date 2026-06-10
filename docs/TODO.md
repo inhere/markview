@@ -88,9 +88,10 @@ UI 页面配置（server渲染设置到页面）：
 - preview_exts: string 支持的预览文件扩展名，多个逗号分隔，默认 .md, .json, .jsonl, .yaml, .yml, .toml, .html
   - 支持前缀 override: 覆盖默认的扩展名设置, append(default): 追加到默认的设置
   - 配置后将会在右侧预览面板显示对应ext的文件内容，而不会打开新页面；`.html` 使用 iframe 渲染页面
-- iframe_hosts: string 允许在右侧预览面板用 iframe 打开的外部 host 白名单，多个 host 用逗号分隔，例如 `intranet.local,192.168.1.20:8080`
+- iframe_hosts: string 允许在右侧预览面板用 iframe 打开的外部 host 白名单，多个 host 用逗号分隔，例如 `intranet.local,192.168.1.20:8080,*.hyy.preview.test`
   - 未配置时不允许外部链接使用 iframe 预览
   - 匹配浏览器 URL 的 host，包含端口，不包含协议和路径
+  - 支持 `*.example.test` 或 `.example.test` 后缀匹配任意子域名
 - layout: string 内容/TOC/目录布局位置，默认 compact
   - 支持 compact(就是现在的布局：toc与file-tree合并,右侧内容), toc-middle(file-tree|toc|body), toc-right(file-tree|body + floating toc)
   - toc-right 中 TOC 是右侧浮动面板，不为 TOC 预留固定列；打开预览面板时默认隐藏 TOC，但可通过按钮手动打开用于跳转

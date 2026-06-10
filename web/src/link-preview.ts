@@ -83,7 +83,18 @@ export function buildHTMLFilePreview(url: string): string {
 }
 
 export function isAllowedIframeURL(url: URL, iframeHosts = allowedIframeHosts): boolean {
-    return normalizeIframeHosts(iframeHosts).includes(url.host.toLowerCase());
+    const host = url.host.toLowerCase();
+    const hostname = url.hostname.toLowerCase();
+
+    return normalizeIframeHosts(iframeHosts).some(rule => {
+        if (rule.startsWith('*.')) {
+            return hostname.endsWith(rule.slice(1));
+        }
+        if (rule.startsWith('.')) {
+            return hostname.endsWith(rule);
+        }
+        return host === rule;
+    });
 }
 
 function shouldShowPreviewButton(anchor: HTMLAnchorElement): boolean {

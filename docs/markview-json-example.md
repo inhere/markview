@@ -26,7 +26,7 @@
   },
   "ui": {
     "preview_exts": "append:.ini,.conf",
-    "iframe_hosts": "intranet.local,192.168.1.20:8080",
+    "iframe_hosts": "intranet.local,192.168.1.20:8080,*.hyy.preview.test",
     "layout": "compact"
   }
 }
@@ -65,6 +65,8 @@ override:.md,.txt
 默认扩展名为 `.md,.json,.jsonl,.yaml,.yml,.toml,.html`。其中 `.html` 会在右侧预览面板中通过 iframe 渲染页面，其余内容文件默认以代码形式展示。未写点号的扩展名会自动补成 `.ext`，并统一转成小写。
 
 `iframe_hosts`: 允许用 iframe 在右侧预览面板中打开的外部地址 host 白名单，多个 host 用英文逗号分隔。匹配规则使用浏览器 URL 的 `host`，包含端口但不包含协议和路径。例如 `http://192.168.1.20:8080/app` 对应 `192.168.1.20:8080`，`http://intranet.local/app` 对应 `intranet.local`。
+
+后缀匹配支持 `*.hyy.preview.test` 或 `.hyy.preview.test`，可匹配 `foo.hyy.preview.test`、`bar.foo.hyy.preview.test` 等子域名；不会匹配根域 `hyy.preview.test`，也不会误匹配 `evil-hyy.preview.test`。
 
 未配置 `iframe_hosts` 时，MarkView 不会给外部链接显示预览按钮。即使 host 已加入白名单，目标站点仍可能因为 `X-Frame-Options` 或 `Content-Security-Policy: frame-ancestors` 拒绝被 iframe 嵌入。
 

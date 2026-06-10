@@ -128,6 +128,12 @@ func TestNormalizeExtListSetting(t *testing.T) {
 	assert.Eq(t, []string{".ini"}, exts)
 }
 
+func TestNormalizeHostListSettingPreservesSuffixRules(t *testing.T) {
+	hosts := NormalizeHostListSetting("*.hyy.preview.test, .corp.local, http://Api.HYY.PREVIEW.TEST/app, intranet.local")
+
+	assert.Eq(t, []string{"*.hyy.preview.test", ".corp.local", "api.hyy.preview.test", "intranet.local"}, hosts)
+}
+
 func setUserConfigEnv(t *testing.T, baseDir string) {
 	t.Helper()
 

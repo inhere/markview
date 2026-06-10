@@ -106,11 +106,16 @@ describe('link preview content files', () => {
     test('only allows configured external iframe hosts', () => {
         configureLinkPreview({
             previewExts: ['.json', '.jsonl', '.yaml', '.yml', '.toml', '.html'],
-            iframeHosts: ['intranet.local', '192.168.1.20:8080'],
+            iframeHosts: ['intranet.local', '192.168.1.20:8080', '*.hyy.preview.test', '.corp.local'],
         });
         try {
             expect(isAllowedIframeURL(new URL('http://intranet.local/app'))).toBe(true);
             expect(isAllowedIframeURL(new URL('http://192.168.1.20:8080/app'))).toBe(true);
+            expect(isAllowedIframeURL(new URL('http://foo.hyy.preview.test/app'))).toBe(true);
+            expect(isAllowedIframeURL(new URL('http://bar.foo.hyy.preview.test/app'))).toBe(true);
+            expect(isAllowedIframeURL(new URL('http://app.corp.local/page'))).toBe(true);
+            expect(isAllowedIframeURL(new URL('http://hyy.preview.test/app'))).toBe(false);
+            expect(isAllowedIframeURL(new URL('http://evil-hyy.preview.test/app'))).toBe(false);
             expect(isAllowedIframeURL(new URL('http://example.com/app'))).toBe(false);
         } finally {
             configureLinkPreview({ previewExts: ['.json', '.jsonl', '.yaml', '.yml', '.toml', '.html'] });
