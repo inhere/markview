@@ -81,3 +81,7 @@ func TestConfigAppConfigCopiesDefaultPreviewExts(t *testing.T) {
 
 	assert.Eq(t, originalDefaults, DefaultPreviewExts)
 }
+
+func TestDefaultPreviewExtsIncludesHTML(t *testing.T) {
+	assert.Contains(t, DefaultPreviewExts, ".html")
+}

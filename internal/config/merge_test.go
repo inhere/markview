@@ -34,7 +34,7 @@ func TestMergeRuntimeConfigPriority(t *testing.T) {
 	assert.True(t, result.Private)
 	assert.False(t, result.EnableWatch)
 	assert.Eq(t, []string{"docs", "example"}, result.WatchDirs)
-	assert.Eq(t, []string{".md", ".json", ".jsonl", ".yaml", ".yml", ".toml", ".ini"}, result.PreviewExts)
+	assert.Eq(t, []string{".md", ".json", ".jsonl", ".yaml", ".yml", ".toml", ".html", ".ini"}, result.PreviewExts)
 	assert.Eq(t, UILayoutTOCMiddle, result.UILayout)
 }
 
@@ -134,7 +134,7 @@ func TestMergeRuntimeConfigProjectPreviewExtsUseDefaultBase(t *testing.T) {
 		})
 
 		assert.NoErr(t, err)
-		assert.Eq(t, []string{".md", ".json", ".jsonl", ".yaml", ".yml", ".toml", ".conf"}, result.PreviewExts)
+		assert.Eq(t, []string{".md", ".json", ".jsonl", ".yaml", ".yml", ".toml", ".html", ".conf"}, result.PreviewExts)
 	})
 
 	t.Run("project override replaces the default list", func(t *testing.T) {

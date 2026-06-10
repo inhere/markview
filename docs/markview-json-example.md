@@ -61,7 +61,7 @@ append:.ini,.conf
 override:.md,.txt
 ```
 
-默认扩展名为 `.md,.json,.jsonl,.yaml,.yml,.toml`。未写点号的扩展名会自动补成 `.ext`，并统一转成小写。
+默认扩展名为 `.md,.json,.jsonl,.yaml,.yml,.toml,.html`。其中 `.html` 会在右侧预览面板中通过 iframe 渲染页面，其余内容文件默认以代码形式展示。未写点号的扩展名会自动补成 `.ext`，并统一转成小写。
 
 `layout`: 页面布局模式，支持以下值：
 

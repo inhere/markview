@@ -120,7 +120,7 @@ func TestNormalizeLayoutRejectsUnsupportedValue(t *testing.T) {
 func TestNormalizeExtListSetting(t *testing.T) {
 	exts, err := NormalizeExtListSetting(DefaultPreviewExts, "append:ini,.conf")
 	assert.NoErr(t, err)
-	assert.Eq(t, []string{".md", ".json", ".jsonl", ".yaml", ".yml", ".toml", ".ini", ".conf"}, exts)
+	assert.Eq(t, []string{".md", ".json", ".jsonl", ".yaml", ".yml", ".toml", ".html", ".ini", ".conf"}, exts)
 
 	exts, err = NormalizeExtListSetting(DefaultPreviewExts, "override:ini")
 	assert.NoErr(t, err)

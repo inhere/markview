@@ -15,7 +15,7 @@ var ProjectConfigFiles = []string{
 	"markview.json",
 }
 
-var DefaultPreviewExts = []string{".md", ".json", ".jsonl", ".yaml", ".yml", ".toml"}
+var DefaultPreviewExts = []string{".md", ".json", ".jsonl", ".yaml", ".yml", ".toml", ".html"}
 
 const (
 	UILayoutCompact   = "compact"

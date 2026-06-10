@@ -16,6 +16,7 @@ function documentWithConfig(configJSON?: string): Document {
 describe('app config', () => {
     test('returns defaults when config script is missing', () => {
         expect(readAppConfig(documentWithConfig())).toEqual(DEFAULT_APP_CONFIG);
+        expect(DEFAULT_APP_CONFIG.previewExts).toContain('.html');
     });
 
     test('normalizes injected preview extensions and layout', () => {

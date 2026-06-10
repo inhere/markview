@@ -85,9 +85,9 @@ server 配置：
   - 用于让点开头的文档目录显示到 file-tree；`.git` 和 `node_modules` 始终跳过
 
 UI 页面配置（server渲染设置到页面）：
-- preview_exts: string 支持的预览文件扩展名，多个逗号分隔，默认 .md, .json, .jsonl, .yaml, .toml
+- preview_exts: string 支持的预览文件扩展名，多个逗号分隔，默认 .md, .json, .jsonl, .yaml, .yml, .toml, .html
   - 支持前缀 override: 覆盖默认的扩展名设置, append(default): 追加到默认的设置
-  - 配置后将会再右侧预览面板显示对应ext的文件内容，而不会打开新页面
+  - 配置后将会在右侧预览面板显示对应ext的文件内容，而不会打开新页面；`.html` 使用 iframe 渲染页面
 - layout: string 内容/TOC/目录布局位置，默认 compact
   - 支持 compact(就是现在的布局：toc与file-tree合并,右侧内容), toc-middle(file-tree|toc|body), toc-right(file-tree|body + floating toc)
   - toc-right 中 TOC 是右侧浮动面板，不为 TOC 预留固定列；打开预览面板时默认隐藏 TOC，但可通过按钮手动打开用于跳转

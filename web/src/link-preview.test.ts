@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { JSDOM } from 'jsdom';
 import {
+    buildHTMLFilePreview,
     buildHighlightedFilePreview,
     configureLinkPreview,
     detectPreviewFileLanguage,
@@ -40,6 +41,7 @@ describe('link preview content files', () => {
         expect(isPreviewableContentPath('/deploy/config.yaml')).toBe(true);
         expect(isPreviewableContentPath('/deploy/config.yml')).toBe(true);
         expect(isPreviewableContentPath('/config/app.toml')).toBe(true);
+        expect(isPreviewableContentPath('/pages/demo.html')).toBe(true);
         expect(isPreviewableContentPath('/assets/logo.png')).toBe(false);
     });
 
@@ -65,9 +67,31 @@ describe('link preview content files', () => {
         expect(html).toContain('&lt;demo&gt;');
     });
 
+    test('renders html content previews as iframe markup', () => {
+        const html = buildHTMLFilePreview('http://127.0.0.1/pages/demo.html?theme=dark');
+
+        expect(html).toContain('<iframe');
+        expect(html).toContain('class="preview-html-frame"');
+        expect(html).toContain('src="http://127.0.0.1/pages/demo.html?theme=dark"');
+        expect(html).not.toContain('<pre class="preview-file-code">');
+    });
+
     test('adds preview button for json links', () => {
         withDOM(`<!DOCTYPE html><body>
             <article id="content"><a href="/config/app.json">config</a></article>
+        </body>`, document => {
+            const content = document.getElementById('content') as HTMLElement;
+
+            enhanceLinksInContent(content);
+
+            expect(content.querySelector('.link-preview-wrapper')).not.toBeNull();
+            expect(content.querySelector('.link-preview-btn')).not.toBeNull();
+        });
+    });
+
+    test('adds preview button for html links by default', () => {
+        withDOM(`<!DOCTYPE html><body>
+            <article id="content"><a href="/pages/demo.html">demo</a></article>
         </body>`, document => {
             const content = document.getElementById('content') as HTMLElement;
 
@@ -92,7 +116,7 @@ describe('link preview content files', () => {
                 expect(content.querySelector('.link-preview-btn')).not.toBeNull();
             });
         } finally {
-            configureLinkPreview({ previewExts: ['.json', '.jsonl', '.yaml', '.yml', '.toml'] });
+            configureLinkPreview({ previewExts: ['.json', '.jsonl', '.yaml', '.yml', '.toml', '.html'] });
         }
     });
 

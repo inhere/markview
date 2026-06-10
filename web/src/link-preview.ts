@@ -71,6 +71,14 @@ export function buildHighlightedFilePreview(content: string, language: string): 
     return `<pre class="preview-file-code"><code class="language-${language}">${escapeHtml(content)}</code></pre>`;
 }
 
+export function isHTMLPreviewPath(pathname: string): boolean {
+    return pathname.split(/[?#]/, 1)[0].toLowerCase().endsWith('.html');
+}
+
+export function buildHTMLFilePreview(url: string): string {
+    return `<iframe class="preview-html-frame" src="${escapeHtml(url)}" title="HTML preview"></iframe>`;
+}
+
 function shouldShowPreviewButton(anchor: HTMLAnchorElement): boolean {
     const href = anchor.getAttribute('href');
     if (!href) return false;
@@ -268,46 +276,53 @@ async function loadInternalContent(url: string): Promise<void> {
     try {
         const targetUrl = new URL(url, window.location.href);
         const isContentPreview = isPreviewableContentPath(targetUrl.pathname);
+        const isHTMLPreview = isHTMLPreviewPath(targetUrl.pathname);
         if (!isContentPreview) {
             targetUrl.searchParams.set('q', 'main');
         }
 
-        console.log('[link-preview] loading:', targetUrl.toString());
-        const response = await fetch(targetUrl.toString(), {
-            headers: { 'X-MarkView-Navigation': 'inline' },
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch: ${response.status}`);
-        }
-
-        const contentType = response.headers.get('Content-Type') || '';
         let contentHTML: string;
         let docTitle = decodeURIComponent(targetUrl.pathname.split('/').filter(Boolean).pop() || url);
+        let bodyPadding = '20px';
 
-        if (isContentPreview) {
-            const language = detectPreviewFileLanguage(targetUrl.pathname) || 'plaintext';
-            contentHTML = buildHighlightedFilePreview(await response.text(), language);
-        } else if (contentType.includes('application/json')) {
-            const data = await response.json();
-            contentHTML = data.contentHTML;
-            docTitle = data.title || url;
+        if (isHTMLPreview) {
+            contentHTML = buildHTMLFilePreview(targetUrl.toString());
+            bodyPadding = '0';
         } else {
-            const html = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const content = doc.querySelector('#content');
+            console.log('[link-preview] loading:', targetUrl.toString());
+            const response = await fetch(targetUrl.toString(), {
+                headers: { 'X-MarkView-Navigation': 'inline' },
+            });
 
-            if (!(content instanceof HTMLElement)) {
-                throw new Error('Missing #content in fetched page');
+            if (!response.ok) {
+                throw new Error(`Failed to fetch: ${response.status}`);
             }
 
-            contentHTML = content.innerHTML;
+            const contentType = response.headers.get('Content-Type') || '';
+            if (isContentPreview) {
+                const language = detectPreviewFileLanguage(targetUrl.pathname) || 'plaintext';
+                contentHTML = buildHighlightedFilePreview(await response.text(), language);
+            } else if (contentType.includes('application/json')) {
+                const data = await response.json();
+                contentHTML = data.contentHTML;
+                docTitle = data.title || url;
+            } else {
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const content = doc.querySelector('#content');
 
-            // 获取第一个 h1 标题作为文档标题
-            const h1 = content.querySelector('h1');
-            if (h1) {
-                docTitle = h1.textContent || docTitle;
+                if (!(content instanceof HTMLElement)) {
+                    throw new Error('Missing #content in fetched page');
+                }
+
+                contentHTML = content.innerHTML;
+
+                // 获取第一个 h1 标题作为文档标题
+                const h1 = content.querySelector('h1');
+                if (h1) {
+                    docTitle = h1.textContent || docTitle;
+                }
             }
         }
 
@@ -321,7 +336,7 @@ async function loadInternalContent(url: string): Promise<void> {
 
         if (bodyEl) {
             bodyEl.innerHTML = contentHTML;
-            bodyEl.style.padding = '20px';
+            bodyEl.style.padding = bodyPadding;
             await enhancePreviewContent(bodyEl);
         }
         if (loadingEl) loadingEl.style.display = 'none';

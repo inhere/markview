@@ -6,7 +6,7 @@ export interface AppConfig {
 }
 
 export const DEFAULT_APP_CONFIG: AppConfig = {
-    previewExts: ['.md', '.json', '.jsonl', '.yaml', '.yml', '.toml'],
+    previewExts: ['.md', '.json', '.jsonl', '.yaml', '.yml', '.toml', '.html'],
     layout: 'compact',
 };
 
