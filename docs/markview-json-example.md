@@ -88,9 +88,11 @@ MKVIEW_WATCH=true
 MKVIEW_WATCH_DIR=docs,example
 MKVIEW_WATCH_SKIP_DIR=append:.cache,coverage
 MKVIEW_INCLUDE_DIR=.docs,.wiki
+MKVIEW_PREVIEW_EXTS=append:.html,.ini
+MKVIEW_IFRAME_HOSTS=*.hyy.preview.test,intranet.local
 ```
 
-环境变量只覆盖运行时服务配置，不包含 `ui.preview_exts`、`ui.iframe_hosts` 和 `ui.layout`。如果需要调整预览扩展名、外部 iframe host 白名单或布局，请使用 `markview.json`。
+环境变量可以覆盖运行时服务配置，也可以通过 `MKVIEW_PREVIEW_EXTS` 覆盖 `ui.preview_exts`，通过 `MKVIEW_IFRAME_HOSTS` 覆盖 `ui.iframe_hosts`。`ui.layout` 仍需通过 `markview.json` 配置。
 
 ## 配置优先级
 

@@ -84,12 +84,16 @@ Using environment variables:
 MKVIEW_PORT=8080 markview
 MKVIEW_ENTRY=guide.md markview
 MKVIEW_INCLUDE_DIR=.docs markview
+MKVIEW_PREVIEW_EXTS=append:.html,.ini markview
+MKVIEW_IFRAME_HOSTS=*.hyy.preview.test markview
 ```
 
 ```powershell
 $env:MKVIEW_PORT = "8080"; markview
 $env:MKVIEW_ENTRY = "guide.md"; markview
 $env:MKVIEW_INCLUDE_DIR = ".docs"; markview
+$env:MKVIEW_PREVIEW_EXTS = "append:.html,.ini"; markview
+$env:MKVIEW_IFRAME_HOSTS = "*.hyy.preview.test"; markview
 ```
 
 Using project config, create `markview.local.json`, `.markview.json`, or `markview.json` in the project root:
@@ -105,6 +109,8 @@ Using project config, create `markview.local.json`, `.markview.json`, or `markvi
 See [docs/markview-json-example.md](docs/markview-json-example.md) for a complete `markview.json` example.
 
 `server.include_dir` and `MKVIEW_INCLUDE_DIR` allow selected skipped directories, including dot-prefixed documentation directories, to appear in the file tree. `.git` and `node_modules` are always skipped.
+
+`ui.preview_exts` and `MKVIEW_PREVIEW_EXTS` configure file extensions opened in the preview panel. `ui.iframe_hosts` and `MKVIEW_IFRAME_HOSTS` configure external hosts that may open in the iframe preview panel; suffix rules such as `*.hyy.preview.test` or `.hyy.preview.test` match any subdomain.
 
 Using CLI options:
 

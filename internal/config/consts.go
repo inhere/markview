@@ -36,4 +36,8 @@ const (
 	// Include directory. multi use comma split
 	//  - 前缀 override: 覆盖默认的设置, append(default): 追加到默认的设置
 	EnvIncludeDir = "MKVIEW_INCLUDE_DIR"
+	// Preview extensions. multi use comma split. supports append:/override:
+	EnvPreviewExts = "MKVIEW_PREVIEW_EXTS"
+	// External iframe host allowlist. multi use comma split.
+	EnvIframeHosts = "MKVIEW_IFRAME_HOSTS"
 )

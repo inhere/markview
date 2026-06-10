@@ -75,7 +75,9 @@ func newCommand(options options) *cflag.CFlags {
   MKVIEW_WATCH           Watch files and live reload (true/false, default: true)
   MKVIEW_WATCH_DIR       Directories to watch, comma separated (default: target dir)
   MKVIEW_WATCH_SKIP_DIR  Directories to skip while watching; supports append:/override:
-  MKVIEW_INCLUDE_DIR     Skipped directories to include in file tree, comma separated`,
+  MKVIEW_INCLUDE_DIR     Skipped directories to include in file tree, comma separated
+  MKVIEW_PREVIEW_EXTS    Preview extensions; supports append:/override:
+  MKVIEW_IFRAME_HOSTS    External iframe host allowlist, comma separated`,
 		config.DefaultEntry, config.DefaultPort, config.DefaultEntry,
 	)
 
@@ -563,6 +565,12 @@ func runtimeEnvConfig(dotenv map[string]string) (config.EnvConfig, error) {
 	}
 	if includeDir := envValue(config.EnvIncludeDir, dotenv); includeDir != "" {
 		envCfg.IncludeDir = &includeDir
+	}
+	if previewExts := envValue(config.EnvPreviewExts, dotenv); previewExts != "" {
+		envCfg.PreviewExts = &previewExts
+	}
+	if iframeHosts := envValue(config.EnvIframeHosts, dotenv); iframeHosts != "" {
+		envCfg.IframeHosts = &iframeHosts
 	}
 	return envCfg, nil
 }

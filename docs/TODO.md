@@ -87,8 +87,10 @@ server 配置：
 UI 页面配置（server渲染设置到页面）：
 - preview_exts: string 支持的预览文件扩展名，多个逗号分隔，默认 .md, .json, .jsonl, .yaml, .yml, .toml, .html
   - 支持前缀 override: 覆盖默认的扩展名设置, append(default): 追加到默认的设置
+  - 可通过 `MKVIEW_PREVIEW_EXTS` 配置
   - 配置后将会在右侧预览面板显示对应ext的文件内容，而不会打开新页面；`.html` 使用 iframe 渲染页面
 - iframe_hosts: string 允许在右侧预览面板用 iframe 打开的外部 host 白名单，多个 host 用逗号分隔，例如 `intranet.local,192.168.1.20:8080,*.hyy.preview.test`
+  - 可通过 `MKVIEW_IFRAME_HOSTS` 配置
   - 未配置时不允许外部链接使用 iframe 预览
   - 匹配浏览器 URL 的 host，包含端口，不包含协议和路径
   - 支持 `*.example.test` 或 `.example.test` 后缀匹配任意子域名

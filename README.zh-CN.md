@@ -84,12 +84,16 @@ markview "path/to/docs" "intro.md"
 MKVIEW_PORT=8080 markview
 MKVIEW_ENTRY=guide.md markview
 MKVIEW_INCLUDE_DIR=.docs markview
+MKVIEW_PREVIEW_EXTS=append:.html,.ini markview
+MKVIEW_IFRAME_HOSTS=*.hyy.preview.test markview
 ```
 
 ```powershell
 $env:MKVIEW_PORT = "8080"; markview
 $env:MKVIEW_ENTRY = "guide.md"; markview
 $env:MKVIEW_INCLUDE_DIR = ".docs"; markview
+$env:MKVIEW_PREVIEW_EXTS = "append:.html,.ini"; markview
+$env:MKVIEW_IFRAME_HOSTS = "*.hyy.preview.test"; markview
 ```
 
 使用项目配置时，可在项目根目录创建 `markview.local.json`、`.markview.json` 或 `markview.json`：
@@ -105,6 +109,8 @@ $env:MKVIEW_INCLUDE_DIR = ".docs"; markview
 完整 `markview.json` 示例见 [docs/markview-json-example.md](docs/markview-json-example.md)。
 
 `server.include_dir` 和 `MKVIEW_INCLUDE_DIR` 用于放行被跳过的目录，包括点开头的文档目录，让它们显示在 file-tree 中。`.git` 和 `node_modules` 会始终跳过。
+
+`ui.preview_exts` 和 `MKVIEW_PREVIEW_EXTS` 用于配置在右侧预览面板打开的文件扩展名。`ui.iframe_hosts` 和 `MKVIEW_IFRAME_HOSTS` 用于配置可在 iframe 预览面板打开的外部 host 白名单；`*.hyy.preview.test` 或 `.hyy.preview.test` 这类规则会匹配任意子域名。
 
 使用CLI选项：
 

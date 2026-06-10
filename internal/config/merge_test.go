@@ -115,6 +115,28 @@ func TestMergeRuntimeConfigIncludeDirPriority(t *testing.T) {
 	assert.Eq(t, []string{".env"}, result.IncludeDirs)
 }
 
+func TestMergeRuntimeConfigEnvUIPriority(t *testing.T) {
+	projectPreview := "append:.project"
+	projectIframeHosts := "project.local"
+	envPreview := "override:.md,.html"
+	envIframeHosts := "*.env.preview.test,env.local"
+
+	result, err := MergeRuntimeConfig(MergeInput{
+		Project: FileConfig{UI: UIFileConfig{
+			PreviewExts: &projectPreview,
+			IframeHosts: &projectIframeHosts,
+		}},
+		Env: EnvConfig{
+			PreviewExts: &envPreview,
+			IframeHosts: &envIframeHosts,
+		},
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{".md", ".html"}, result.PreviewExts)
+	assert.Eq(t, []string{"*.env.preview.test", "env.local"}, result.IframeHosts)
+}
+
 func TestMergeRuntimeConfigRejectsUnsupportedIncludeDirMode(t *testing.T) {
 	include := "replace:.docs"
 

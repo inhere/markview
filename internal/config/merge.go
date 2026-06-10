@@ -21,6 +21,8 @@ type EnvConfig struct {
 	WatchDir     *string
 	WatchSkipDir *string
 	IncludeDir   *string
+	PreviewExts  *string
+	IframeHosts  *string
 }
 
 type CLIConfig struct {
@@ -130,6 +132,16 @@ func applyEnvConfig(cfg *Config, env EnvConfig) error {
 			return err
 		}
 		cfg.IncludeDirs = dirs
+	}
+	if env.PreviewExts != nil {
+		exts, err := NormalizeExtListSetting(DefaultPreviewExts, *env.PreviewExts)
+		if err != nil {
+			return err
+		}
+		cfg.PreviewExts = exts
+	}
+	if env.IframeHosts != nil {
+		cfg.IframeHosts = NormalizeHostListSetting(*env.IframeHosts)
 	}
 	return nil
 }

@@ -131,6 +131,8 @@ func TestCommandHelpListsSupportedEnvironmentVariables(t *testing.T) {
 		config.EnvWatchDir,
 		config.EnvWatchSkipDir,
 		config.EnvIncludeDir,
+		config.EnvPreviewExts,
+		config.EnvIframeHosts,
 	} {
 		t.Run(name, func(t *testing.T) {
 			assert.StrContains(t, help, name)
@@ -610,6 +612,17 @@ func TestRuntimeEnvConfigReadsIncludeDir(t *testing.T) {
 
 	assert.NoErr(t, err)
 	assert.Eq(t, ".docs,.wiki", *envCfg.IncludeDir)
+}
+
+func TestRuntimeEnvConfigReadsPreviewExtsAndIframeHosts(t *testing.T) {
+	envCfg, err := runtimeEnvConfig(map[string]string{
+		config.EnvPreviewExts: "override:.md,.html",
+		config.EnvIframeHosts: "*.hyy.preview.test,intranet.local",
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "override:.md,.html", *envCfg.PreviewExts)
+	assert.Eq(t, "*.hyy.preview.test,intranet.local", *envCfg.IframeHosts)
 }
 
 func TestListenProjectPortFromRegistrySkipsPortsSavedByOtherProjects(t *testing.T) {
