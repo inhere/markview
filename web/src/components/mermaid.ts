@@ -1,4 +1,4 @@
-import { escapeHtml } from './util';
+import { escapeHtml } from '../util';
 
 interface SVGGraphicsElement extends SVGElement {
     getBBox(): DOMRect;

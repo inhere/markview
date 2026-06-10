@@ -6,10 +6,10 @@ import './style/highlight.css';
 import './style/app.css';
 
 import { ensureHighlightLanguages, safeHighlightElement } from './highlight';
-import { setupLiveReloadStatus } from './live-status';
-import { enhanceMermaidContent, setupMermaidModal } from './mermaid';
-import { enhanceImagesInContent, setupImageModal } from './image-modal';
-import { setupContentSearch } from './content-search';
+import { setupLiveReloadStatus } from './components/live-status';
+import { enhanceMermaidContent, setupMermaidModal } from './components/mermaid';
+import { enhanceImagesInContent, setupImageModal } from './components/image-modal';
+import { setupContentSearch } from './components/content-search';
 import {
     applyPageSnapshot,
     parsePageSnapshot,
@@ -41,15 +41,15 @@ import {
     highlightTOC,
     renderFileTree,
     setupSidebarCollapse,
-} from './sidebar';
+} from './components/sidebar';
 import {
     applyInitialSidebarWidth,
     initSidebarResize,
-} from './sidebar-resize';
+} from './components/sidebar-resize';
 import {
     applyInitialPreviewWidth,
     initPreviewResize,
-} from './preview-resize';
+} from './components/preview-resize';
 import {
     buildContentBaseURL,
     getContentScrollTop,
@@ -65,16 +65,16 @@ import {
     isPreviewableContentPath,
     openPreviewPanel,
     setupLinkPreview,
-} from './link-preview';
-import { enhanceCodeBlocks } from './code-copy';
-import { enhanceTablesInContent } from './table-overflow';
+} from './components/link-preview';
+import { enhanceCodeBlocks } from './components/code-copy';
+import { enhanceTablesInContent } from './components/table-overflow';
 import { readAppConfig } from './app-config';
 import type { AppConfig, AppLayout } from './app-config';
 import {
     applyLayoutMode,
     setupLayoutControls,
-} from './layout-mode';
-import { setupTocToggle } from './toc-toggle';
+} from './components/layout-mode';
+import { setupTocToggle } from './components/toc-toggle';
 
 interface RenderPageOptions {
     hash?: string;

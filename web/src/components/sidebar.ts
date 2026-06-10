@@ -6,12 +6,12 @@ import {
     folderIcon,
     getContentScrollTop,
     readJSONScript,
-} from './util';
+} from '../util';
 import {
     persistSidebarCollapsed,
     persistFilesCollapsed,
     readSidebarPreferences,
-} from './preferences';
+} from '../preferences';
 
 // Debounce 工具函数
 function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): (...args: Parameters<T>) => void {

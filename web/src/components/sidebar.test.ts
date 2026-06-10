@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { JSDOM } from 'jsdom';
 import { bindTOCScrollSpy, highlightTOC, setupSidebarCollapse } from './sidebar';
 import { initSidebarResize } from './sidebar-resize';
-import { SIDEBAR_WIDTH_STORAGE_KEY } from './preferences';
+import { SIDEBAR_WIDTH_STORAGE_KEY } from '../preferences';
 
 describe('sidebar scroll behavior', () => {
     test('highlightTOC reads scroll position from content wrapper', () => {

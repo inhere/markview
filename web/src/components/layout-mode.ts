@@ -1,9 +1,9 @@
-import type { AppLayout } from './app-config';
+import type { AppLayout } from '../app-config';
 import {
     clearStoredLayoutMode,
     LAYOUT_MODE_STORAGE_KEY,
     persistLayoutMode,
-} from './preferences';
+} from '../preferences';
 
 interface StorageReaderWriter {
     getItem(key: string): string | null;

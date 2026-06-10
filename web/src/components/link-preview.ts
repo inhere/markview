@@ -1,18 +1,18 @@
-// web/src/link-preview.ts
+// web/src/components/link-preview.ts
 
-import { ensureHighlightLanguages, safeHighlightElement } from './highlight';
+import { ensureHighlightLanguages, safeHighlightElement } from '../highlight';
 import { enhanceMermaidContent } from './mermaid';
 import { enhanceCodeBlocks } from './code-copy';
 import {
     parsePageSnapshot,
     type PageSnapshot,
-} from './page';
-import { escapeHtml } from './util';
+} from '../page';
+import { escapeHtml } from '../util';
 import {
     DEFAULT_APP_CONFIG,
     normalizeIframeHosts,
     normalizePreviewExts,
-} from './app-config';
+} from '../app-config';
 
 async function enhancePreviewContent(contentRoot: HTMLElement) {
     ensureHighlightLanguages();

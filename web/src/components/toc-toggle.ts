@@ -1,4 +1,4 @@
-import type { AppLayout } from './app-config';
+import type { AppLayout } from '../app-config';
 
 interface TocToggleOptions {
     documentRef?: Document;

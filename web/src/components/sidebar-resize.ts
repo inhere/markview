@@ -3,7 +3,7 @@ import {
     MAX_SIDEBAR_WIDTH,
     DEFAULT_SIDEBAR_WIDTH,
     persistSidebarWidth,
-} from './preferences';
+} from '../preferences';
 
 const SIDEBAR_WIDTH_VAR = '--sidebar-width';
 const RESIZE_HANDLE_ID = 'sidebar-resize-handle';

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { JSDOM } from 'jsdom';
-import { LAYOUT_MODE_STORAGE_KEY } from './preferences';
+import { LAYOUT_MODE_STORAGE_KEY } from '../preferences';
 import {
     applyLayoutMode,
     setupLayoutControls,

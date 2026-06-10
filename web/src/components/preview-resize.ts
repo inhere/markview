@@ -4,7 +4,7 @@ import {
     MIN_PREVIEW_WIDTH,
     normalizePreviewWidth,
     persistPreviewWidth,
-} from './preferences';
+} from '../preferences';
 
 const PREVIEW_WIDTH_VAR = '--preview-width';
 const RESIZE_HANDLE_ID = 'preview-resize-handle';

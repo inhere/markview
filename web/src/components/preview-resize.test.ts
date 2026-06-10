@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { JSDOM } from 'jsdom';
-import { PREVIEW_WIDTH_STORAGE_KEY } from './preferences';
+import { PREVIEW_WIDTH_STORAGE_KEY } from '../preferences';
 import { initPreviewResize } from './preview-resize';
 
 describe('preview resize behavior', () => {
