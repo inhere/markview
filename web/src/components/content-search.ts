@@ -80,10 +80,15 @@ export function renderResults(response: SearchResponse, container: HTMLElement):
             `;
         }).join('');
 
-        return `
-            <div class="content-search-result-group">
+            return `
+                <div class="content-search-result-group">
                 <div class="content-search-file" data-file="${result.file}">
-                    <span class="file-icon">📄</span>
+                    <span class="file-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                    </span>
                     <span class="file-name">${result.file}</span>
                     <!-- 空 matches（纯 exclude 查询）显示 "file match"，否则显示匹配数量 -->
                     <span class="match-count">${result.matches.length === 0 ? 'file match' : result.matches.length}</span>
@@ -182,7 +187,7 @@ function closeResults(resultsContainer: HTMLElement, input: HTMLInputElement): v
 /** 更新清除按钮显示状态 */
 function updateClearButton(input: HTMLInputElement): void {
     const clearBtn = input.parentElement?.querySelector('.content-search-clear');
-    if (clearBtn instanceof HTMLElement) {
+    if (clearBtn && 'style' in clearBtn) {
         clearBtn.style.display = input.value.length > 0 ? 'block' : 'none';
     }
 }
@@ -193,6 +198,8 @@ export function setupContentSearch(): void {
         return;
     }
 
+    const trigger = document.getElementById('content-search-trigger') as HTMLButtonElement | null;
+    const backdrop = searchWrapper.querySelector('.content-search-backdrop') as HTMLButtonElement | null;
     const input = searchWrapper.querySelector('.content-search-input') as HTMLInputElement;
     const clearBtn = searchWrapper.querySelector('.content-search-clear') as HTMLButtonElement;
     const resultsContainer = searchWrapper.querySelector('.content-search-results') as HTMLElement;
@@ -200,6 +207,35 @@ export function setupContentSearch(): void {
     if (!input || !clearBtn || !resultsContainer) {
         return;
     }
+
+    const elementCtor = document.defaultView?.Element;
+    const htmlElementCtor = document.defaultView?.HTMLElement;
+
+    function isElement(value: EventTarget | null): value is Element {
+        return !!elementCtor && value instanceof elementCtor;
+    }
+
+    function isHTMLElement(value: Element | null | undefined): value is HTMLElement {
+        return !!htmlElementCtor && value instanceof htmlElementCtor;
+    }
+
+    function openSearch() {
+        searchWrapper.hidden = false;
+        trigger?.setAttribute('aria-expanded', 'true');
+        input.focus();
+    }
+
+    function closeSearch() {
+        closeResults(resultsContainer, input);
+        searchWrapper.hidden = true;
+        trigger?.setAttribute('aria-expanded', 'false');
+        trigger?.focus();
+    }
+
+    trigger?.setAttribute('aria-controls', 'content-search');
+    trigger?.setAttribute('aria-expanded', 'false');
+    trigger?.addEventListener('click', openSearch);
+    backdrop?.addEventListener('click', closeSearch);
 
     const debouncedSearch = debounce((query: string) => {
         performSearch(query, resultsContainer);
@@ -217,50 +253,55 @@ export function setupContentSearch(): void {
 
     input.addEventListener('keydown', (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
-            closeResults(resultsContainer, input);
-            input.blur();
+            closeSearch();
+        }
+    });
+
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+        const key = e.key.toLowerCase();
+        if ((e.ctrlKey || e.metaKey) && key === 'k') {
+            e.preventDefault();
+            openSearch();
+            return;
+        }
+        if (e.key === 'Escape' && !searchWrapper.hidden) {
+            e.preventDefault();
+            closeSearch();
         }
     });
 
     resultsContainer.addEventListener('click', (e: MouseEvent) => {
-        const target = e.target instanceof Element ? e.target : null;
+        const target = isElement(e.target) ? e.target : null;
 
         const contextLine = target?.closest('.context-line');
-        if (contextLine instanceof HTMLElement) {
+        if (isHTMLElement(contextLine)) {
             const matchItem = contextLine.closest('.content-search-match');
-            const file = matchItem instanceof HTMLElement ? matchItem.dataset.file : undefined;
+            const file = isHTMLElement(matchItem) ? matchItem.dataset.file : undefined;
             const line = contextLine.dataset.line;
             if (file && line) {
                 navigateToResult(file, parseInt(line, 10));
-                closeResults(resultsContainer, input);
+                closeSearch();
             }
             return;
         }
 
         const matchItem = target?.closest('.content-search-match');
-        if (matchItem instanceof HTMLElement) {
+        if (isHTMLElement(matchItem)) {
             const file = matchItem.dataset.file;
             const line = matchItem.dataset.line;
             if (file) {
                 navigateToResult(file, line ? parseInt(line, 10) : undefined);
-                closeResults(resultsContainer, input);
+                closeSearch();
             }
             return;
         }
 
         const fileItem = target?.closest('.content-search-file');
-        if (fileItem instanceof HTMLElement) {
+        if (isHTMLElement(fileItem)) {
             const group = fileItem.closest('.content-search-result-group');
-            if (group instanceof HTMLElement) {
+            if (isHTMLElement(group)) {
                 group.classList.toggle('expanded');
             }
-        }
-    });
-
-    document.addEventListener('click', (e: MouseEvent) => {
-        const target = e.target instanceof Element ? e.target : null;
-        if (!searchWrapper.contains(target)) {
-            resultsContainer.style.display = 'none';
         }
     });
 

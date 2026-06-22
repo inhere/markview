@@ -13,6 +13,12 @@
     <!-- Top Toolbar -->
     <div class="toolbar" id="toolbar">
         <div class="toolbar-header">
+          <button class="toolbar-toggle-btn content-search-trigger" id="content-search-trigger" type="button" title="Search content" aria-label="Search content">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="m20 20-3.5-3.5"></path>
+            </svg>
+          </button>
           <button class="toolbar-toggle-btn" id="toolbar-toggle" title="Settings">
             <svg class="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3"></circle>
@@ -158,18 +164,26 @@
         <!-- Main Content -->
         <main class="content-wrapper">
             <!-- Content Search -->
-            <div class="content-search-wrapper" id="content-search">
+            <div class="content-search-wrapper" id="content-search" hidden>
+                <button class="content-search-backdrop" type="button" aria-label="Close search"></button>
+                <section class="content-search-panel" role="dialog" aria-modal="true" aria-label="Search content">
                 <div class="content-search-box">
+                    <svg class="content-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <path d="m20 20-3.5-3.5"></path>
+                    </svg>
                     <input
                         type="text"
                         class="content-search-input"
                         id="content-search-input"
-                        placeholder="Search in files ..."
+                        placeholder="Search in files..."
                         autocomplete="off"
                     />
+                    <kbd class="content-search-shortcut">Esc</kbd>
                     <button class="content-search-clear" type="button" aria-label="Clear search">×</button>
                 </div>
                 <div class="content-search-results"></div>
+                </section>
             </div>
             <div class="content-inner">
                 <!-- inject the tempalte-main.html -->

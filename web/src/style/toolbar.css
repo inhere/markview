@@ -93,6 +93,13 @@
     background: var(--accent-subtle);
     color: var(--accent-primary);
 }
+.content-search-trigger {
+    display: inline-flex;
+}
+.content-search-trigger[aria-expanded="true"] {
+    background: var(--accent-subtle);
+    color: var(--accent-primary);
+}
 .toolbar-toggle-btn svg {
     width: 18px;
     height: 18px;

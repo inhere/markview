@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { JSDOM } from 'jsdom';
-import { renderResults } from './content-search';
+import { renderResults, setupContentSearch } from './content-search';
 import type { SearchResponse } from './content-search';
 
 /**
@@ -68,5 +68,87 @@ describe('renderResults match-count display', () => {
 
         // 核心断言：非空 matches 时应显示实际数量
         expect(matchCountEl?.textContent).toBe('2');
+    });
+});
+
+describe('setupContentSearch overlay controls', () => {
+    test('opens search overlay from trigger and focuses input', () => {
+        const dom = new JSDOM(`
+            <!DOCTYPE html>
+            <button id="content-search-trigger">Search</button>
+            <div id="content-search" hidden>
+                <button class="content-search-backdrop" type="button"></button>
+                <section class="content-search-panel">
+                    <input class="content-search-input" />
+                    <button class="content-search-clear" type="button"></button>
+                    <div class="content-search-results"></div>
+                </section>
+            </div>
+        `, { url: 'http://localhost/' });
+        globalThis.document = dom.window.document;
+        globalThis.window = dom.window as unknown as Window & typeof globalThis;
+
+        setupContentSearch();
+
+        const wrapper = dom.window.document.getElementById('content-search') as HTMLElement;
+        const input = dom.window.document.querySelector('.content-search-input') as HTMLInputElement;
+        const trigger = dom.window.document.getElementById('content-search-trigger') as HTMLButtonElement;
+
+        trigger.click();
+
+        expect(wrapper.hidden).toBe(false);
+        expect(dom.window.document.activeElement).toBe(input);
+    });
+
+    test('closes search overlay on Escape and restores trigger focus', () => {
+        const dom = new JSDOM(`
+            <!DOCTYPE html>
+            <button id="content-search-trigger">Search</button>
+            <div id="content-search" hidden>
+                <button class="content-search-backdrop" type="button"></button>
+                <section class="content-search-panel">
+                    <input class="content-search-input" value="layout" />
+                    <button class="content-search-clear" type="button"></button>
+                    <div class="content-search-results"><div>result</div></div>
+                </section>
+            </div>
+        `, { url: 'http://localhost/' });
+        globalThis.document = dom.window.document;
+        globalThis.window = dom.window as unknown as Window & typeof globalThis;
+
+        setupContentSearch();
+
+        const wrapper = dom.window.document.getElementById('content-search') as HTMLElement;
+        const trigger = dom.window.document.getElementById('content-search-trigger') as HTMLButtonElement;
+
+        trigger.click();
+        dom.window.document.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape' }));
+
+        expect(wrapper.hidden).toBe(true);
+        expect(dom.window.document.activeElement).toBe(trigger);
+    });
+
+    test('opens search overlay with Ctrl+K', () => {
+        const dom = new JSDOM(`
+            <!DOCTYPE html>
+            <button id="content-search-trigger">Search</button>
+            <div id="content-search" hidden>
+                <button class="content-search-backdrop" type="button"></button>
+                <section class="content-search-panel">
+                    <input class="content-search-input" />
+                    <button class="content-search-clear" type="button"></button>
+                    <div class="content-search-results"></div>
+                </section>
+            </div>
+        `, { url: 'http://localhost/' });
+        globalThis.document = dom.window.document;
+        globalThis.window = dom.window as unknown as Window & typeof globalThis;
+
+        setupContentSearch();
+
+        const wrapper = dom.window.document.getElementById('content-search') as HTMLElement;
+        dom.window.document.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+
+        expect(wrapper.hidden).toBe(false);
     });
 });

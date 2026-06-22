@@ -51,6 +51,13 @@ describe('layout CSS modes', () => {
         expect(toolbarCssText).not.toMatch(/\.toolbar\.expanded\s*\{[^}]*opacity:\s*0\.5;/s);
     });
 
+    test('defines content search trigger and centered overlay styles', () => {
+        expect(toolbarCssText).toMatch(/\.content-search-trigger\s*\{[^}]*display:\s*inline-flex;/s);
+        expect(overlaysCssText).toMatch(/\.content-search-wrapper\[hidden\]\s*\{[^}]*display:\s*none;/s);
+        expect(overlaysCssText).toMatch(/\.content-search-panel\s*\{[^}]*position:\s*fixed;[^}]*top:\s*14vh;[^}]*left:\s*50%;[^}]*width:\s*min\(720px,\s*calc\(100vw - 32px\)\);[^}]*transform:\s*translateX\(-50%\);/s);
+        expect(overlaysCssText).toMatch(/@media \(max-width:\s*1023px\)\s*\{[\s\S]*\.content-search-panel\s*\{[^}]*top:\s*12px;[^}]*bottom:\s*12px;/s);
+    });
+
     test('defines desktop rules for toc-middle and floating toc-right', () => {
         expect(cssText).toContain('@media (min-width: 1024px)');
         expectRule(/--toc-width:\s*280px;/);
@@ -93,7 +100,7 @@ describe('layout CSS modes', () => {
         expectRule(/html\[data-layout="toc-right"\]\s+body\.preview-active\s+\.toc-pane\s*\{[^}]*right:\s*calc\(var\(--preview-width\) \+ 16px\);/s);
         expectRule(/html\[data-layout="toc-right"\]\s+body\.preview-active:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*right:\s*var\(--preview-width\);[^}]*transform:\s*translateX\(calc\(100% - 44px\)\);/s);
         expectRule(/\.content-wrapper\s*\{[^}]*position:\s*relative;[^}]*overflow:\s*auto;/s);
-        expectRule(/\.content-search-wrapper\s*\{[^}]*position:\s*absolute;[^}]*left:\s*30px;/s);
+        expectRule(/\.content-search-wrapper\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*0;/s);
     });
 
     test('lets html iframe previews fill the preview panel height', () => {

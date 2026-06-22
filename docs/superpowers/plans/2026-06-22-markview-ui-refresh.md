@@ -402,7 +402,7 @@ Expected: commit succeeds. Do not stage unrelated files.
 - Modify: `web/src/style/overlays.css`
 - Modify: `web/src/layout-css.test.ts`
 
-- [ ] **Step 1: Add behavior tests for content search overlay**
+- [x] **Step 1: Add behavior tests for content search overlay**
 
 Append to `web/src/components/content-search.test.ts`:
 
@@ -492,7 +492,7 @@ describe('setupContentSearch overlay controls', () => {
 });
 ```
 
-- [ ] **Step 2: Add CSS tests for toolbar search and overlay**
+- [x] **Step 2: Add CSS tests for toolbar search and overlay**
 
 Add to `web/src/layout-css.test.ts`:
 
@@ -505,7 +505,7 @@ test('defines content search trigger and centered overlay styles', () => {
 });
 ```
 
-- [ ] **Step 3: Run tests to verify failures before implementation**
+- [x] **Step 3: Run tests to verify failures before implementation**
 
 Run:
 
@@ -516,7 +516,7 @@ bun test src/components/content-search.test.ts src/layout-css.test.ts
 
 Expected: FAIL because trigger, overlay behavior, and overlay CSS are not implemented yet.
 
-- [ ] **Step 4: Update toolbar template with Search icon**
+- [x] **Step 4: Update toolbar template with Search icon**
 
 Modify `web/template.html` inside `.toolbar-header`, before `#toolbar-toggle`:
 
@@ -531,7 +531,7 @@ Modify `web/template.html` inside `.toolbar-header`, before `#toolbar-toggle`:
 
 Do not remove `#toolbar-toggle`; settings panel behavior remains tied to the existing button.
 
-- [ ] **Step 5: Replace current content search DOM with overlay DOM**
+- [x] **Step 5: Replace current content search DOM with overlay DOM**
 
 Modify the current `#content-search` block in `web/template.html` to:
 
@@ -561,7 +561,7 @@ Modify the current `#content-search` block in `web/template.html` to:
 
 Place this block near the top of `<main class="content-wrapper">` as it is today, or directly after the toolbar. Because the panel is `fixed`, visual position does not depend on DOM location.
 
-- [ ] **Step 6: Implement overlay open/close in content-search.ts**
+- [x] **Step 6: Implement overlay open/close in content-search.ts**
 
 Modify `web/src/components/content-search.ts` inside `setupContentSearch()`.
 
@@ -615,7 +615,7 @@ Update existing input Escape handler to call `closeSearch()` instead of only `cl
 
 Keep existing `input` listener, clear button listener, `performSearch()`, and result click navigation.
 
-- [ ] **Step 7: Replace search result emoji icon**
+- [x] **Step 7: Replace search result emoji icon**
 
 Modify `renderResults()` in `web/src/components/content-search.ts`.
 
@@ -648,7 +648,7 @@ Add CSS in `web/src/style/overlays.css`:
 }
 ```
 
-- [ ] **Step 8: Add overlay CSS**
+- [x] **Step 8: Add overlay CSS**
 
 Modify `web/src/style/toolbar.css`:
 
@@ -750,7 +750,7 @@ Modify `web/src/style/overlays.css`:
 
 Remove or override old `.content-search-wrapper { position: absolute; top: 6px; left: 30px; }` and old focus-width behavior. Search overlay width is fixed by `.content-search-panel`, not by input focus.
 
-- [ ] **Step 9: Run content search and CSS tests**
+- [x] **Step 9: Run content search and CSS tests**
 
 Run:
 
@@ -761,7 +761,7 @@ bun test src/components/content-search.test.ts src/layout-css.test.ts
 
 Expected: all tests pass.
 
-- [ ] **Step 10: Run frontend build**
+- [x] **Step 10: Run frontend build**
 
 Run:
 
@@ -772,7 +772,7 @@ bun run build
 
 Expected: build exits 0.
 
-- [ ] **Step 11: Commit search overlay**
+- [x] **Step 11: Commit search overlay**
 
 Run:
 

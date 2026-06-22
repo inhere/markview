@@ -902,11 +902,35 @@ div.mermaid {
 
 /* ===== Content Search ===== */
 
+.content-search-wrapper[hidden] {
+    display: none;
+}
+
 .content-search-wrapper {
-    position: absolute;
-    top: 6px;
-    left: 30px;
-    z-index: 100;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+}
+
+.content-search-backdrop {
+    position: fixed;
+    inset: 0;
+    border: 0;
+    background: rgba(47, 49, 40, 0.18);
+    backdrop-filter: blur(2px);
+}
+
+.content-search-panel {
+    position: fixed;
+    top: 14vh;
+    left: 50%;
+    width: min(720px, calc(100vw - 32px));
+    transform: translateX(-50%);
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    background: var(--bg-paper);
+    box-shadow: 0 24px 70px rgba(70, 60, 38, 0.22);
 }
 
 @media (min-width: 1024px) {
@@ -972,49 +996,57 @@ div.mermaid {
 }
 
 .content-search-box {
-    width: 140px;
-    display: flex;
+    width: 100%;
+    height: 56px;
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) auto 28px;
     align-items: center;
-    position: relative;
-    height: 32px;
-    transition: width 0.2s ease;
+    gap: 10px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border-light);
 }
 
-.content-search-box:focus-within {
-    width: 260px;
+.content-search-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--accent-primary);
 }
 
 .content-search-input {
     width: 100%;
-    height: 100%;
-    padding: 0 32px 0 12px;
-    border: 1px solid var(--border-light);
-    border-radius: 6px;
-    background: none;
-    font-size: 14px;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 17px;
     font-family: var(--font-ui);
-    color: var(--text-body);
+    color: var(--text-heading);
     outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .content-search-input:focus {
-    background: rgba(var(--bg-surface-rgb), 0.75);
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px var(--accent-subtle);
+    box-shadow: none;
 }
 
 .content-search-input::placeholder {
     color: var(--text-muted);
 }
 
+.content-search-shortcut {
+    border: 1px solid var(--border-light);
+    border-radius: 5px;
+    padding: 3px 6px;
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1;
+}
+
 .content-search-clear {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     border: none;
     background: transparent;
     color: var(--text-muted);
@@ -1038,19 +1070,16 @@ div.mermaid {
 /* Results Panel */
 .content-search-results {
     display: none;
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    width: 55vw;
-    min-width: 680px;
-    max-width: 960px;
-    max-height: 650px;
+    position: static;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    max-height: min(560px, 62vh);
     overflow-y: auto;
     background: var(--bg-paper);
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    z-index: 50;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .content-search-header {
@@ -1083,7 +1112,16 @@ div.mermaid {
 }
 
 .file-icon {
-    font-size: 14px;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+.file-icon svg {
+    width: 16px;
+    height: 16px;
+    display: block;
 }
 
 .file-name {
@@ -1169,6 +1207,21 @@ div.mermaid {
 
 .content-search-error {
     color: var(--status-warn);
+}
+
+@media (max-width: 1023px) {
+    .content-search-panel {
+        top: 12px;
+        bottom: 12px;
+        width: calc(100vw - 24px);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .content-search-results {
+        max-height: none;
+        flex: 1;
+    }
 }
 
 /* ===== File Change Toast Notification ===== */
