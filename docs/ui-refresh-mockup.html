@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MarkView UI Refresh Mockup</title>
+  <style>
+    :root {
+      --bg-canvas: #f3f1ea;
+      --bg-paper: #fffdf6;
+      --bg-surface: #fbf8ef;
+      --border: #d8d1c2;
+      --border-soft: #e7dfcf;
+      --text-strong: #22251f;
+      --text-body: #3f443a;
+      --text-muted: #74786c;
+      --accent: #2f6f68;
+      --accent-soft: #e8f2ee;
+      --accent-line: #a8c8bf;
+      --live: #0f9f6e;
+      --warn: #b7791f;
+      --shadow: 0 16px 40px rgba(70, 60, 38, 0.08);
+      --mono: "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+      --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg-canvas);
+      color: var(--text-body);
+      font-family: var(--ui);
+      overflow: hidden;
+    }
+    button, input, select { font: inherit; }
+    button, a, select { cursor: pointer; }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-columns: 292px minmax(0, 1fr) 260px;
+      grid-template-rows: 1fr;
+    }
+
+    .sidebar {
+      min-width: 0;
+      border-right: 1px solid var(--border);
+      background: var(--bg-surface);
+      display: flex;
+      flex-direction: column;
+    }
+    .brand {
+      height: 56px;
+      padding: 0 14px 0 18px;
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-mark {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #2f6f68, #2d332b);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .brand-title {
+      min-width: 0;
+      flex: 1;
+      color: var(--text-strong);
+      font-size: 15px;
+      font-weight: 760;
+      letter-spacing: -0.01em;
+    }
+    .live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      border: 1px solid #a7f3d0;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font: 11px/1 var(--mono);
+    }
+    .live::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--live);
+      box-shadow: 0 0 0 3px rgba(15, 159, 110, 0.12);
+    }
+
+    .panel {
+      margin: 12px;
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      background: var(--bg-paper);
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel.files { flex: 1; }
+    .panel-head {
+      min-height: 42px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-label {
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 760;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .search {
+      min-width: 0;
+      flex: 1;
+      height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0 9px;
+      color: var(--text-body);
+      background: #fbfcfe;
+      font-size: 13px;
+    }
+    .tree {
+      padding: 8px;
+      overflow: auto;
+    }
+    .tree-row {
+      height: 32px;
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      align-items: center;
+      gap: 6px;
+      border-radius: 6px;
+      padding: 0 8px 0 2px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    .tree-row:hover { background: #f6f1e6; color: var(--text-strong); }
+    .tree-row.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      box-shadow: inset 3px 0 0 var(--accent);
+      font-weight: 650;
+    }
+    .tree-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .child { margin-left: 18px; border-left: 1px solid var(--border-soft); padding-left: 8px; }
+
+    .content {
+      min-width: 0;
+      overflow: auto;
+      padding: clamp(20px, 4vw, 52px);
+      position: relative;
+    }
+    .top-actions {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      justify-content: flex-end;
+      pointer-events: none;
+    }
+    .toolbar {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+    .tool-btn, .seg-btn {
+      height: 30px;
+      min-width: 30px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 9px;
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .tool-btn:hover, .seg-btn:hover { color: var(--accent); background: var(--accent-soft); }
+    .tool-btn.active {
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-color: var(--accent-line);
+    }
+    .segmented {
+      display: inline-flex;
+      gap: 2px;
+      padding: 2px;
+      border: 1px solid var(--border-soft);
+      border-radius: 7px;
+      background: #f6f1e6;
+    }
+    .seg-btn.active {
+      color: var(--accent);
+      background: var(--bg-paper);
+      border-color: var(--accent-line);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+    .toolbar select {
+      height: 30px;
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      background: var(--bg-paper);
+      color: var(--text-body);
+      padding: 0 8px;
+      font-size: 12px;
+    }
+    .search-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: rgba(47, 49, 40, 0.18);
+      backdrop-filter: blur(2px);
+      pointer-events: none;
+    }
+    .search-panel {
+      position: fixed;
+      top: 14vh;
+      left: 50%;
+      z-index: 21;
+      width: min(720px, calc(100vw - 32px));
+      transform: translateX(-50%);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-paper);
+      box-shadow: 0 24px 70px rgba(70, 60, 38, 0.22);
+    }
+    .global-search-box {
+      height: 56px;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .global-search-box svg {
+      color: var(--accent);
+    }
+    .global-search-box input {
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text-strong);
+      font-size: 17px;
+    }
+    .global-search-box kbd {
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 3px 6px;
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      font: 11px/1 var(--mono);
+    }
+    .global-search-results {
+      max-height: min(560px, 62vh);
+      overflow: auto;
+      padding: 8px;
+    }
+    .search-stat {
+      padding: 8px 10px 10px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+    .result-file {
+      margin: 0 0 6px;
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      background: #fffbf1;
+      overflow: hidden;
+    }
+    .result-title {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      color: var(--text-strong);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .result-count {
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .result-line {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 10px;
+      padding: 7px 12px;
+      border-top: 1px solid var(--border-soft);
+      color: var(--text-body);
+      font: 12px/1.5 var(--mono);
+    }
+    .result-line:hover {
+      background: var(--accent-soft);
+    }
+    .result-line-num {
+      color: var(--text-muted);
+      text-align: right;
+      user-select: none;
+    }
+    .result-line mark {
+      border-radius: 3px;
+      background: #d9ece5;
+      color: #1f5d55;
+      padding: 0 2px;
+    }
+
+    .paper-wrap {
+      width: min(100%, 960px);
+      margin: 0 auto;
+      position: relative;
+    }
+    .raw-link {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-paper);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .raw-link:hover { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+    .paper {
+      background: var(--bg-paper);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: clamp(34px, 5vw, 72px);
+    }
+    .paper h1 {
+      margin: 0 0 22px;
+      color: var(--text-strong);
+      font-size: clamp(30px, 4vw, 44px);
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+    }
+    .paper h2 {
+      margin: 42px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-soft);
+      color: var(--text-strong);
+      font-size: 22px;
+      letter-spacing: -0.015em;
+    }
+    .paper p, .paper li {
+      font-size: 16px;
+      line-height: 1.72;
+    }
+    .paper code {
+      border: 1px solid #d8d1c2;
+      border-radius: 5px;
+      padding: 2px 5px;
+      background: #f7f9fc;
+      font-family: var(--mono);
+      font-size: 0.9em;
+    }
+    .paper pre {
+      overflow: auto;
+      border: 1px solid #d8d1c2;
+      border-radius: 8px;
+      background: #232821;
+      color: #e8e4d7;
+      padding: 16px;
+      line-height: 1.58;
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+    .note {
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      border-radius: 6px;
+      padding: 12px 14px;
+      color: #28524e;
+    }
+    .meta {
+      width: min(100%, 960px);
+      margin: 18px auto 0;
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .toc {
+      min-width: 0;
+      border-left: 1px solid var(--border);
+      background: var(--bg-surface);
+      display: flex;
+      flex-direction: column;
+    }
+    .toc .panel { margin: 12px; flex: 1; }
+    .toc-list { list-style: none; margin: 0; padding: 8px; }
+    .toc-list a {
+      display: block;
+      padding: 7px 10px;
+      border-left: 3px solid transparent;
+      border-radius: 0 6px 6px 0;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .toc-list a:hover { background: #f6f1e6; color: var(--text-strong); }
+    .toc-list a.active {
+      background: var(--accent-soft);
+      border-left-color: var(--accent);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .toc-list .sub { padding-left: 24px; font-size: 12px; }
+
+    @media (max-width: 1023px) {
+      body { overflow: auto; }
+      .app { display: block; min-height: 100%; }
+      .sidebar, .toc { display: none; }
+      .content { padding: 0; overflow: visible; }
+      .top-actions { position: fixed; top: 12px; right: 12px; }
+      .segmented, .toolbar select { display: none; }
+      .search-overlay { background: rgba(47, 49, 40, 0.22); }
+      .search-panel {
+        top: 12px;
+        bottom: 12px;
+        width: calc(100vw - 24px);
+        display: flex;
+        flex-direction: column;
+      }
+      .global-search-results {
+        max-height: none;
+        flex: 1;
+      }
+      .paper-wrap { width: 100%; }
+      .raw-link { top: 58px; right: 14px; }
+      .paper { border: 0; border-radius: 0; box-shadow: none; padding: 76px 20px 32px; }
+      .meta { padding: 0 20px 24px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <header class="brand">
+        <div class="brand-mark">M</div>
+        <div class="brand-title">MarkView</div>
+        <div class="live">Live</div>
+      </header>
+
+      <section class="panel files">
+        <div class="panel-head">
+          <span class="panel-label">Files</span>
+          <input class="search" type="search" placeholder="Search file..." aria-label="Search files">
+        </div>
+        <nav class="tree" aria-label="Files">
+          <div class="tree-row"><span>&gt;</span><span class="tree-name">docs</span></div>
+          <div class="child">
+            <div class="tree-row active"><span></span><span class="tree-name">ui-refresh-design.md</span></div>
+            <div class="tree-row"><span></span><span class="tree-name">config-files.md</span></div>
+            <div class="tree-row"><span></span><span class="tree-name">search-box.md</span></div>
+          </div>
+          <div class="tree-row"><span>v</span><span class="tree-name">example</span></div>
+          <div class="child">
+            <div class="tree-row"><span></span><span class="tree-name">index.md</span></div>
+            <div class="tree-row"><span></span><span class="tree-name">guide.md</span></div>
+          </div>
+          <div class="tree-row"><span>&gt;</span><span class="tree-name">web</span></div>
+        </nav>
+      </section>
+    </aside>
+
+    <main class="content">
+      <div class="top-actions">
+        <div class="toolbar" aria-label="View controls">
+          <button class="tool-btn active" title="Search content" aria-label="Search content">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </button>
+          <button class="tool-btn" title="Settings" aria-label="Settings">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1A2 2 0 1 1 7.1 4.3l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1Z"/></svg>
+          </button>
+          <div class="segmented" role="group" aria-label="Layout">
+            <button class="seg-btn active">Compact</button>
+            <button class="seg-btn">TOC Mid</button>
+            <button class="seg-btn">TOC Right</button>
+          </div>
+          <button class="tool-btn" title="Decrease font" aria-label="Decrease font">A-</button>
+          <button class="tool-btn" title="Increase font" aria-label="Increase font">A+</button>
+          <select aria-label="Color scheme">
+            <option>System</option>
+            <option>Light</option>
+            <option>Dark</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="search-overlay" aria-hidden="true"></div>
+      <section class="search-panel" aria-label="Content search dialog">
+        <div class="global-search-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" value="layout" aria-label="Search in files">
+          <kbd>Esc</kbd>
+        </div>
+        <div class="global-search-results">
+          <div class="search-stat">8 results / 3 files / 24ms</div>
+          <article class="result-file">
+            <div class="result-title">
+              <span>docs/ui-refresh-design.md</span>
+              <span class="result-count">4</span>
+            </div>
+            <div class="result-line">
+              <span class="result-line-num">42</span>
+              <span>The shell keeps three stable regions: files, document, and table of contents.</span>
+            </div>
+            <div class="result-line">
+              <span class="result-line-num">71</span>
+              <span>The <mark>layout</mark> controls remain in the settings panel.</span>
+            </div>
+          </article>
+          <article class="result-file">
+            <div class="result-title">
+              <span>README.md</span>
+              <span class="result-count">3</span>
+            </div>
+            <div class="result-line">
+              <span class="result-line-num">18</span>
+              <span>MarkView provides live preview, file navigation, and <mark>layout</mark> switching.</span>
+            </div>
+            <div class="result-line">
+              <span class="result-line-num">64</span>
+              <span>Use compact mode for reading and TOC right for long documents.</span>
+            </div>
+          </article>
+          <article class="result-file">
+            <div class="result-title">
+              <span>docs/config-files.md</span>
+              <span class="result-count">1</span>
+            </div>
+            <div class="result-line">
+              <span class="result-line-num">93</span>
+              <span>The default UI <mark>layout</mark> can be configured per project.</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <div class="paper-wrap">
+        <a class="raw-link" href="#">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          View raw
+        </a>
+        <article class="paper">
+          <h1>UI Refresh Design</h1>
+          <p>MarkView is a local Markdown reader for developers. The refreshed interface keeps the current workflow intact while making reading, navigation, and controls quieter.</p>
+          <div class="note">The main change is visual hierarchy: content leads, navigation supports, controls stay available without competing for attention.</div>
+          <h2>Layout</h2>
+          <p>The shell keeps three stable regions: files, document, and table of contents. The center document uses a softer page surface with responsive padding so long documents stay readable.</p>
+          <pre><code>.paper {
+  border-radius: 8px;
+  padding: clamp(34px, 5vw, 72px);
+}</code></pre>
+          <h2>Controls</h2>
+          <p>The toolbar becomes a compact control strip with segmented layout buttons and consistent icon sizing. Focus rings and touch targets are explicit.</p>
+          <ul>
+            <li>Use SVG icons instead of emoji UI affordances.</li>
+            <li>Keep native selects for color and theme choices.</li>
+            <li>Disable heavy motion when reduced motion is requested.</li>
+          </ul>
+        </article>
+      </div>
+      <div class="meta">ui-refresh-design.md / 18 KB / updated today</div>
+    </main>
+
+    <aside class="toc">
+      <section class="panel">
+        <div class="panel-head">
+          <span class="panel-label">On This Page</span>
+        </div>
+        <nav aria-label="Table of contents">
+          <ul class="toc-list">
+            <li><a class="active" href="#">UI Refresh Design</a></li>
+            <li><a href="#">Layout</a></li>
+            <li><a class="sub" href="#">Document surface</a></li>
+            <li><a class="sub" href="#">Responsive spacing</a></li>
+            <li><a href="#">Controls</a></li>
+            <li><a href="#">Accessibility</a></li>
+          </ul>
+        </nav>
+      </section>
+    </aside>
+  </div>
+</body>
+</html>

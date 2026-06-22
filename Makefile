@@ -5,7 +5,7 @@ GOEXE = $(shell go env GOEXE)
 BINARY  := $(APP)$(GOEXE)
 
 # Build metadata
-BUILD_TIME := $(shell date +%Y/%m/%d-%H:%M:%S)
+BUILD_TIME := $(shell date +%Y-%m-%dT%H:%M:%S)
 GIT_HASH  := $(shell git rev-parse --short=8 HEAD 2>/dev/null || echo "unknown")
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null | sed 's/^v//' || echo "dev-$(GIT_HASH)")
 
