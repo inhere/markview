@@ -791,7 +791,7 @@ Expected: commit succeeds. Do not stage unrelated files.
 **Files:**
 - Modify: `docs/superpowers/plans/2026-06-22-markview-ui-refresh.md`
 
-- [ ] **Step 1: Run all frontend tests**
+- [x] **Step 1: Run all frontend tests**
 
 Run:
 
@@ -802,7 +802,7 @@ bun test
 
 Expected: all frontend tests pass.
 
-- [ ] **Step 2: Run frontend build**
+- [x] **Step 2: Run frontend build**
 
 Run:
 
@@ -813,7 +813,7 @@ bun run build
 
 Expected: build exits 0.
 
-- [ ] **Step 3: Run Go tests**
+- [x] **Step 3: Run Go tests**
 
 Run:
 
@@ -823,7 +823,7 @@ go test ./...
 
 Expected: all Go packages pass.
 
-- [ ] **Step 4: Manually inspect key UI states**
+- [x] **Step 4: Manually inspect key UI states**
 
 Run built app according to project convention:
 
@@ -844,11 +844,11 @@ sidebar expanded/collapsed
 
 Stop the process after inspection.
 
-- [ ] **Step 5: Update plan checkboxes**
+- [x] **Step 5: Update plan checkboxes**
 
 Modify this file and mark completed steps with `[x]`. Do not mark unrun validation steps complete.
 
-- [ ] **Step 6: Commit plan progress**
+- [x] **Step 6: Commit plan progress**
 
 Run:
 
