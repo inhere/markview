@@ -1,20 +1,20 @@
 
 :root {
     /* Palette - Light Theme */
-    --bg-canvas: #f8f9fa;
-    --bg-paper: #ffffff;
-    --bg-surface: #ffffff;
+    --bg-canvas: #f3f1ea;
+    --bg-paper: #fffdf6;
+    --bg-surface: #fbf8ef;
 
-    --border-light: #e2e8f0;
-    --border-focus: #cbd5e1;
+    --border-light: #d8d1c2;
+    --border-focus: #a8c8bf;
 
-    --text-heading: #0f172a;
-    --text-body: #334155;
-    --text-muted: #64748b;
+    --text-heading: #22251f;
+    --text-body: #3f443a;
+    --text-muted: #74786c;
 
-    --accent-primary: #0f62fe;
-    --accent-subtle: #eff6ff;
-    --accent-border: #bfdbfe;
+    --accent-primary: #2f6f68;
+    --accent-subtle: #e8f2ee;
+    --accent-border: #a8c8bf;
 
     --status-live: #10b981;
     --status-warn: #f59e0b;

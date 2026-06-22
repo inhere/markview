@@ -185,7 +185,7 @@ Expected: commit succeeds. Do not stage `Makefile` or `docs/TODO.md`.
 - Modify: `web/src/layout-css.test.ts`
 - Modify: `web/template-main.html`
 
-- [ ] **Step 1: 为护眼默认 token 写 CSS 测试**
+- [x] **Step 1: 为护眼默认 token 写 CSS 测试**
 
 Add to `web/src/layout-css.test.ts`:
 
@@ -210,7 +210,7 @@ test('keeps reader surface quiet and responsive', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail before implementation**
+- [x] **Step 2: Run tests to verify they fail before implementation**
 
 Run:
 
@@ -221,7 +221,7 @@ bun test src/layout-css.test.ts
 
 Expected: FAIL because new tokens and reader rules are not implemented yet.
 
-- [ ] **Step 3: Update default tokens**
+- [x] **Step 3: Update default tokens**
 
 Modify `web/src/style/tokens.css` default `:root` values:
 
@@ -246,7 +246,7 @@ Modify `web/src/style/tokens.css` default `:root` values:
 
 Keep existing dark/system/theme overrides after the default block. Do not delete `github`, `one-dark`, `dracula`, or `nord`.
 
-- [ ] **Step 4: Update content layout spacing**
+- [x] **Step 4: Update content layout spacing**
 
 Modify `web/src/style/layout.css` or `web/src/style/content.css` according to where the selectors were moved:
 
@@ -264,7 +264,7 @@ Modify `web/src/style/layout.css` or `web/src/style/content.css` according to wh
 
 Keep `width`, `max-width`, `border`, and `margin-bottom` behavior compatible with existing layout controls.
 
-- [ ] **Step 5: Reduce toolbar visual noise**
+- [x] **Step 5: Reduce toolbar visual noise**
 
 Modify `web/src/style/toolbar.css`:
 
@@ -293,7 +293,7 @@ If `color-mix()` causes build or browser concern during verification, use:
 
 The fallback is acceptable because the UI goal is low distraction, not glass effect.
 
-- [ ] **Step 6: Update sidebar and TOC surface styling**
+- [x] **Step 6: Update sidebar and TOC surface styling**
 
 Modify `web/src/style/sidebar.css`:
 
@@ -318,7 +318,7 @@ Modify `web/src/style/sidebar.css`:
 
 Use the existing active/current class names present in the moved CSS. If the current file selector differs, update the selector to the existing class rather than adding a new class.
 
-- [ ] **Step 7: Replace raw Markdown emoji with SVG icon**
+- [x] **Step 7: Replace raw Markdown emoji with SVG icon**
 
 Modify `web/template-main.html`.
 
@@ -356,7 +356,7 @@ Add or keep CSS in `web/src/style/content.css`:
 }
 ```
 
-- [ ] **Step 8: Run visual CSS tests**
+- [x] **Step 8: Run visual CSS tests**
 
 Run:
 
@@ -367,7 +367,7 @@ bun test src/layout-css.test.ts
 
 Expected: all tests pass.
 
-- [ ] **Step 9: Run frontend build**
+- [x] **Step 9: Run frontend build**
 
 Run:
 
@@ -378,7 +378,7 @@ bun run build
 
 Expected: build exits 0.
 
-- [ ] **Step 10: Commit visual token refresh**
+- [x] **Step 10: Commit visual token refresh**
 
 Run:
 

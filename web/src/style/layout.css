@@ -34,6 +34,16 @@ body.sidebar-collapsed .app-shell {
     grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
 }
 
+.content-wrapper {
+    grid-area: content;
+    padding: clamp(20px, 4vw, 52px);
+    display: flex;
+    justify-content: center;
+    min-height: 0;
+    position: relative;
+    overflow: auto;
+}
+
 .files-pane {
     grid-area: files;
     min-width: 0;

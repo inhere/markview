@@ -36,6 +36,21 @@ describe('layout CSS modes', () => {
         expect(appCssText.indexOf('content.css')).toBeLessThan(appCssText.indexOf('overlays.css'));
     });
 
+    test('uses warm low-glare default theme tokens', () => {
+        expect(tokensCssText).toContain('--bg-canvas: #f3f1ea;');
+        expect(tokensCssText).toContain('--bg-paper: #fffdf6;');
+        expect(tokensCssText).toContain('--bg-surface: #fbf8ef;');
+        expect(tokensCssText).toContain('--text-body: #3f443a;');
+        expect(tokensCssText).toContain('--accent-primary: #2f6f68;');
+        expect(tokensCssText).toContain('--accent-subtle: #e8f2ee;');
+    });
+
+    test('keeps reader surface quiet and responsive', () => {
+        expect(contentCssText).toMatch(/\.paper\s*\{[^}]*border-radius:\s*8px;[^}]*padding:\s*clamp\(34px,\s*5vw,\s*72px\);/s);
+        expect(layoutCssText).toMatch(/\.content-wrapper\s*\{[^}]*padding:\s*clamp\(20px,\s*4vw,\s*52px\);/s);
+        expect(toolbarCssText).not.toMatch(/\.toolbar\.expanded\s*\{[^}]*opacity:\s*0\.5;/s);
+    });
+
     test('defines desktop rules for toc-middle and floating toc-right', () => {
         expect(cssText).toContain('@media (min-width: 1024px)');
         expectRule(/--toc-width:\s*280px;/);

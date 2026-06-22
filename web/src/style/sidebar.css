@@ -79,10 +79,9 @@
     display: flex;
     flex-direction: column;
     border: 1px solid var(--border-light);
-    border-radius: 14px;
-    background:
-        linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(255, 255, 255, 1) 34%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    border-radius: 8px;
+    background: var(--bg-paper);
+    box-shadow: none;
     overflow: hidden;
 }
 
@@ -522,7 +521,7 @@ body.sidebar-is-resizing .sidebar {
     grid-template-columns: 22px minmax(0, 1fr);
     align-items: center;
     column-gap: 6px;
-    min-height: 30px;
+    min-height: 32px;
 }
 
 .file-tree-children {
@@ -597,8 +596,8 @@ body.sidebar-is-resizing .sidebar {
 .tree-link.ancestor,
 .tree-label.ancestor {
     color: var(--text-heading);
-    background: rgba(15, 98, 254, 0.06);
-    border-color: rgba(191, 219, 254, 0.65);
+    background: var(--accent-subtle);
+    border-color: var(--accent-border);
 }
 
 .tree-link.ancestor .tree-icon,
