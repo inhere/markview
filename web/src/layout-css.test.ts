@@ -1,11 +1,41 @@
 import { describe, expect, test } from 'bun:test';
-import cssText from './style/app.css' with { type: 'text' };
+import appCssText from './style/app.css' with { type: 'text' };
+import tokensCssText from './style/tokens.css' with { type: 'text' };
+import layoutCssText from './style/layout.css' with { type: 'text' };
+import toolbarCssText from './style/toolbar.css' with { type: 'text' };
+import sidebarCssText from './style/sidebar.css' with { type: 'text' };
+import contentCssText from './style/content.css' with { type: 'text' };
+import overlaysCssText from './style/overlays.css' with { type: 'text' };
+
+const cssText = [
+    appCssText,
+    tokensCssText,
+    layoutCssText,
+    toolbarCssText,
+    sidebarCssText,
+    contentCssText,
+    overlaysCssText,
+].join('\n');
 
 function expectRule(pattern: RegExp) {
     expect(cssText).toMatch(pattern);
 }
 
 describe('layout CSS modes', () => {
+    test('keeps app css as ordered style entrypoint', () => {
+        expect(appCssText).toContain('@import "./tokens.css";');
+        expect(appCssText).toContain('@import "./layout.css";');
+        expect(appCssText).toContain('@import "./toolbar.css";');
+        expect(appCssText).toContain('@import "./sidebar.css";');
+        expect(appCssText).toContain('@import "./content.css";');
+        expect(appCssText).toContain('@import "./overlays.css";');
+        expect(appCssText.indexOf('tokens.css')).toBeLessThan(appCssText.indexOf('layout.css'));
+        expect(appCssText.indexOf('layout.css')).toBeLessThan(appCssText.indexOf('toolbar.css'));
+        expect(appCssText.indexOf('toolbar.css')).toBeLessThan(appCssText.indexOf('sidebar.css'));
+        expect(appCssText.indexOf('sidebar.css')).toBeLessThan(appCssText.indexOf('content.css'));
+        expect(appCssText.indexOf('content.css')).toBeLessThan(appCssText.indexOf('overlays.css'));
+    });
+
     test('defines desktop rules for toc-middle and floating toc-right', () => {
         expect(cssText).toContain('@media (min-width: 1024px)');
         expectRule(/--toc-width:\s*280px;/);

@@ -50,7 +50,7 @@ TypeScript/模板职责：
 - Create: `web/src/style/overlays.css`
 - Modify: `web/src/layout-css.test.ts`
 
-- [ ] **Step 1: 复制当前 CSS 到临时工作副本**
+- [x] **Step 1: 复制当前 CSS 到临时工作副本**
 
 Run:
 
@@ -60,7 +60,7 @@ Copy-Item web\src\style\app.css web\src\style\app.css.before-ui-split
 
 Expected: `web/src/style/app.css.before-ui-split` 存在，仅作为本地拆分辅助文件，不提交。
 
-- [ ] **Step 2: 创建 CSS 分文件并搬运现有块**
+- [x] **Step 2: 创建 CSS 分文件并搬运现有块**
 
 按当前 `app.css` 注释和选择器分区机械搬运，不改选择器、不改属性值、不改顺序语义。
 
@@ -86,7 +86,7 @@ reset, html/body, app-shell, desktop/mobile    -> layout.css
 @import "./overlays.css";
 ```
 
-- [ ] **Step 3: 删除本地辅助副本**
+- [x] **Step 3: 删除本地辅助副本**
 
 Run:
 
@@ -96,7 +96,7 @@ Remove-Item -LiteralPath web\src\style\app.css.before-ui-split
 
 Expected: 辅助副本已删除，工作区只剩真实 CSS 文件变更。
 
-- [ ] **Step 4: 更新 CSS 文本测试以覆盖分文件 import**
+- [x] **Step 4: 更新 CSS 文本测试以覆盖分文件 import**
 
 Modify `web/src/layout-css.test.ts` 顶部 import，改为读取入口 `app.css` 和分文件文本。
 
@@ -138,7 +138,7 @@ test('keeps app css as ordered style entrypoint', () => {
 });
 ```
 
-- [ ] **Step 5: 运行 CSS 相关测试**
+- [x] **Step 5: 运行 CSS 相关测试**
 
 Run:
 
@@ -149,7 +149,7 @@ bun test src/layout-css.test.ts
 
 Expected: all tests pass.
 
-- [ ] **Step 6: 验证前端构建**
+- [x] **Step 6: 验证前端构建**
 
 Run:
 
@@ -160,7 +160,7 @@ bun run build
 
 Expected: build exits 0 and `web/dist/app.css` is generated.
 
-- [ ] **Step 7: 提交 CSS 拆分**
+- [x] **Step 7: 提交 CSS 拆分**
 
 Run:
 
