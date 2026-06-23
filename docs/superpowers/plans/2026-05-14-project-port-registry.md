@@ -6,7 +6,7 @@
 
 **Architecture:** A new `internal/projects` package owns registry persistence and project record semantics. `main.go` owns CLI/ENV port-source detection and listener selection, using the registry only when CLI `-p -1` is used or no port was configured through CLI/ENV.
 
-**Tech Stack:** Go `net`, `os`, `encoding/json`, `path/filepath`, `github.com/gookit/goutil/cflag`, existing `github.com/gookit/goutil/testutil/assert`.
+**Tech Stack:** Go `net`, `os`, `encoding/json`, `path/filepath`, `github.com/gookit/goutil/cflag`, existing `github.com/gookit/goutil/x/assert`.
 
 ---
 

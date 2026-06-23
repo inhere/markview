@@ -12,7 +12,7 @@
 
 **Architecture:** `internal/config` 负责配置文件模型、查找、解析、归一化和合并，`internal/bootstrap` 只负责确定目标项目目录并把 CLI/registry 来源传入合并流程。服务端通过模板注入 `app-config-data`，前端通过 `web/src/app-config.ts` 读取运行时配置，并让链接预览和 layout dataset 使用同一份配置结果。
 
-**Tech Stack:** Go 1.25、`encoding/json`、`os.UserConfigDir`、`github.com/gookit/goutil/envutil`、`github.com/gookit/goutil/testutil/assert`、TypeScript、Bun、JSDOM。
+**Tech Stack:** Go 1.25、`encoding/json`、`os.UserConfigDir`、`github.com/gookit/goutil/envutil`、`github.com/gookit/goutil/x/assert`、TypeScript、Bun、JSDOM。
 
 ---
 
@@ -81,7 +81,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestFindProjectConfigUsesFirstExistingFile(t *testing.T) {
@@ -331,7 +331,7 @@ package config
 import (
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestMergeRuntimeConfigPriority(t *testing.T) {

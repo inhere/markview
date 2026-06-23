@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/gookit/color"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inhere/markview/internal/projects"
 )

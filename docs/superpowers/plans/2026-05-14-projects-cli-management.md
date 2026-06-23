@@ -6,7 +6,7 @@
 
 **架构：** 扩展 `internal/projects`，加入排序列表、selector 解析、删除和 prune 等纯数据 helpers。新增一个轻量 CLI 处理层，在 `--projects` 被设置时先执行管理命令并提前返回，避免进入普通 server 启动流程。
 
-**技术栈：** Go、`github.com/gookit/goutil/cflag`、`github.com/gookit/cliui`、`encoding/json`、`os`、现有 `github.com/gookit/goutil/testutil/assert`。
+**技术栈：** Go、`github.com/gookit/goutil/cflag`、`github.com/gookit/cliui`、`encoding/json`、`os`、现有 `github.com/gookit/goutil/x/assert`。
 
 ---
 

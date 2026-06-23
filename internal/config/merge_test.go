@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestMergeRuntimeConfigPriority(t *testing.T) {

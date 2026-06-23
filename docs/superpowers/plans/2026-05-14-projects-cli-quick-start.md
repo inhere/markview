@@ -6,7 +6,7 @@
 
 **架构：** 复用阶段一的 selector 解析 helpers。在 `prepare()` 计算 target directory 之前解析选中的项目，然后把匹配到的路径传入现有 config 初始化和启动流程。
 
-**技术栈：** Go、`github.com/gookit/goutil/cflag`、现有 `internal/projects`、现有 `github.com/gookit/goutil/testutil/assert`。
+**技术栈：** Go、`github.com/gookit/goutil/cflag`、现有 `internal/projects`、现有 `github.com/gookit/goutil/x/assert`。
 
 ---
 
