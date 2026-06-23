@@ -5,6 +5,14 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    align-self: flex-start;
+}
+
+.content-inner::after {
+    content: "";
+    display: block;
+    height: clamp(64px, 9vh, 110px);
+    flex-shrink: 0;
 }
 
 /* Split Layout (when preview is open) */
