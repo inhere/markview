@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import templateHtml from '../template.html' with { type: 'text' };
 import appCssText from './style/app.css' with { type: 'text' };
 import tokensCssText from './style/tokens.css' with { type: 'text' };
 import layoutCssText from './style/layout.css' with { type: 'text' };
@@ -59,6 +60,9 @@ describe('layout CSS modes', () => {
         expect(overlaysCssText).toMatch(/\.content-search-wrapper\[hidden\]\s*\{[^}]*display:\s*none;/s);
         expect(overlaysCssText).toMatch(/\.content-search-panel\s*\{[^}]*position:\s*fixed;[^}]*top:\s*14vh;[^}]*left:\s*50%;[^}]*width:\s*min\(720px,\s*calc\(100vw - 32px\)\);[^}]*transform:\s*translateX\(-50%\);/s);
         expect(overlaysCssText).toMatch(/\.content-search-help\s*\{[^}]*padding:\s*8px\s+16px\s+10px;/s);
+        expect(templateHtml).toContain('keyword !exclude');
+        expect(templateHtml).toContain('path:docs/api keyword');
+        expect(overlaysCssText).toMatch(/\.context-text\s*\{[^}]*min-width:\s*0;[^}]*overflow-wrap:\s*anywhere;/s);
         expect(overlaysCssText).toMatch(/@media \(max-width:\s*1023px\)\s*\{[\s\S]*\.content-search-panel\s*\{[^}]*top:\s*12px;[^}]*bottom:\s*12px;/s);
     });
 
@@ -75,7 +79,7 @@ describe('layout CSS modes', () => {
         expectRule(/html\[data-layout="compact"\]\s+\.files-pane\.sidebar\s*\{[^}]*padding-bottom:\s*8px;/s);
         expectRule(/html\[data-layout="compact"\]\s+\.files-pane\s+\.sidebar-panels\s*\{[^}]*padding-bottom:\s*0;/s);
         expectRule(/\.toc-pane\s*\{[^}]*border-radius:\s*0;/s);
-        expectRule(/\.toc-section-toggle\s*\{[^}]*display:\s*inline-flex;/s);
+        expectRule(/\.toc-section-toggle\s*\{[^}]*display:\s*inline-flex;[^}]*border:\s*1px solid var\(--accent-border\);/s);
         expectRule(/body:not\(\.toc-floating-open\)\s+\.toc-pane\s+\.toc-section-label-text\s*\{[^}]*display:\s*none;/s);
         expectRule(/body:not\(\.toc-floating-open\)\s+\.toc-pane\s+\.toc-container\s*\{[^}]*display:\s*none;/s);
         expectRule(/html\[data-layout="compact"\]\s+body:not\(\.toc-floating-open\)\s+\.app-shell\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)\s+44px;/s);

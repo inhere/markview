@@ -69,6 +69,27 @@ describe('renderResults match-count display', () => {
         // 核心断言：非空 matches 时应显示实际数量
         expect(matchCountEl?.textContent).toBe('2');
     });
+
+    test('匹配行正文包裹在稳定文本容器内', () => {
+        const response: SearchResponse = {
+            query: '下载',
+            results: [
+                {
+                    file: 'README.md',
+                    matches: [
+                        { line: 11, snippet: '`eget` 用于下载二进制', lines: [11], context: ['`eget` 用于下载二进制'] },
+                    ],
+                },
+            ],
+            total: 1,
+        };
+
+        renderResults(response, container);
+
+        const textEl = container.querySelector('.context-line.match-line .context-text');
+        expect(textEl).not.toBeNull();
+        expect(textEl?.innerHTML).toContain('<mark>下载</mark>');
+    });
 });
 
 describe('setupContentSearch overlay controls', () => {

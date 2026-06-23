@@ -69,9 +69,9 @@ export function renderResults(response: SearchResponse, container: HTMLElement):
                     const isMatchLine = lineNum === match.line;
                     const cls = isMatchLine ? 'context-line match-line' : 'context-line';
                     const content = isMatchLine ? highlightedSnippet : escapeHtml(line);
-                    return `<div class="${cls}" data-line="${lineNum}"><span class="line-num">${lineNum}</span>${content}</div>`;
+                    return `<div class="${cls}" data-line="${lineNum}"><span class="line-num">${lineNum}</span><span class="context-text">${content}</span></div>`;
                 }).join('')
-                : `<div class="context-line match-line" data-line="${match.line}"><span class="line-num">${match.line}</span>${highlightedSnippet}</div>`;
+                : `<div class="context-line match-line" data-line="${match.line}"><span class="line-num">${match.line}</span><span class="context-text">${highlightedSnippet}</span></div>`;
 
             return `
                 <div class="content-search-match" data-file="${result.file}" data-line="${match.line}">

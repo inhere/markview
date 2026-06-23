@@ -340,14 +340,16 @@ body.sidebar-is-resizing .sidebar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
-    border: 0;
-    background: transparent;
+    padding: 2px;
+    border: 1px solid var(--accent-border);
+    border-radius: 5px;
+    background: var(--accent-subtle);
     cursor: pointer;
+    color: var(--accent-primary);
 }
 
 .toc-section-toggle:hover {
-    color: var(--accent-primary);
+    background: var(--bg-paper);
 }
 
 .sidebar-section-icon svg {

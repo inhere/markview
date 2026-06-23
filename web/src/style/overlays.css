@@ -1202,6 +1202,11 @@ div.mermaid {
     padding-right: 5px;
 }
 
+.context-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .context-line.match-line {
     background: var(--accent-subtle);
     border-radius: 2px;
