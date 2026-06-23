@@ -1073,6 +1073,21 @@ div.mermaid {
     color: var(--text-heading);
 }
 
+.content-search-help {
+    padding: 8px 16px 10px;
+    margin: 0;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.content-search-help code {
+    font-family: var(--font-mono);
+    color: var(--text-body);
+}
+
 /* Results Panel */
 .content-search-results {
     display: none;

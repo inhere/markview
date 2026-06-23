@@ -857,6 +857,45 @@ Status: draft`,
 	}
 }
 
+func TestParseSearchTermsPathFilter(t *testing.T) {
+	terms := parseSearchTerms(`path:docs/api auth token !draft`)
+
+	assert.Eq(t, "docs/api", terms.Path)
+	assert.Eq(t, []string{"auth", "token"}, terms.Include)
+	assert.Eq(t, []string{"draft"}, terms.Exclude)
+}
+
+func TestHandleSearch_PathFilter(t *testing.T) {
+	root := t.TempDir()
+	files := map[string]string{
+		"docs/api/auth.md":   "# Auth\nshared keyword",
+		"docs/guide/auth.md": "# Auth\nshared keyword",
+		"notes/api-root.md":  "# Auth\nshared keyword",
+		"docs/api/nested.md": "# Nested\nanother keyword",
+	}
+	for relativePath, content := range files {
+		path := filepath.Join(root, filepath.FromSlash(relativePath))
+		assert.NoErr(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		assert.NoErr(t, os.WriteFile(path, []byte(content), 0o644))
+	}
+
+	origTargetDir := config.Cfg.TargetDir
+	config.Cfg.TargetDir = root
+	defer func() { config.Cfg.TargetDir = origTargetDir }()
+
+	req := httptest.NewRequest(http.MethodGet, "/search?q=path:docs/api+shared", nil)
+	rec := httptest.NewRecorder()
+
+	HandleSearch(rec, req)
+
+	assert.Eq(t, http.StatusOK, rec.Code)
+	var resp SearchResponse
+	assert.NoErr(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	assert.Eq(t, 1, len(resp.Results))
+	assert.Eq(t, filepath.Join("docs", "api", "auth.md"), resp.Results[0].File)
+	assert.Eq(t, 2, resp.FilesScanned)
+}
+
 // TestHandleSearch_PureExcludeQuery 端到端测试：纯 exclude 查询应返回命中文件（即使 matches 为空）
 // 期望语义：
 //   - 纯 exclude 查询命中不含排除词的文件时，响应 results 非空

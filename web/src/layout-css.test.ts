@@ -58,6 +58,7 @@ describe('layout CSS modes', () => {
         expect(toolbarCssText).toMatch(/\.content-search-trigger\s*\{[^}]*display:\s*inline-flex;/s);
         expect(overlaysCssText).toMatch(/\.content-search-wrapper\[hidden\]\s*\{[^}]*display:\s*none;/s);
         expect(overlaysCssText).toMatch(/\.content-search-panel\s*\{[^}]*position:\s*fixed;[^}]*top:\s*14vh;[^}]*left:\s*50%;[^}]*width:\s*min\(720px,\s*calc\(100vw - 32px\)\);[^}]*transform:\s*translateX\(-50%\);/s);
+        expect(overlaysCssText).toMatch(/\.content-search-help\s*\{[^}]*padding:\s*8px\s+16px\s+10px;/s);
         expect(overlaysCssText).toMatch(/@media \(max-width:\s*1023px\)\s*\{[\s\S]*\.content-search-panel\s*\{[^}]*top:\s*12px;[^}]*bottom:\s*12px;/s);
     });
 

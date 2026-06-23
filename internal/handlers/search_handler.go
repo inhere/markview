@@ -67,6 +67,9 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 			strings.EqualFold(filepath.Base(path), "index.md") {
 			return nil
 		}
+		if !pathMatchesSearchFilter(relPath, terms) {
+			return nil
+		}
 
 		filesScanned++
 
@@ -125,9 +128,11 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 type SearchTerms struct {
 	Include []string // 原始包含关键词
 	Exclude []string // 原始排除关键词
+	Path    string   // path: 前缀限制的目录路径
 	// 预计算的 lowercase 版本，避免在搜索循环中重复转换
 	includeLower []string
 	excludeLower []string // 预计算的 lowercase 版本
+	pathLower    string
 }
 
 // SearchMatch 匹配的行
@@ -165,7 +170,12 @@ func parseSearchTerms(query string) SearchTerms {
 	}
 
 	words := strings.Fields(query)
-	for _, word := range words {
+	for i, word := range words {
+		if i == 0 && strings.HasPrefix(strings.ToLower(word), "path:") {
+			terms.Path = normalizeSearchPath(word[5:])
+			terms.pathLower = strings.ToLower(terms.Path)
+			continue
+		}
 		if strings.HasPrefix(word, "!") {
 			cleanWord := strings.TrimPrefix(word, "!")
 			terms.Exclude = append(terms.Exclude, cleanWord)
@@ -177,6 +187,21 @@ func parseSearchTerms(query string) SearchTerms {
 	}
 
 	return terms
+}
+
+func normalizeSearchPath(path string) string {
+	path = strings.ReplaceAll(strings.TrimSpace(path), "\\", "/")
+	return strings.Trim(path, "/")
+}
+
+func pathMatchesSearchFilter(relPath string, terms SearchTerms) bool {
+	if terms.pathLower == "" {
+		return true
+	}
+
+	dir := filepath.ToSlash(filepath.Dir(relPath))
+	dir = strings.Trim(strings.ToLower(dir), "/")
+	return strings.Contains(dir, terms.pathLower)
 }
 
 // fileMatchesContent 检查整个文件是否匹配搜索条件（文件级 AND + NOT）
