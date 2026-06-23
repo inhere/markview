@@ -7,7 +7,11 @@ import {
     parsePageSnapshot,
     type PageSnapshot,
 } from '../page';
-import { escapeHtml } from '../util';
+import {
+    escapeHtml,
+    isInlineNavigablePath,
+    rewriteAttributeURLs,
+} from '../util';
 import {
     DEFAULT_APP_CONFIG,
     normalizeIframeHosts,
@@ -287,6 +291,46 @@ function resetPanelState(): void {
     if (error) error.classList.remove('visible');
 }
 
+function handlePreviewContentClick(event: MouseEvent): void {
+    if (event.defaultPrevented || event.button !== 0) {
+        return;
+    }
+
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+    }
+
+    const view = document.defaultView ?? window;
+    const target = event.target instanceof view.Element ? event.target : event.target instanceof view.Node ? event.target.parentElement : null;
+    const anchor = target?.closest('a[href]');
+    if (!(anchor instanceof view.HTMLAnchorElement)) {
+        return;
+    }
+
+    if (anchor.target && anchor.target !== '_self') {
+        return;
+    }
+
+    if (anchor.hasAttribute('download')) {
+        return;
+    }
+
+    const url = new URL(anchor.href, window.location.href);
+    if (url.origin !== window.location.origin) {
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        return;
+    }
+
+    if (!isPreviewableContentPath(url.pathname) && !isInlineNavigablePath(url.pathname)) {
+        return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    openPreviewPanel(url.toString(), anchor);
+}
+
 async function loadInternalContent(url: string): Promise<void> {
     const panel = document.getElementById('preview-panel');
     if (!panel) return;
@@ -356,6 +400,12 @@ async function loadInternalContent(url: string): Promise<void> {
         if (bodyEl) {
             bodyEl.innerHTML = contentHTML;
             bodyEl.style.padding = bodyPadding;
+            if (!isHTMLPreview && !isExternalIframePreview) {
+                const baseURL = new URL('.', targetUrl);
+                rewriteAttributeURLs(bodyEl, 'a[href]', 'href', baseURL);
+                rewriteAttributeURLs(bodyEl, 'img[src]', 'src', baseURL);
+            }
+            bodyEl.onclick = handlePreviewContentClick;
             await enhancePreviewContent(bodyEl);
         }
         if (loadingEl) loadingEl.style.display = 'none';

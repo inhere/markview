@@ -8,6 +8,7 @@ import {
     enhanceLinksInContent,
     isAllowedIframeURL,
     isPreviewableContentPath,
+    openPreviewPanel,
 } from './link-preview';
 
 function withDOM(html: string, run: (document: Document) => void) {
@@ -32,6 +33,38 @@ function withDOM(html: string, run: (document: Document) => void) {
         globalThis.HTMLElement = previousHTMLElement;
         globalThis.HTMLAnchorElement = previousHTMLAnchorElement;
     }
+}
+
+async function withAsyncDOM(html: string, run: (document: Document, window: Window) => Promise<void>) {
+    const dom = new JSDOM(html, {
+        url: 'http://127.0.0.1/docs/readme.md',
+        pretendToBeVisual: true,
+    });
+    const previousDocument = globalThis.document;
+    const previousWindow = globalThis.window;
+    const previousHTMLElement = globalThis.HTMLElement;
+    const previousHTMLAnchorElement = globalThis.HTMLAnchorElement;
+    const previousDOMParser = globalThis.DOMParser;
+
+    try {
+        globalThis.document = dom.window.document;
+        globalThis.window = dom.window as unknown as Window & typeof globalThis;
+        globalThis.HTMLElement = dom.window.HTMLElement;
+        globalThis.HTMLAnchorElement = dom.window.HTMLAnchorElement;
+        globalThis.DOMParser = dom.window.DOMParser;
+        await run(dom.window.document, dom.window as unknown as Window);
+    } finally {
+        globalThis.document = previousDocument;
+        globalThis.window = previousWindow;
+        globalThis.HTMLElement = previousHTMLElement;
+        globalThis.HTMLAnchorElement = previousHTMLAnchorElement;
+        globalThis.DOMParser = previousDOMParser;
+    }
+}
+
+async function flushAsyncPreviewWork() {
+    await Promise.resolve();
+    await Promise.resolve();
 }
 
 describe('link preview content files', () => {
@@ -181,6 +214,76 @@ describe('link preview content files', () => {
 
             expect(content.querySelectorAll('.link-preview-wrapper')).toHaveLength(1);
             expect(content.querySelectorAll('.link-preview-btn')).toHaveLength(1);
+        });
+    });
+
+    test('rewrites relative links inside preview content from the preview document path', async () => {
+        await withAsyncDOM(`<!DOCTYPE html><body>
+            <aside id="preview-panel" style="display: none;">
+                <button class="preview-close" type="button"></button>
+                <div class="preview-loading"></div>
+                <div class="preview-body"></div>
+                <div class="preview-error"></div>
+            </aside>
+        </body>`, async (document, window) => {
+            const previousFetch = globalThis.fetch;
+            globalThis.fetch = (async () => new Response(`
+                <!DOCTYPE html>
+                <article id="content">
+                    <h1>Guide</h1>
+                    <a href="./basics.md">Basics</a>
+                    <img src="../assets/logo.svg" />
+                </article>
+            `, { headers: { 'Content-Type': 'text/html' } })) as typeof fetch;
+
+            try {
+                openPreviewPanel('http://127.0.0.1/docs/intro.md');
+                await flushAsyncPreviewWork();
+
+                expect(document.querySelector('.preview-body a')?.getAttribute('href')).toBe('/docs/basics.md');
+                expect(document.querySelector('.preview-body img')?.getAttribute('src')).toBe('/assets/logo.svg');
+            } finally {
+                globalThis.fetch = previousFetch;
+            }
+        });
+    });
+
+    test('opens internal links from preview content inside the preview panel', async () => {
+        await withAsyncDOM(`<!DOCTYPE html><body>
+            <aside id="preview-panel" style="display: none;">
+                <button class="preview-close" type="button"></button>
+                <div class="preview-loading"></div>
+                <div class="preview-body"></div>
+                <div class="preview-error"></div>
+            </aside>
+        </body>`, async (document) => {
+            const requestedUrls: string[] = [];
+            const previousFetch = globalThis.fetch;
+            globalThis.fetch = (async (input: RequestInfo | URL) => {
+                const url = input.toString();
+                requestedUrls.push(url);
+                const title = url.includes('/docs/basics.md') ? 'Basics' : 'Guide';
+                const body = title === 'Guide'
+                    ? '<a href="./basics.md">Basics</a>'
+                    : '<p>Loaded basics</p>';
+                return new Response(`<!DOCTYPE html><article id="content"><h1>${title}</h1>${body}</article>`, {
+                    headers: { 'Content-Type': 'text/html' },
+                });
+            }) as typeof fetch;
+
+            try {
+                openPreviewPanel('http://127.0.0.1/docs/guide.md');
+                await flushAsyncPreviewWork();
+
+                const link = document.querySelector('.preview-body a') as HTMLAnchorElement;
+                link.dispatchEvent(new document.defaultView!.MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+                await flushAsyncPreviewWork();
+
+                expect(requestedUrls).toContain('http://127.0.0.1/docs/basics.md?q=main');
+                expect(document.querySelector('.preview-body')?.textContent).toContain('Loaded basics');
+            } finally {
+                globalThis.fetch = previousFetch;
+            }
         });
     });
 });
