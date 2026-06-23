@@ -37,6 +37,7 @@ body.sidebar-collapsed .app-shell {
 .content-wrapper {
     grid-area: content;
     padding: clamp(20px, 4vw, 52px);
+    padding-bottom: clamp(72px, 10vh, 120px);
     display: flex;
     justify-content: center;
     min-height: 0;

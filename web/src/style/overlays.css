@@ -245,7 +245,7 @@
     .toc-pane {
         display: none;
     }
-    .content-wrapper { padding: 0; display: block; overflow: visible; }
+    .content-wrapper { padding: 0 0 72px; display: block; overflow: visible; }
     .content-inner { max-width: 100%; }
     .paper { padding: 30px 20px; border: none; max-width: 100%; box-shadow: none; margin-bottom: 0; }
 }
@@ -453,6 +453,12 @@ body.preview-is-resizing .preview-content {
 .preview-body {
     flex: 1;
     min-height: 0;
+}
+
+.preview-body::after {
+    content: "";
+    display: block;
+    height: clamp(64px, 9vh, 110px);
 }
 
 .preview-file-code {

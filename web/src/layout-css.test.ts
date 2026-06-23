@@ -48,6 +48,8 @@ describe('layout CSS modes', () => {
     test('keeps reader surface quiet and responsive', () => {
         expect(contentCssText).toMatch(/\.paper\s*\{[^}]*border-radius:\s*8px;[^}]*padding:\s*clamp\(34px,\s*5vw,\s*72px\);/s);
         expect(layoutCssText).toMatch(/\.content-wrapper\s*\{[^}]*padding:\s*clamp\(20px,\s*4vw,\s*52px\);/s);
+        expect(layoutCssText).toMatch(/\.content-wrapper\s*\{[^}]*padding-bottom:\s*clamp\(72px,\s*10vh,\s*120px\);/s);
+        expect(overlaysCssText).toMatch(/\.preview-body::after\s*\{[^}]*content:\s*"";[^}]*display:\s*block;[^}]*height:\s*clamp\(64px,\s*9vh,\s*110px\);/s);
         expect(toolbarCssText).not.toMatch(/\.toolbar\.expanded\s*\{[^}]*opacity:\s*0\.5;/s);
     });
 
