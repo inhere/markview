@@ -6,7 +6,7 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gookit/cliui v0.3.1
 	github.com/gookit/color v1.6.2-0.20260604125953-289d54c4470a
-	github.com/gookit/goutil v0.7.6
+	github.com/gookit/goutil v0.8.0
 	github.com/yuin/goldmark v1.8.2
 	github.com/yuin/goldmark-emoji v1.0.6
 	github.com/yuin/goldmark-meta v1.1.0
