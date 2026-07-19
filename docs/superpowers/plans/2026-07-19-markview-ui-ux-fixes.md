@@ -97,7 +97,7 @@ git commit -m "fix: fill compact collapsed sidebar height"
 - Consumes: `toc-floating-open`、`preview-active`、`--sidebar-width`、`--sidebar-collapsed-width`、`--preview-width`。
 - Produces: toc-middle 左下角与 toc-right 右下角的 48px 控制按钮；展开状态 24px SVG 图标。
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 替换旧的 44px 竖栏断言，并新增图标尺寸断言：
 
@@ -108,13 +108,13 @@ expectRule(/\.toc-section-toggle\s+svg\s*\{[^}]*width:\s*24px;[^}]*height:\s*24p
 expectRule(/html\[data-layout="toc-right"\]\s+body\.preview-active:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*right:\s*calc\(var\(--preview-width\) \+ 16px\);[^}]*transform:\s*none;/s);
 ```
 
-- [ ] **Step 2: 验证 RED**
+- [x] **Step 2: 验证 RED**
 
 Run: `cd web && bun test src/layout-css.test.ts`
 
 Expected: FAIL，旧 CSS 仍使用 44px 竖栏和 translateX。
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 在桌面布局中加入收起状态：
 
@@ -178,7 +178,7 @@ html[data-layout="toc-right"] body.preview-active:not(.toc-floating-open) .toc-p
 }
 ```
 
-- [ ] **Step 4: 验证 GREEN 并更新进度**
+- [x] **Step 4: 验证 GREEN 并更新进度**
 
 Run: `cd web && bun test src/layout-css.test.ts src/components/toc-toggle.test.ts && bun test`
 
@@ -186,7 +186,7 @@ Expected: 目标测试和全部前端测试通过。
 
 将 `docs/TODO.md` 的 UI006 checkbox 改为 `[x]`，保留其位置说明。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add web/src/layout-css.test.ts web/src/style/layout.css web/src/style/sidebar.css web/src/style/overlays.css

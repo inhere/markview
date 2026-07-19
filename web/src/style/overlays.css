@@ -957,8 +957,8 @@ div.mermaid {
     }
 
     html[data-layout="toc-right"] body.preview-active:not(.toc-floating-open) .toc-pane {
-        right: var(--preview-width);
-        transform: translateX(calc(100% - 44px));
+        right: calc(var(--preview-width) + 16px);
+        transform: none;
     }
 
     html[data-layout="toc-middle"] body.sidebar-collapsed.preview-active .app-shell,

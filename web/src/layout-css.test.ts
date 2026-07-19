@@ -72,7 +72,7 @@ describe('layout CSS modes', () => {
         expectRule(/html\[data-layout="toc-middle"\]\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-width\)\s+minmax\(0,\s*1fr\);[^}]*grid-template-areas:\s*"files content";/s);
         expectRule(/html\[data-layout="toc-right"\]\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-width\)\s+minmax\(0,\s*1fr\);[^}]*grid-template-areas:\s*"files content";/s);
         expectRule(/html\[data-layout="toc-middle"\]\s+\.toc-pane\s*\{[^}]*position:\s*fixed;[^}]*top:\s*56px;[^}]*left:\s*var\(--sidebar-width\);[^}]*box-shadow:\s*none;[^}]*width:\s*var\(--toc-width\);/s);
-        expectRule(/html\[data-layout="toc-right"\]\s+\.toc-pane\s*\{[^}]*position:\s*fixed;[^}]*border-radius:\s*0;[^}]*box-shadow:\s*none;[^}]*transform:\s*translateX\(calc\(100% - 44px\)\);[^}]*opacity:\s*1;/s);
+        expectRule(/html\[data-layout="toc-right"\]\s+\.toc-pane\s*\{[^}]*position:\s*fixed;[^}]*border-radius:\s*0;[^}]*box-shadow:\s*none;[^}]*transform:\s*none;[^}]*opacity:\s*1;/s);
         expectRule(/html\[data-layout="toc-right"\]\s+body\.toc-floating-open\s+\.toc-pane\s*\{[^}]*transform:\s*translateX\(0\);[^}]*opacity:\s*1;[^}]*pointer-events:\s*auto;/s);
         expectRule(/html\[data-layout="compact"\]\s+\.app-shell\s*\{[^}]*grid-template-rows:\s*minmax\(8rem,\s*1fr\)\s+minmax\(16rem,\s*2fr\);/s);
         expectRule(/html\[data-layout="compact"\]\s+\.toc-pane\s*\{[^}]*margin:\s*0\s+0\s+8px;/s);
@@ -83,7 +83,10 @@ describe('layout CSS modes', () => {
         expectRule(/body:not\(\.toc-floating-open\)\s+\.toc-pane\s+\.toc-section-label-text\s*\{[^}]*display:\s*none;/s);
         expectRule(/body:not\(\.toc-floating-open\)\s+\.toc-pane\s+\.toc-container\s*\{[^}]*display:\s*none;/s);
         expectRule(/html\[data-layout="compact"\]\s+body:not\(\.toc-floating-open\)\s+\.app-shell\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)\s+44px;/s);
-        expectRule(/html\[data-layout="toc-middle"\]\s+body:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*width:\s*44px;[^}]*overflow:\s*hidden;/s);
+        expectRule(/html\[data-layout="toc-middle"\]\s+body:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*top:\s*auto;[^}]*left:\s*calc\(var\(--sidebar-width\) \+ 16px\);[^}]*bottom:\s*16px;[^}]*width:\s*48px;[^}]*height:\s*48px;/s);
+        expectRule(/html\[data-layout="toc-middle"\]\s+body\.sidebar-collapsed:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*left:\s*calc\(var\(--sidebar-collapsed-width\) \+ 16px\);/s);
+        expectRule(/html\[data-layout="toc-right"\]\s+body:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*top:\s*auto;[^}]*right:\s*16px;[^}]*bottom:\s*16px;[^}]*width:\s*48px;[^}]*height:\s*48px;[^}]*transform:\s*none;/s);
+        expectRule(/\.toc-section-toggle\s+svg\s*\{[^}]*width:\s*24px;[^}]*height:\s*24px;/s);
         expect(cssText).not.toMatch(/html\[data-layout="toc-right"\]\s+\.sidebar-icons\s*\{[^}]*display:\s*flex;/s);
         expect(cssText).not.toContain('.toc-toggle-button');
     });
@@ -110,7 +113,7 @@ describe('layout CSS modes', () => {
         expect(cssText).not.toMatch(/html\[data-layout="toc-middle"\]\s+body\.preview-active\s+\.toc-pane\s*\{[^}]*display:\s*none;/s);
         expectRule(/html\[data-layout="toc-middle"\]\s+body\.preview-active\s+\.app-shell\s*\{[^}]*grid-template-columns:\s*var\(--sidebar-width\)\s+minmax\(0,\s*1fr\);[^}]*grid-template-areas:\s*"files content";[^}]*padding-right:\s*var\(--preview-width\);/s);
         expectRule(/html\[data-layout="toc-right"\]\s+body\.preview-active\s+\.toc-pane\s*\{[^}]*right:\s*calc\(var\(--preview-width\) \+ 16px\);/s);
-        expectRule(/html\[data-layout="toc-right"\]\s+body\.preview-active:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*right:\s*var\(--preview-width\);[^}]*transform:\s*translateX\(calc\(100% - 44px\)\);/s);
+        expectRule(/html\[data-layout="toc-right"\]\s+body\.preview-active:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*right:\s*calc\(var\(--preview-width\) \+ 16px\);[^}]*transform:\s*none;/s);
         expectRule(/\.content-wrapper\s*\{[^}]*position:\s*relative;[^}]*overflow:\s*auto;/s);
         expectRule(/\.content-search-wrapper\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*0;/s);
     });

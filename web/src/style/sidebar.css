@@ -337,6 +337,8 @@ body.sidebar-is-resizing .sidebar {
 }
 
 .toc-section-toggle {
+    width: 32px;
+    height: 32px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -524,6 +526,11 @@ body.sidebar-is-resizing .sidebar {
     align-items: center;
     column-gap: 6px;
     min-height: 32px;
+}
+
+.toc-section-toggle svg {
+    width: 24px;
+    height: 24px;
 }
 
 .file-tree-children {
