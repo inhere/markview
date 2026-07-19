@@ -39,7 +39,7 @@
 - Consumes: `body.sidebar-collapsed` 和 `html[data-layout="compact"]`。
 - Produces: compact 收起状态下跨越两行的 `.files-pane`。
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `keeps mobile layout compact and supports collapsed files width` 前增加：
 
@@ -49,13 +49,13 @@ test('lets the compact collapsed sidebar span the full viewport height', () => {
 });
 ```
 
-- [ ] **Step 2: 验证 RED**
+- [x] **Step 2: 验证 RED**
 
 Run: `cd web && bun test src/layout-css.test.ts`
 
 Expected: FAIL，找不到 compact collapsed `.files-pane` 的 `grid-row: 1 / -1`。
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 在桌面端 compact collapsed 规则附近增加：
 
@@ -66,7 +66,7 @@ html[data-layout="compact"] body.sidebar-collapsed .files-pane {
 }
 ```
 
-- [ ] **Step 4: 验证 GREEN 并更新进度**
+- [x] **Step 4: 验证 GREEN 并更新进度**
 
 Run: `cd web && bun test src/layout-css.test.ts && bun test`
 
@@ -74,7 +74,7 @@ Expected: layout 测试和全部前端测试通过。
 
 将 `docs/TODO.md` 的 UI005 checkbox 改为 `[x]`。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add web/src/layout-css.test.ts web/src/style/layout.css

@@ -204,6 +204,11 @@ body.sidebar-collapsed .app-shell {
         grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
     }
 
+    html[data-layout="compact"] body.sidebar-collapsed .files-pane {
+        grid-row: 1 / -1;
+        height: 100vh;
+    }
+
     html[data-layout="toc-middle"] body.sidebar-collapsed .app-shell {
         grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
     }

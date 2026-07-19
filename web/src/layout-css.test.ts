@@ -98,6 +98,10 @@ describe('layout CSS modes', () => {
         expect(cssText).not.toMatch(/(?:^|})\s*body\.sidebar-collapsed\s+\.toc-pane\s*\{\s*display:\s*none;/);
     });
 
+    test('lets the compact collapsed sidebar span the full viewport height', () => {
+        expectRule(/html\[data-layout="compact"\]\s+body\.sidebar-collapsed\s+\.files-pane\s*\{[^}]*grid-row:\s*1\s*\/\s*-1;[^}]*height:\s*100vh;/s);
+    });
+
     test('defines preview-active and mobile fallback layout rules', () => {
         expect(cssText).toContain('preview-active');
         expect(cssText).toContain('toc-floating-open');
