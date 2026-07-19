@@ -72,6 +72,16 @@ markview "path/to/docs" "intro.md"
 
 When no port is specified, MarkView automatically chooses and remembers a project port, preferring `6100` when available.
 
+### Serve all saved projects
+
+Start one local server for every project in the saved registry:
+
+```bash
+markview --global
+```
+
+The global home page lists saved projects and opens each one under `/p/{project-id}/`. It binds to `127.0.0.1` by default; see [Global server mode](docs/global-server.md) for routing, configuration precedence, registry refresh behavior, and the explicit public-listener option.
+
 > Example documents are available in [example/](example/).
 
 ### Configuration

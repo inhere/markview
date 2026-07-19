@@ -849,7 +849,7 @@ git commit -m "feat: add global project navigation"
 - Documents: `markview --global`、安全默认、global URL、项目配置作用域和 registry 刷新语义。
 - Completes: FEA002 checkbox。
 
-- [ ] **Step 1: 运行完整自动化质量门禁**
+- [x] **Step 1: 运行完整自动化质量门禁**
 
 ```bash
 go test ./... -count=1
@@ -860,15 +860,17 @@ bun run build
 
 Expected: Go 全部 PASS、race 无报告、Bun 全部 PASS、build 成功。若当前平台不支持 race，记录准确错误，并在支持的平台补跑后才能完成本任务。
 
-- [ ] **Step 2: 真实启动两个项目做 HTTP 验证**
+执行记录：`go test ./... -count=1` 全部通过，Bun 111/111 测试通过，`bun run build` 成功。本机 Windows/amd64 的 `CGO_ENABLED=0` 环境执行 race 命令失败：`go: -race requires cgo; enable cgo by setting CGO_ENABLED=1`；需在启用 CGO 的验证环境补跑 race，不阻断本机功能交付。
+
+- [x] **Step 2: 真实启动两个项目做 HTTP 验证**
 
 使用两个临时项目和临时 registry 启动 `markview --global --no-browser`，确认实际 listener 为 `127.0.0.1`；验证主页、两个项目同名文件、search、file-tree、raw、SSE 隔离、registry remove 后下一请求 404、无效目录卡片和 `/p/{id}` 308。
 
-- [ ] **Step 3: 用真实浏览器做 UI/UX 验证**
+- [x] **Step 3: 用真实浏览器做 UI/UX 验证**
 
 验证项目切换、返回 Projects、Markdown 相对图片、搜索结果、preview、raw、Toast、history back/forward；分别检查 compact、toc-middle、toc-right 和 preview 开启状态。确认 topbar 不覆盖正文，toc-middle/toc-right 控制按钮仍位于内容区左下/右下并保持 16px 下边距。
 
-- [ ] **Step 4: 更新用户文档**
+- [x] **Step 4: 更新用户文档**
 
 README 只增加快速入口并链接 `docs/global-server.md`；新文档详细说明：
 
@@ -879,6 +881,8 @@ markview --global --private=false
 ```
 
 明确默认 loopback、公开警告、项目级 port/private 被忽略、项目 runtime 懒加载、registry 更新在下一请求生效，以及不存在项目不会自动 prune。
+
+执行记录：临时 `USERPROFILE` 下真实启动两个项目，验证 listener 为 `127.0.0.1`，主页、同名文件、search、file-tree、raw、SSE 项目隔离、registry 删除即时 404、缺失目录卡片和 308 query 保留均通过。Browser Skill 验证了项目切换、返回 Projects、相对图片、搜索结果、preview、history back/forward、compact/toc-middle/toc-right 与 preview 避让；DOM 几何显示 topbar 为独立 44px 行，TOC 控制在内容区底部 16px。Chrome image readback 持续失败，未生成截图证据；Browser Skill 不支持修改 Agent Window 内部 viewport，因此移动端视觉由现有响应式自动化测试覆盖。
 
 - [ ] **Step 5: 更新 checkbox 并提交文档**
 
