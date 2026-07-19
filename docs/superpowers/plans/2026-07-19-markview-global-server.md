@@ -513,11 +513,11 @@ git commit -m "refactor: instance project HTTP server"
 - Produces: `NewWatcher(root ProjectRoot, cfg config.Config, events *EventHub) (*Watcher, error)`、`Run(context.Context) error`、`Close() error`。
 - Consumes: Task 3 的 `ProjectRoot.Resolve` 和 Task 4 的 `EventHub`。
 
-- [ ] **Step 1: 写 watcher 根外动态目录测试**
+- [x] **Step 1: 写 watcher 根外动态目录测试**
 
 创建项目根和外部目录，启动 Watcher 后在项目内创建指向外部目录的 symlink/junction，写入 Markdown 文件，并断言 EventHub 在短超时内没有消息。另测项目内 Markdown 修改只发布项目内 slash 相对路径。
 
-- [ ] **Step 2: 确认 RED**
+- [x] **Step 2: 确认 RED**
 
 ```bash
 go test ./internal/handlers -run 'EventHub|Watcher' -count=1
@@ -525,11 +525,11 @@ go test ./internal/handlers -run 'EventHub|Watcher' -count=1
 
 Expected: FAIL，实例类型不存在或旧 watcher 将根外动态目录加入监听。
 
-- [ ] **Step 3: 实现 Watcher 生命周期和边界**
+- [x] **Step 3: 实现 Watcher 生命周期和边界**
 
 Watcher 持有自己的 `fsnotify.Watcher`、root、config、hub、`sync.Once` 和 done channel。初始 WalkDir、Create 目录和事件发布都调用 root boundary helper；越界目录 `SkipDir`，越界事件记录 debug 后丢弃。删除包级 `watcher`、`stopChan`、`watchedDir` 和共享 debounce 状态。
 
-- [ ] **Step 4: 验证 handler 与 race**
+- [x] **Step 4: 验证 handler 与 race**
 
 ```bash
 go test ./internal/handlers -count=1
@@ -539,7 +539,9 @@ go test ./... -count=1
 
 Expected: PASS，无跨 hub 消息、根外监听或 data race。
 
-- [ ] **Step 5: 提交 runtime 事件隔离**
+执行记录：项目隔离、动态 watch_dir 子目录、运行期根外 junction、SSE 相对路径和幂等 Close 测试均 PASS，`go test ./... -count=1` 全绿；本机 race 限制同 Task 1。
+
+- [x] **Step 5: 提交 runtime 事件隔离**
 
 ```bash
 git add internal/handlers docs/superpowers/plans/2026-07-19-markview-global-server.md

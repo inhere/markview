@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -134,15 +135,23 @@ func run(c *cflag.CFlags, content fs.FS) error {
 	ccolor.Printf("Serving directory: <info>%s</>\n", config.Cfg.TargetDir)
 	ccolor.Printf("Default entry file: <info>%s</>\n", config.Cfg.EntryFile)
 
-	if config.Cfg.EnableWatch {
-		go handlers.WatchDirectory(config.Cfg.TargetDir)
-	}
-
 	projectRoot, err := handlers.NewProjectRoot(config.Cfg.TargetDir)
 	if err != nil {
 		return err
 	}
-	projectServer := handlers.NewProjectServer(config.Cfg, projectRoot, nil, content)
+	events := handlers.NewEventHub()
+	projectServer := handlers.NewProjectServer(config.Cfg, projectRoot, events, content)
+	if config.Cfg.EnableWatch {
+		projectWatcher, err := handlers.NewWatcher(projectRoot, config.Cfg, events)
+		if err != nil {
+			return err
+		}
+		go func() {
+			if err := projectWatcher.Run(context.Background()); err != nil {
+				clog.Errorf("WATCH: %v", err)
+			}
+		}()
+	}
 
 	// SSE 是长连接，server 级别不设置 WriteTimeout；普通 API 通过 TimeoutHandler 限时。
 	mainServer := &http.Server{
