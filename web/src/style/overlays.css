@@ -1273,8 +1273,8 @@ div.mermaid {
     display: flex;
     align-items: center;
     gap: 16px;
-    max-width: 360px;
-    min-width: 200px;
+    width: min(520px, calc(100vw - 48px));
+    min-width: min(280px, calc(100vw - 48px));
     opacity: 0;
     transform: translateY(16px);
     transition: opacity 0.25s ease, transform 0.25s ease;
@@ -1334,9 +1334,15 @@ div.mermaid {
     font-size: 13px;
     color: var(--text-heading);
     font-weight: 600;
+    text-decoration: none;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.toast-file:hover {
+    color: var(--accent-primary);
+    text-decoration: underline;
 }
 
 .toast-count {

@@ -116,11 +116,25 @@ function showFileChangeToast(files: string[]): void {
     const message = document.createElement('div');
     message.className = 'toast-message';
 
-    if (files.length === 1) {
-        const fileName = files[0].split('/').pop() || files[0];
-        message.innerHTML = `<span class="toast-label">文件变动</span><span class="toast-file">${fileName}</span>`;
-    } else {
-        message.innerHTML = `<span class="toast-label">文件变动</span><span class="toast-count">${files.length} 个文件</span>`;
+    const label = document.createElement('span');
+    label.className = 'toast-label';
+    label.textContent = '文件变动';
+    message.appendChild(label);
+
+    files.slice(0, 3).forEach(file => {
+        const normalizedPath = normalizeFilePath(file);
+        const link = document.createElement('a');
+        link.className = 'toast-file';
+        link.href = '/' + normalizedPath.split('/').map(encodeURIComponent).join('/');
+        link.textContent = normalizedPath;
+        message.appendChild(link);
+    });
+
+    if (files.length > 3) {
+        const count = document.createElement('span');
+        count.className = 'toast-count';
+        count.textContent = `还有 ${files.length - 3} 个文件`;
+        message.appendChild(count);
     }
 
     const closeBtn = document.createElement('button');

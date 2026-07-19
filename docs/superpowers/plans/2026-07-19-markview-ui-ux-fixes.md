@@ -286,7 +286,7 @@ git commit -m "fix: skip path-only content searches"
 - Consumes: SSE `msg.files: string[]`。
 - Produces: 最多三个 `.toast-file` 站内链接，以及可选 `.toast-count` 剩余数量。
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 通过已有 `setupLiveReloadStatus` 触发 Toast，验证安全链接和数量：
 
@@ -310,13 +310,13 @@ test('renders at most three safe clickable file links', () => {
 expect(overlaysCssText).toMatch(/\.file-change-toast\s*\{[^}]*width:\s*min\(520px,\s*calc\(100vw - 48px\)\);/s);
 ```
 
-- [ ] **Step 2: 验证 RED**
+- [x] **Step 2: 验证 RED**
 
 Run: `cd web && bun test src/components/live-status.test.ts src/layout-css.test.ts`
 
 Expected: FAIL，当前 Toast 没有链接且最大宽度为 360px。
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 在 `live-status.ts` 中用 DOM API 替换 message 的 `innerHTML`：
 
@@ -364,7 +364,7 @@ if (files.length > 3) {
 }
 ```
 
-- [ ] **Step 4: 验证 GREEN 并更新进度**
+- [x] **Step 4: 验证 GREEN 并更新进度**
 
 Run: `cd web && bun test src/components/live-status.test.ts src/layout-css.test.ts && bun test && bun run build`
 
@@ -372,7 +372,7 @@ Expected: 目标测试、全部前端测试和前端构建通过。
 
 将 `docs/TODO.md` 的 UX002 checkbox 改为 `[x]`。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add web/src/components/live-status.ts web/src/components/live-status.test.ts web/src/style/overlays.css web/src/layout-css.test.ts

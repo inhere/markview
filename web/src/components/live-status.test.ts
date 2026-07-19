@@ -28,6 +28,32 @@ describe('live reload status', () => {
         expect(liveDot.style.backgroundColor).toBe('');
     });
 
+    test('renders at most three safe clickable file links', async () => {
+        const source = createFakeEventSource();
+        const files = ['docs/<unsafe>.md', 'docs/two.md', 'docs/three.md', 'docs/four.md'];
+        const fileTreeJSON = JSON.stringify(files.map(file => ({
+            name: file,
+            href: `/${file}`,
+            matchPath: file,
+            kind: 'file',
+            navigable: true,
+        })));
+
+        await withFileTreeDOM(async () => {
+            setupLiveReloadStatus(source, null, null, async () => {});
+            source.onmessage?.({
+                data: JSON.stringify({ type: 'reload', files }),
+            });
+
+            const links = [...document.querySelectorAll<HTMLAnchorElement>('.toast-file')];
+            expect(links).toHaveLength(3);
+            expect(links[0].textContent).toBe('docs/<unsafe>.md');
+            expect(links[0].innerHTML).not.toContain('<unsafe>');
+            expect(links[0].getAttribute('href')).toBe('/docs/%3Cunsafe%3E.md');
+            expect(document.querySelector('.toast-count')?.textContent).toBe('还有 1 个文件');
+        }, { fileTreeJSON });
+    });
+
     test('refreshes file tree after SSE reconnects from offline', async () => {
         const source = createFakeEventSource();
         let fetchCount = 0;

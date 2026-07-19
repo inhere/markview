@@ -66,6 +66,10 @@ describe('layout CSS modes', () => {
         expect(overlaysCssText).toMatch(/@media \(max-width:\s*1023px\)\s*\{[\s\S]*\.content-search-panel\s*\{[^}]*top:\s*12px;[^}]*bottom:\s*12px;/s);
     });
 
+    test('gives file change notifications responsive reading width', () => {
+        expect(overlaysCssText).toMatch(/\.file-change-toast\s*\{[^}]*width:\s*min\(520px,\s*calc\(100vw - 48px\)\);/s);
+    });
+
     test('defines desktop rules for toc-middle and floating toc-right', () => {
         expect(cssText).toContain('@media (min-width: 1024px)');
         expectRule(/--toc-width:\s*280px;/);
