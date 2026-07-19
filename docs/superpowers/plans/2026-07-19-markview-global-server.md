@@ -895,7 +895,7 @@ git add -p docs/TODO.md
 git commit -m "docs: complete global server feature"
 ```
 
-- [ ] **Step 6: 最终核验提交与推送状态**
+- [x] **Step 6: 最终核验提交与推送状态**
 
 ```bash
 git status --short --branch
@@ -906,3 +906,5 @@ git status --short --branch
 ```
 
 Expected: 所有计划提交已推送，分支显示与 `origin/main` up to date；`docs/TODO.md` 仅保留用户未纳入 FEA002 提交的其他修改。
+
+执行记录：`main` 已快进合并功能分支并推送至 `origin/main`；FEA002 checkbox 已单行提交，工作区仅保留用户原有的其他 `docs/TODO.md` 修改。当前子仓库未初始化 Beads（`bd where` 返回 `No active beads workspace found`），本次未创建 Beads issue。
