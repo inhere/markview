@@ -156,7 +156,7 @@ git commit -m "fix: isolate project dotenv loading"
 - Produces: `IndexedProject`、`ProjectIndex`、`BuildIndex(registry Registry) (ProjectIndex, error)`。
 - Preserves: `Load`、`Save`、`Upsert`、`List`、`Resolve` 的现有外部行为。
 
-- [ ] **Step 1: 写 StableID、碰撞和原子保存失败测试**
+- [x] **Step 1: 写 StableID、碰撞和原子保存失败测试**
 
 ```go
 func TestStableIDUsesNormalizedProjectKey(t *testing.T) {
@@ -183,7 +183,7 @@ func TestBuildIndexRejectsDuplicateID(t *testing.T) {
 
 原子保存测试通过注入窄小的包级 `renameFile = os.Rename` seam，让 rename 返回错误并断言旧文件内容未改变；不要暴露可配置 ID 长度。
 
-- [ ] **Step 2: 运行项目包测试，确认 RED**
+- [x] **Step 2: 运行项目包测试，确认 RED**
 
 ```bash
 go test ./internal/projects -run 'StableID|BuildIndex|Save' -count=1
@@ -191,13 +191,13 @@ go test ./internal/projects -run 'StableID|BuildIndex|Save' -count=1
 
 Expected: FAIL，缺少 StableID/BuildIndex，旧 Save 不满足 rename 失败保留旧快照测试。
 
-- [ ] **Step 3: 实现最小标准库 ID 与索引**
+- [x] **Step 3: 实现最小标准库 ID 与索引**
 
 ```go
 type IndexedProject struct {
 	ID     string
 	Path   string
-	Entry  ProjectEntry
+	Record ProjectRecord
 	Exists bool
 }
 
@@ -213,9 +213,9 @@ func StableID(targetDir string) (string, error) {
 }
 ```
 
-`BuildIndex` 遍历 registry map，计算 ID、检测已占用 ID，并用 `fsutil.IsDir(path)` 塡充 `Exists`。
+`BuildIndex` 遍历 registry map，计算 ID、检测已占用 ID，并用 `os.Stat(path)` 塡充 `Exists`。
 
-- [ ] **Step 4: 把 Save 改为同目录原子替换**
+- [x] **Step 4: 把 Save 改为同目录原子替换**
 
 ```go
 func Save(path string, registry Registry) (err error) {
@@ -236,7 +236,7 @@ func Save(path string, registry Registry) (err error) {
 }
 ```
 
-- [ ] **Step 5: 验证项目包并提交**
+- [x] **Step 5: 验证项目包并提交**
 
 ```bash
 go test ./internal/projects -count=1

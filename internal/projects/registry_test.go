@@ -1,6 +1,8 @@
 package projects
 
 import (
+	"encoding/hex"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,6 +20,70 @@ func TestRegistryPath(t *testing.T) {
 
 	assert.NoErr(t, err)
 	assert.Eq(t, filepath.Join(home, ".config", "markview", "markview-projects.json"), path)
+}
+
+func TestStableIDUsesNormalizedProjectKey(t *testing.T) {
+	dir := t.TempDir()
+
+	id1, err := StableID(dir)
+	assert.NoErr(t, err)
+	id2, err := StableID(filepath.Join(dir, "."))
+	assert.NoErr(t, err)
+
+	assert.Eq(t, 12, len(id1))
+	_, err = hex.DecodeString(id1)
+	assert.NoErr(t, err)
+	assert.Eq(t, id1, id2)
+}
+
+func TestBuildIndexRejectsStableIDCollision(t *testing.T) {
+	original := stableID
+	t.Cleanup(func() { stableID = original })
+	stableID = func(string) (string, error) { return "aaaaaaaaaaaa", nil }
+
+	_, err := BuildIndex(Registry{
+		filepath.Join(t.TempDir(), "a"): {Name: "A"},
+		filepath.Join(t.TempDir(), "b"): {Name: "B"},
+	})
+
+	assert.Err(t, err)
+}
+
+func TestBuildIndexKeepsMissingProject(t *testing.T) {
+	dir := t.TempDir()
+	existing := filepath.Join(dir, "existing")
+	assert.NoErr(t, os.Mkdir(existing, 0755))
+	missing := filepath.Join(dir, "missing")
+
+	index, err := BuildIndex(Registry{
+		existing: {Name: "Existing"},
+		missing:  {Name: "Missing"},
+	})
+
+	assert.NoErr(t, err)
+	existingID, err := StableID(existing)
+	assert.NoErr(t, err)
+	missingID, err := StableID(missing)
+	assert.NoErr(t, err)
+	assert.True(t, index[existingID].Exists)
+	assert.False(t, index[missingID].Exists)
+	assert.Eq(t, missing, index[missingID].Path)
+}
+
+func TestSaveRenameFailurePreservesPreviousRegistry(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "markview-projects.json")
+	oldData := []byte("{\n  \"old\": {\"port\": 6100}\n}\n")
+	assert.NoErr(t, os.WriteFile(path, oldData, 0644))
+	original := renameFile
+	t.Cleanup(func() { renameFile = original })
+	renameFile = func(string, string) error { return errors.New("rename failed") }
+
+	err := Save(path, Registry{"new": {Port: 6200}})
+
+	assert.Err(t, err)
+	current, readErr := os.ReadFile(path)
+	assert.NoErr(t, readErr)
+	assert.Eq(t, string(oldData), string(current))
 }
 
 func TestLoad(t *testing.T) {

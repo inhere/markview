@@ -1,11 +1,16 @@
 package projects
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -23,9 +28,20 @@ type ProjectRecord struct {
 
 type Registry map[string]ProjectRecord
 
+type IndexedProject struct {
+	ID     string
+	Path   string
+	Record ProjectRecord
+	Exists bool
+}
+
+type ProjectIndex map[string]IndexedProject
+
 var (
 	ErrProjectNotFound  = errors.New("project not found")
 	ErrProjectAmbiguous = errors.New("project selector is ambiguous")
+	stableID            = StableID
+	renameFile          = os.Rename
 )
 
 type ProjectEntry struct {
@@ -47,6 +63,44 @@ func ProjectKey(targetDir string) (string, error) {
 		return "", err
 	}
 	return filepath.Clean(absPath), nil
+}
+
+func StableID(targetDir string) (string, error) {
+	key, err := ProjectKey(targetDir)
+	if err != nil {
+		return "", err
+	}
+	key = filepath.ToSlash(key)
+	if runtime.GOOS == "windows" {
+		key = strings.ToLower(key)
+	}
+	sum := sha256.Sum256([]byte(key))
+	return hex.EncodeToString(sum[:])[:12], nil
+}
+
+func BuildIndex(registry Registry) (ProjectIndex, error) {
+	index := make(ProjectIndex, len(registry))
+	for targetDir, record := range registry {
+		path, err := ProjectKey(targetDir)
+		if err != nil {
+			return nil, err
+		}
+		id, err := stableID(path)
+		if err != nil {
+			return nil, err
+		}
+		if existing, ok := index[id]; ok && existing.Path != path {
+			return nil, fmt.Errorf("project ID collision %s: %q and %q", id, existing.Path, path)
+		}
+		info, statErr := os.Stat(path)
+		index[id] = IndexedProject{
+			ID:     id,
+			Path:   path,
+			Record: record,
+			Exists: statErr == nil && info.IsDir(),
+		}
+	}
+	return index, nil
 }
 
 func Load(path string) (Registry, error) {
@@ -78,7 +132,29 @@ func Save(path string, registry Registry) error {
 		return err
 	}
 	data = append(data, '\n')
-	return os.WriteFile(path, data, 0644)
+
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".markview-projects-*")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	if err := tmp.Chmod(0644); err != nil {
+		tmp.Close()
+		return err
+	}
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return renameFile(tmpPath, path)
 }
 
 func LookupPort(registry Registry, targetDir string) (int, bool) {
