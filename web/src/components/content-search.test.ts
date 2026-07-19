@@ -1,7 +1,19 @@
 import { describe, expect, test } from 'bun:test';
 import { JSDOM } from 'jsdom';
-import { renderResults, setupContentSearch } from './content-search';
+import { hasSearchTerms, renderResults, setupContentSearch } from './content-search';
 import type { SearchResponse } from './content-search';
+
+describe('content search query validation', () => {
+    test('skips path-only queries', () => {
+        expect(hasSearchTerms('path:docs')).toBe(false);
+        expect(hasSearchTerms('path:docs path:api')).toBe(false);
+    });
+
+    test('keeps keyword and pure exclude queries searchable', () => {
+        expect(hasSearchTerms('path:docs keyword')).toBe(true);
+        expect(hasSearchTerms('!vendor')).toBe(true);
+    });
+});
 
 /**
  * content-search.ts 搜索结果文案渲染测试

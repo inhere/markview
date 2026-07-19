@@ -128,9 +128,17 @@ function debounce<T extends (...args: unknown[]) => unknown>(
     };
 }
 
+export function hasSearchTerms(query: string): boolean {
+    return query
+        .split(/\s+/)
+        .filter(term => term && !term.startsWith('path:'))
+        .join(' ')
+        .length >= 2;
+}
+
 /** 执行搜索 */
 async function performSearch(query: string, resultsContainer: HTMLElement): void {
-    if (query.length < 2) {
+    if (!hasSearchTerms(query)) {
         resultsContainer.innerHTML = '';
         resultsContainer.style.display = 'none';
         return;

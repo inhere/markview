@@ -207,7 +207,7 @@ git commit -m "fix: dock collapsed toc controls"
 - Consumes: 搜索输入框的 trimmed query。
 - Produces: `hasSearchTerms(query: string): boolean`，在 `performSearch` 发请求前使用。
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 导出查询判定并测试现有语义：
 
@@ -227,13 +227,13 @@ describe('content search query validation', () => {
 });
 ```
 
-- [ ] **Step 2: 验证 RED**
+- [x] **Step 2: 验证 RED**
 
 Run: `cd web && bun test src/components/content-search.test.ts`
 
 Expected: FAIL，`hasSearchTerms` 尚未导出。
 
-- [ ] **Step 3: 最小实现**
+- [x] **Step 3: 最小实现**
 
 ```ts
 export function hasSearchTerms(query: string): boolean {
@@ -255,7 +255,7 @@ if (!hasSearchTerms(query)) {
 }
 ```
 
-- [ ] **Step 4: 验证 GREEN 并更新进度**
+- [x] **Step 4: 验证 GREEN 并更新进度**
 
 Run: `cd web && bun test src/components/content-search.test.ts && bun test`
 
@@ -263,7 +263,7 @@ Expected: 目标测试和全部前端测试通过。
 
 将 `docs/TODO.md` 的 UX001 checkbox 改为 `[x]`。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add web/src/components/content-search.ts web/src/components/content-search.test.ts
