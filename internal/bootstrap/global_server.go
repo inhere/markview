@@ -84,7 +84,7 @@ func (server *globalServer) renderHome(w http.ResponseWriter) {
 			Name:      name,
 			Path:      simplifyProjectPath(project.Path),
 			URL:       "/p/" + id + "/",
-			Added:     entry.Record.Added,
+			Added:     formatProjectAdded(entry.Record.Added),
 			Available: project.Exists,
 		})
 	}

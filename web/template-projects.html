@@ -47,14 +47,14 @@
     .project.unavailable::before { background: var(--muted); }
     .project-head { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; }
     h2 { margin: 0; font: 600 25px/1.1 "Iowan Old Style", "Palatino Linotype", Georgia, serif; overflow-wrap: anywhere; }
-    .status { flex: none; padding: 3px 9px; border: 1px solid color-mix(in srgb, var(--ok), transparent 58%); border-radius: 999px; color: var(--ok); font-size: 11px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+    .project-name { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+    .project-name:hover { color: var(--accent); text-decoration-thickness: 2px; }
+    .project-name:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent), transparent 65%); outline-offset: 5px; border-radius: 2px; }
+    .status { flex: none; padding: 2px 7px; border: 1px solid color-mix(in srgb, var(--ok), transparent 58%); border-radius: 999px; color: var(--ok); font-size: 10px; font-weight: 400; letter-spacing: .04em; text-transform: uppercase; }
     .unavailable .status { border-color: var(--line); color: var(--muted); }
     .path { min-height: 46px; margin: 18px 0 20px; color: var(--muted); font: 13px/1.45 "Cascadia Mono", Consolas, monospace; overflow-wrap: anywhere; }
     .meta { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 15px; border-top: 1px solid var(--line); }
     .added { color: var(--muted); font-size: 12px; }
-    .enter { color: var(--accent); font-weight: 750; text-decoration-thickness: 1px; text-underline-offset: 4px; }
-    .enter:hover { text-decoration-thickness: 2px; }
-    .enter:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent), transparent 65%); outline-offset: 5px; border-radius: 2px; }
     .disabled { color: var(--muted); font-size: 12px; }
     .empty { padding: 48px; border: 1px dashed var(--line); border-radius: 6px 28px 6px 6px; background: var(--card); text-align: center; }
     .empty h2 { margin-bottom: 10px; }
@@ -81,13 +81,13 @@
       {{range .Projects}}
       <article class="project{{if not .Available}} unavailable{{end}}">
         <div class="project-head">
-          <h2>{{.Name}}</h2>
+          <h2>{{if .Available}}<a class="project-name" href="{{.URL}}">{{.Name}}</a>{{else}}{{.Name}}{{end}}</h2>
           <span class="status">{{if .Available}}Ready{{else}}Missing{{end}}</span>
         </div>
         <p class="path">{{.Path}}</p>
         <div class="meta">
           <span class="added">Added {{.Added}}</span>
-          {{if .Available}}<a class="enter" href="{{.URL}}">Open project →</a>{{else}}<span class="disabled">Run prune/remove to clean up</span>{{end}}
+          {{if not .Available}}<span class="disabled">Run prune/remove to clean up</span>{{end}}
         </div>
       </article>
       {{end}}

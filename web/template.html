@@ -82,14 +82,6 @@
         </div>
     </div>
 
-    {{if .GlobalMode}}
-    <nav class="global-topbar" aria-label="Project navigation">
-        <a class="global-topbar-back" href="/">← Projects</a>
-        <span class="global-topbar-name">{{.ProjectName}}</span>
-        <span class="global-topbar-path" title="{{.ProjectPath}}">{{.ProjectPath}}</span>
-    </nav>
-    {{end}}
-
     <div class="app-shell">
         <!-- Sidebar -->
         <aside class="files-pane sidebar" id="files-pane">
@@ -171,6 +163,13 @@
 
         <!-- Main Content -->
         <main class="content-wrapper">
+            {{if .GlobalMode}}
+            <nav class="global-topbar" aria-label="Project navigation">
+                <a class="global-topbar-back" href="/">← Projects</a>
+                <span class="global-topbar-name">{{.ProjectName}}</span>
+                <span class="global-topbar-path" title="{{.ProjectPath}}">{{.ProjectPath}}</span>
+            </nav>
+            {{end}}
             <!-- Content Search -->
             <div class="content-search-wrapper" id="content-search" hidden>
                 <button class="content-search-backdrop" type="button" aria-label="Close search"></button>

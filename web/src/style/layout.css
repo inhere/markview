@@ -18,18 +18,17 @@ body {
     display: block;
 }
 
-body.global-mode {
-    display: grid;
-    grid-template-rows: 44px minmax(0, 1fr);
-}
-
-body.global-mode .app-shell {
-    height: auto;
-    min-height: 0;
+body.global-mode .content-wrapper {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
 }
 
 .global-topbar {
+    width: 100%;
     min-width: 0;
+    min-height: 44px;
+    margin-bottom: 16px;
     padding: 0 112px 0 16px;
     display: flex;
     align-items: center;
@@ -174,10 +173,6 @@ body.sidebar-collapsed .app-shell {
         height: 100vh;
     }
 
-    html[data-layout] body.global-mode .files-pane {
-        height: 100%;
-    }
-
     /* toc-middle and toc-right keep TOC out of the grid and turn it into a floating overlay. */
     html[data-layout="toc-middle"] .toc-pane {
         position: fixed;
@@ -301,10 +296,6 @@ body.sidebar-collapsed .app-shell {
     html[data-layout="compact"] body.sidebar-collapsed .files-pane {
         grid-row: 1 / -1;
         height: 100vh;
-    }
-
-    html[data-layout="compact"] body.global-mode.sidebar-collapsed .files-pane {
-        height: 100%;
     }
 
     html[data-layout="toc-middle"] body.sidebar-collapsed .app-shell {

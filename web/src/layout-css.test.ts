@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import templateHtml from '../template.html' with { type: 'text' };
+import projectsTemplateHtml from '../template-projects.html' with { type: 'text' };
 import appCssText from './style/app.css' with { type: 'text' };
 import tokensCssText from './style/tokens.css' with { type: 'text' };
 import layoutCssText from './style/layout.css' with { type: 'text' };
@@ -55,15 +56,23 @@ describe('layout CSS modes', () => {
         expect(toolbarCssText).not.toMatch(/\.toolbar\.expanded\s*\{[^}]*opacity:\s*0\.5;/s);
     });
 
-    test('renders global navigation as its own layout row without moving TOC controls', () => {
+    test('keeps global navigation inside the scrolling content area', () => {
         expect(templateHtml).toContain('{{if .GlobalMode}}');
         expect(templateHtml).toContain('class="global-topbar"');
         expect(templateHtml).toContain('aria-label="Project navigation"');
-        expect(layoutCssText).toMatch(/body\.global-mode\s*\{[^}]*display:\s*grid;[^}]*grid-template-rows:\s*44px\s+minmax\(0,\s*1fr\);/s);
-        expect(layoutCssText).toMatch(/body\.global-mode\s+\.app-shell\s*\{[^}]*height:\s*auto;[^}]*min-height:\s*0;/s);
-        expect(layoutCssText).toMatch(/\.global-topbar\s*\{[^}]*min-width:\s*0;[^}]*border-bottom:\s*1px solid var\(--border-light\);/s);
+        expect(templateHtml.indexOf('class="global-topbar"')).toBeGreaterThan(templateHtml.indexOf('class="content-wrapper"'));
+        expect(layoutCssText).not.toMatch(/body\.global-mode\s*\{[^}]*grid-template-rows:/s);
+        expect(layoutCssText).toMatch(/body\.global-mode\s+\.content-wrapper\s*\{[^}]*flex-direction:\s*column;/s);
+        expect(layoutCssText).toMatch(/\.global-topbar\s*\{[^}]*width:\s*100%;[^}]*border-bottom:\s*1px solid var\(--border-light\);/s);
+        expect(layoutCssText).not.toMatch(/\.global-topbar\s*\{[^}]*(?:position:\s*(?:fixed|sticky)|inset:)/s);
         expectRule(/html\[data-layout="toc-middle"\]\s+body:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*bottom:\s*16px;/s);
         expectRule(/html\[data-layout="toc-right"\]\s+body:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*bottom:\s*16px;/s);
+    });
+
+    test('makes project names the only entry link and keeps status labels quiet', () => {
+        expect(projectsTemplateHtml).toContain('<a class="project-name" href="{{.URL}}">{{.Name}}</a>');
+        expect(projectsTemplateHtml).not.toContain('Open project');
+        expect(projectsTemplateHtml).toMatch(/\.status\s*\{[^}]*border:\s*1px solid[^}]*font-size:\s*10px;[^}]*font-weight:\s*400;/s);
     });
 
     test('defines content search trigger and centered overlay styles', () => {
@@ -101,7 +110,7 @@ describe('layout CSS modes', () => {
         expectRule(/html\[data-layout="toc-middle"\]\s+body:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*top:\s*auto;[^}]*left:\s*calc\(var\(--sidebar-width\) \+ 16px\);[^}]*bottom:\s*16px;[^}]*width:\s*48px;[^}]*height:\s*48px;/s);
         expectRule(/html\[data-layout="toc-middle"\]\s+body\.sidebar-collapsed:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*left:\s*calc\(var\(--sidebar-collapsed-width\) \+ 16px\);/s);
         expectRule(/html\[data-layout="toc-right"\]\s+body:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*top:\s*auto;[^}]*right:\s*16px;[^}]*bottom:\s*16px;[^}]*width:\s*48px;[^}]*height:\s*48px;[^}]*transform:\s*none;/s);
-        expectRule(/\.toc-section-toggle\s+svg\s*\{[^}]*width:\s*24px;[^}]*height:\s*24px;/s);
+        expectRule(/\.toc-section-toggle\s+svg\s*\{[^}]*width:\s*20px;[^}]*height:\s*20px;/s);
         expect(cssText).not.toMatch(/html\[data-layout="toc-right"\]\s+\.sidebar-icons\s*\{[^}]*display:\s*flex;/s);
         expect(cssText).not.toContain('.toc-toggle-button');
     });

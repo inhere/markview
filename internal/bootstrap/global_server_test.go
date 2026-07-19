@@ -22,7 +22,8 @@ func TestGlobalMuxServesRegistryProjectsAndRefreshesRegistry(t *testing.T) {
 	assert.NoErr(t, os.WriteFile(filepath.Join(projectDir, ".env"), []byte("MKVIEW_WATCH=false\n"), 0644))
 	registryPath := filepath.Join(t.TempDir(), "projects.json")
 	registry := projects.Registry{}
-	assert.NoErr(t, projects.Upsert(registry, projectDir, 6100, time.Now()))
+	addedAt := time.Date(2026, 7, 19, 18, 0, 0, 0, time.FixedZone("CST", 8*60*60))
+	assert.NoErr(t, projects.Upsert(registry, projectDir, 6100, addedAt))
 	assert.NoErr(t, projects.Save(registryPath, registry))
 	projectID, err := projects.StableID(projectDir)
 	assert.NoErr(t, err)
@@ -36,6 +37,8 @@ func TestGlobalMuxServesRegistryProjectsAndRefreshesRegistry(t *testing.T) {
 	handler.ServeHTTP(home, httptest.NewRequest(http.MethodGet, "/", nil))
 	assert.Eq(t, http.StatusOK, home.Code)
 	assert.True(t, strings.Contains(home.Body.String(), filepath.Base(projectDir)))
+	assert.StrContains(t, home.Body.String(), "2026-07-19 18:00:00")
+	assert.StrNotContains(t, home.Body.String(), "+08:00")
 
 	redirect := httptest.NewRecorder()
 	handler.ServeHTTP(redirect, httptest.NewRequest(http.MethodGet, "/p/"+projectID+"?q=raw", nil))
@@ -148,7 +151,7 @@ func TestGlobalProjectsTemplateParses(t *testing.T) {
 
 func globalTestContent() fstest.MapFS {
 	return fstest.MapFS{
-		"web/template-projects.html": {Data: []byte(`{{range .Projects}}{{.Name}} {{.URL}} {{.Available}}{{end}}`)},
+		"web/template-projects.html": {Data: []byte(`{{range .Projects}}{{.Name}} {{.URL}} {{.Available}} {{.Added}}{{end}}`)},
 		"web/template-main.html":     {Data: []byte(`{{.Content}}`)},
 		"web/template.html":          {Data: []byte(`<script type="application/json">{{.AppConfigJSON}}</script>{{.MainContent}}`)},
 		"web/dist/app.css":           {Data: []byte("body{}")},
