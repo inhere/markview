@@ -9,7 +9,7 @@
     <!-- Style sheets -->
     <link rel="stylesheet" href="/static/app.css">
 </head>
-<body>
+<body{{if .GlobalMode}} class="global-mode"{{end}}>
     <!-- Top Toolbar -->
     <div class="toolbar" id="toolbar">
         <div class="toolbar-header">
@@ -81,6 +81,14 @@
             </div>
         </div>
     </div>
+
+    {{if .GlobalMode}}
+    <nav class="global-topbar" aria-label="Project navigation">
+        <a class="global-topbar-back" href="/">← Projects</a>
+        <span class="global-topbar-name">{{.ProjectName}}</span>
+        <span class="global-topbar-path" title="{{.ProjectPath}}">{{.ProjectPath}}</span>
+    </nav>
+    {{end}}
 
     <div class="app-shell">
         <!-- Sidebar -->

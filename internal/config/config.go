@@ -40,6 +40,8 @@ type Config struct {
 	IframeHosts   []string
 	UILayout      string
 	BasePath      string
+	ProjectName   string
+	ProjectPath   string
 }
 
 type AppConfig struct {

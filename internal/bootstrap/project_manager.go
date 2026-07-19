@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"path/filepath"
 	"sync"
 
 	"github.com/gookit/goutil/x/clog"
@@ -176,6 +177,11 @@ func buildProjectRuntime(ctx context.Context, project projects.IndexedProject, c
 		return nil, err
 	}
 	cfg.BasePath = "/p/" + project.ID
+	cfg.ProjectName = project.Record.Name
+	if cfg.ProjectName == "" {
+		cfg.ProjectName = filepath.Base(project.Path)
+	}
+	cfg.ProjectPath = simplifyProjectPath(project.Path)
 	root, err := handlers.NewProjectRoot(project.Path)
 	if err != nil {
 		return nil, err

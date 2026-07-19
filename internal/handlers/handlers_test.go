@@ -3,6 +3,7 @@ package handlers
 import (
 	"bufio"
 	"encoding/json"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/gookit/goutil/x/assert"
@@ -457,6 +459,32 @@ func TestRenderFullPageInjectsAppConfigJSON(t *testing.T) {
 	assert.StrContains(t, body, `"previewExts":[".md",".json",".ini"]`)
 	assert.StrContains(t, body, `"iframeHosts":["intranet.local"]`)
 	assert.StrContains(t, body, `"layout":"toc-right"`)
+}
+
+func TestGlobalTopbarOnlyRendersForGlobalFullPages(t *testing.T) {
+	root := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(root, "README.md"), []byte("# Test"), 0o644))
+	content := fstest.MapFS{
+		"web/template-main.html": {Data: []byte(`{{.Content}}`)},
+		"web/template.html":      {Data: []byte(`{{if .GlobalMode}}<nav class="global-topbar"><a href="/">← Projects</a><b>{{.ProjectName}}</b><span>{{.ProjectPath}}</span></nav>{{end}}{{.MainContent}}`)},
+	}
+	readContent := func(path string) ([]byte, error) { return fs.ReadFile(content, path) }
+
+	global := httptest.NewRecorder()
+	renderMarkdownForProject(global, filepath.Join(root, "README.md"), config.Config{
+		TargetDir:   root,
+		BasePath:    "/p/aaaaaaaaaaaa",
+		ProjectName: "Docs",
+		ProjectPath: "~/work/docs",
+	}, readContent)
+	assert.StrContains(t, global.Body.String(), `class="global-topbar"`)
+	assert.StrContains(t, global.Body.String(), `← Projects`)
+	assert.StrContains(t, global.Body.String(), `Docs`)
+	assert.StrContains(t, global.Body.String(), `~/work/docs`)
+
+	single := httptest.NewRecorder()
+	renderMarkdownForProject(single, filepath.Join(root, "README.md"), config.Config{TargetDir: root}, readContent)
+	assert.NotContains(t, single.Body.String(), `global-topbar`)
 }
 
 func TestRenderFullPageUsesSplitPaneLayoutSkeleton(t *testing.T) {

@@ -18,6 +18,62 @@ body {
     display: block;
 }
 
+body.global-mode {
+    display: grid;
+    grid-template-rows: 44px minmax(0, 1fr);
+}
+
+body.global-mode .app-shell {
+    height: auto;
+    min-height: 0;
+}
+
+.global-topbar {
+    min-width: 0;
+    padding: 0 112px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-muted);
+    font-size: 13px;
+    overflow: hidden;
+}
+
+.global-topbar-back {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    color: var(--accent-primary);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.global-topbar-back:hover {
+    text-decoration: underline;
+}
+
+.global-topbar-back:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -3px;
+}
+
+.global-topbar-name {
+    color: var(--text-heading);
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.global-topbar-path {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+}
+
 .app-shell {
     min-height: 100vh;
     height: 100vh;
@@ -116,6 +172,10 @@ body.sidebar-collapsed .app-shell {
     html[data-layout="toc-middle"] .files-pane,
     html[data-layout="toc-right"] .files-pane {
         height: 100vh;
+    }
+
+    html[data-layout] body.global-mode .files-pane {
+        height: 100%;
     }
 
     /* toc-middle and toc-right keep TOC out of the grid and turn it into a floating overlay. */
@@ -243,6 +303,10 @@ body.sidebar-collapsed .app-shell {
         height: 100vh;
     }
 
+    html[data-layout="compact"] body.global-mode.sidebar-collapsed .files-pane {
+        height: 100%;
+    }
+
     html[data-layout="toc-middle"] body.sidebar-collapsed .app-shell {
         grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
     }
@@ -260,3 +324,13 @@ body.sidebar-collapsed .app-shell {
     }
 }
 
+@media (max-width: 640px) {
+    .global-topbar {
+        padding-right: 72px;
+        gap: 8px;
+    }
+
+    .global-topbar-path {
+        display: none;
+    }
+}

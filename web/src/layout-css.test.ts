@@ -55,6 +55,17 @@ describe('layout CSS modes', () => {
         expect(toolbarCssText).not.toMatch(/\.toolbar\.expanded\s*\{[^}]*opacity:\s*0\.5;/s);
     });
 
+    test('renders global navigation as its own layout row without moving TOC controls', () => {
+        expect(templateHtml).toContain('{{if .GlobalMode}}');
+        expect(templateHtml).toContain('class="global-topbar"');
+        expect(templateHtml).toContain('aria-label="Project navigation"');
+        expect(layoutCssText).toMatch(/body\.global-mode\s*\{[^}]*display:\s*grid;[^}]*grid-template-rows:\s*44px\s+minmax\(0,\s*1fr\);/s);
+        expect(layoutCssText).toMatch(/body\.global-mode\s+\.app-shell\s*\{[^}]*height:\s*auto;[^}]*min-height:\s*0;/s);
+        expect(layoutCssText).toMatch(/\.global-topbar\s*\{[^}]*min-width:\s*0;[^}]*border-bottom:\s*1px solid var\(--border-light\);/s);
+        expectRule(/html\[data-layout="toc-middle"\]\s+body:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*bottom:\s*16px;/s);
+        expectRule(/html\[data-layout="toc-right"\]\s+body:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*bottom:\s*16px;/s);
+    });
+
     test('defines content search trigger and centered overlay styles', () => {
         expect(toolbarCssText).toMatch(/\.content-search-trigger\s*\{[^}]*display:\s*inline-flex;/s);
         expect(overlaysCssText).toMatch(/\.content-search-wrapper\[hidden\]\s*\{[^}]*display:\s*none;/s);

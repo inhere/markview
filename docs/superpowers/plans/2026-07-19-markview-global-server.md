@@ -789,11 +789,11 @@ git commit -m "feat: scope reader URLs by project"
 - Consumes: 项目页面数据中的 `GlobalMode`、`ProjectName`、`ProjectPath`。
 - Preserves: toc-middle/toc-right 内容区底部 16px、preview 横向避让和单项目布局。
 
-- [ ] **Step 1: 写 topbar 渲染与布局失败测试**
+- [x] **Step 1: 写 topbar 渲染与布局失败测试**
 
 Go 测试断言 global Markdown/目录页包含返回 `/`、名称和安全简化路径；raw/API/SSE 与单项目 HTML 不包含 topbar。CSS 测试断言 topbar 为独立 grid row，内容区使用剩余高度，TOC 仍保持 `bottom: 16px`。
 
-- [ ] **Step 2: 确认 RED**
+- [x] **Step 2: 确认 RED**
 
 ```bash
 go test ./internal/handlers -run GlobalTopbar -count=1
@@ -802,7 +802,7 @@ cd web && bun test src/layout-css.test.ts
 
 Expected: FAIL，topbar markup 和布局规则尚不存在。
 
-- [ ] **Step 3: 实现最小语义化 topbar**
+- [x] **Step 3: 实现最小语义化 topbar**
 
 ```html
 {{if .GlobalMode}}
@@ -816,7 +816,7 @@ Expected: FAIL，topbar markup 和布局规则尚不存在。
 
 路径由服务端简化并通过 `html/template` 转义。CSS 只增加 topbar grid row；正文/sidebar 使用剩余高度，TOC 的 bottom 和 preview 避让规则不改。
 
-- [ ] **Step 4: 验证 Go、CSS 和前端**
+- [x] **Step 4: 验证 Go、CSS 和前端**
 
 ```bash
 go test ./internal/handlers -count=1
@@ -826,7 +826,9 @@ bun run build
 
 Expected: PASS；单项目模板快照不新增 topbar。
 
-- [ ] **Step 5: 提交 topbar**
+执行记录：global 完整页面与单项目页面渲染测试通过，前端 111/111 测试通过，Bun build 与 `go test ./... -count=1` 均成功；TOC 两种浮动布局继续保持内容区底部 16px。
+
+- [x] **Step 5: 提交 topbar**
 
 ```bash
 git add web/template.html web/src/style/layout.css web/src/layout-css.test.ts internal/handlers docs/superpowers/plans/2026-07-19-markview-global-server.md

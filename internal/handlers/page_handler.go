@@ -70,6 +70,9 @@ type PageData struct {
 	AppConfigJSON       template.JS
 	CurrentFilePath     string
 	AppVersion          string
+	GlobalMode          bool
+	ProjectName         string
+	ProjectPath         string
 }
 
 // IfsReader 从 embed.FS 读取文件内容
@@ -189,6 +192,9 @@ func renderFullPageForProject(w http.ResponseWriter, mainData *PageData, cfg con
 		FileTreeJSON:  utils.MustMarshalJSON(fileTree),
 		AppConfigJSON: utils.MustMarshalJSON(cfg.AppConfig()),
 		AppVersion:    cfg.Version,
+		GlobalMode:    cfg.BasePath != "",
+		ProjectName:   cfg.ProjectName,
+		ProjectPath:   cfg.ProjectPath,
 	}
 
 	setPageCacheHeaders(w)
