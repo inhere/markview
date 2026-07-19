@@ -884,7 +884,7 @@ markview --global --private=false
 
 执行记录：临时 `USERPROFILE` 下真实启动两个项目，验证 listener 为 `127.0.0.1`，主页、同名文件、search、file-tree、raw、SSE 项目隔离、registry 删除即时 404、缺失目录卡片和 308 query 保留均通过。Browser Skill 验证了项目切换、返回 Projects、相对图片、搜索结果、preview、history back/forward、compact/toc-middle/toc-right 与 preview 避让；DOM 几何显示 topbar 为独立 44px 行，TOC 控制在内容区底部 16px。Chrome image readback 持续失败，未生成截图证据；Browser Skill 不支持修改 Agent Window 内部 viewport，因此移动端视觉由现有响应式自动化测试覆盖。
 
-- [ ] **Step 5: 更新 checkbox 并提交文档**
+- [x] **Step 5: 更新 checkbox 并提交文档**
 
 只对 `docs/TODO.md` 中 FEA002 对应行使用精确 cached patch 标记完成，保留其他用户修改；勾选本计划全部任务。
 
