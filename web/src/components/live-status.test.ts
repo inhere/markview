@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { JSDOM } from 'jsdom';
-import { setupLiveReloadStatus } from './live-status';
+import { fileChangeURL, setupLiveReloadStatus } from './live-status';
 
 describe('live reload status', () => {
     test('restores live status after reconnecting from offline', () => {
@@ -52,6 +52,31 @@ describe('live reload status', () => {
             expect(links[0].getAttribute('href')).toBe('/docs/%3Cunsafe%3E.md');
             expect(document.querySelector('.toast-count')?.textContent).toBe('还有 1 个文件');
         }, { fileTreeJSON });
+    });
+
+    test('scopes toast and file-tree requests to the global project', async () => {
+        const source = createFakeEventSource();
+        const requested: string[] = [];
+
+        await withFileTreeDOM(async () => {
+            const previousFetch = globalThis.fetch;
+            globalThis.fetch = (async (input: string | URL | Request) => {
+                requested.push(String(input));
+                return new Response('[]', { status: 200 });
+            }) as typeof fetch;
+            try {
+                setupLiveReloadStatus(source, null, null, async () => {});
+                expect(fileChangeURL('docs/<unsafe>.md')).toBe('/p/aaaaaaaaaaaa/docs/%3Cunsafe%3E.md');
+
+                source.onopen?.();
+                source.onerror?.();
+                source.onopen?.();
+                await flushPromises();
+                expect(requested).toContain('/p/aaaaaaaaaaaa/api/file-tree');
+            } finally {
+                globalThis.fetch = previousFetch;
+            }
+        }, { basePath: '/p/aaaaaaaaaaaa' });
     });
 
     test('refreshes file tree after SSE reconnects from offline', async () => {
@@ -184,12 +209,13 @@ function createFakeEventSource() {
 
 async function withFileTreeDOM(
     run: () => Promise<void>,
-    options: { fileTreeJSON?: string; currentFilePathJSON?: string } = {},
+    options: { fileTreeJSON?: string; currentFilePathJSON?: string; basePath?: string } = {},
 ) {
     const dom = new JSDOM(`<!DOCTYPE html><body>
         <div id="file-tree"></div>
         <script id="file-tree-data" type="application/json">${options.fileTreeJSON ?? `[{"name":"existing.md","href":"/existing.md","matchPath":"existing.md","kind":"file","navigable":true}]`}</script>
         <script id="current-file-path-data" type="application/json">${options.currentFilePathJSON ?? `"current.md"`}</script>
+        <script id="app-config-data" type="application/json">${JSON.stringify({ basePath: options.basePath ?? '' })}</script>
     </body>`);
 
     const previousDocument = globalThis.document;

@@ -1,4 +1,5 @@
 import { renderFileTree, type FileTreeNode } from './sidebar';
+import { projectURL } from '../project-url';
 
 interface ReloadEventSource {
     onopen: null | (() => void);
@@ -125,7 +126,7 @@ function showFileChangeToast(files: string[]): void {
         const normalizedPath = normalizeFilePath(file);
         const link = document.createElement('a');
         link.className = 'toast-file';
-        link.href = '/' + normalizedPath.split('/').map(encodeURIComponent).join('/');
+        link.href = fileChangeURL(normalizedPath);
         link.textContent = normalizedPath;
         message.appendChild(link);
     });
@@ -179,7 +180,7 @@ function parseReloadMessage(data: string): ReloadMessage | null {
 
 async function refreshFileTree(): Promise<void> {
     try {
-        const response = await fetch('/api/file-tree');
+        const response = await fetch(projectURL('/api/file-tree'));
         if (!response.ok) {
             return;
         }
@@ -235,6 +236,10 @@ function hasFilesMissingFromLocalTree(files: string[]): boolean {
 
 function normalizeFilePath(path: string): string {
     return path.replace(/\\/g, '/').replace(/^\/+/, '');
+}
+
+export function fileChangeURL(path: string): string {
+    return projectURL('/' + normalizeFilePath(path).split('/').map(encodeURIComponent).join('/'));
 }
 
 export function setupLiveReloadStatus(

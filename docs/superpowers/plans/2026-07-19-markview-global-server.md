@@ -706,7 +706,7 @@ git commit -m "feat: serve registered projects globally"
 - Produces: `AppConfig.basePath: string`，单项目为 `""`，global 项目为 `/p/{id}`。
 - Produces: `projectURL(path: string, basePath?: string): string`。
 
-- [ ] **Step 1: 写 projectURL 精确行为测试**
+- [x] **Step 1: 写 projectURL 精确行为测试**
 
 ```ts
 test('prefixes project URLs once and preserves query/hash', () => {
@@ -725,7 +725,7 @@ test('leaves global and external URLs unchanged', () => {
 
 增加单项目空 basePath、相对路径、图片、download、raw、SSE、search、file-tree、Toast 和 popstate 用例。
 
-- [ ] **Step 2: 确认 RED**
+- [x] **Step 2: 确认 RED**
 
 ```bash
 cd web && bun test src/project-url.test.ts src/app-config.test.ts
@@ -733,7 +733,7 @@ cd web && bun test src/project-url.test.ts src/app-config.test.ts
 
 Expected: FAIL，helper/basePath 尚不存在。
 
-- [ ] **Step 3: 实现唯一 URL helper**
+- [x] **Step 3: 实现唯一 URL helper**
 
 ```ts
 export function projectURL(path: string, basePath = readAppConfig().basePath): string {
@@ -751,11 +751,11 @@ export function projectURL(path: string, basePath = readAppConfig().basePath): s
 
 `normalizeAppConfig` 对 basePath 只接受空字符串或 `/p/[0-9a-f]{12}`；无效注入回退为空。
 
-- [ ] **Step 4: 迁移全部项目级 URL**
+- [x] **Step 4: 迁移全部项目级 URL**
 
 所有 `/api/search`、`/api/file-tree`、`/sse`、搜索结果、文件树、目录列表、raw、preview、Markdown 相对资源、Toast 和 history 调用统一经过 `projectURL`。`buildContentBaseURL` 使用项目 URL，不再固定从 origin 根构造；模板由服务端 helper 输出带 basePath 的 raw/download/目录链接。
 
-- [ ] **Step 5: 验证前后端 URL 行为**
+- [x] **Step 5: 验证前后端 URL 行为**
 
 ```bash
 cd web && bun test
@@ -765,7 +765,9 @@ cd .. && go test ./internal/config ./internal/handlers -count=1
 
 Expected: Bun 全部 PASS、build 成功、Go 模板测试 PASS。
 
-- [ ] **Step 6: 提交 basePath 迁移**
+执行记录：前端 110/110 测试通过，Bun build 成功；`internal/config`、`internal/handlers`、`internal/bootstrap` 相关 Go 测试全部通过。
+
+- [x] **Step 6: 提交 basePath 迁移**
 
 ```bash
 git add web/src web/template.html internal/config internal/handlers docs/superpowers/plans/2026-07-19-markview-global-server.md

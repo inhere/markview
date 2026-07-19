@@ -148,6 +148,7 @@ func renderMarkdownForProject(w http.ResponseWriter, filePath string, cfg config
 		http.Error(w, err.Error(), 500)
 		return
 	}
+	mainData.CurrentFilePath = projectURLPath(cfg.BasePath, mainData.CurrentFilePath)
 
 	renderFullPageForProject(w, mainData, cfg, readContent)
 }
@@ -205,6 +206,7 @@ func renderDirectoryListingForProject(w http.ResponseWriter, r *http.Request, di
 		http.Error(w, err.Error(), 500)
 		return
 	}
+	mainData.CurrentFilePath = projectURLPath(cfg.BasePath, mainData.CurrentFilePath)
 
 	queryParam := r.URL.Query().Get("q")
 	if queryParam == queryTypeMain {
@@ -219,6 +221,13 @@ func renderDirectoryListingForProject(w http.ResponseWriter, r *http.Request, di
 	}
 
 	renderFullPageForProject(w, mainData, cfg, readContent)
+}
+
+func projectURLPath(basePath, path string) string {
+	if basePath == "" {
+		return path
+	}
+	return strings.TrimRight(basePath, "/") + "/" + strings.TrimLeft(path, "/")
 }
 
 // renderMarkdownContent renders just the markdown content (shared function)
@@ -742,7 +751,7 @@ func buildFileTreeDir(absDir, relativeDir string, cfg config.Config) ([]FileTree
 				Name:      entry.Name(),
 				Kind:      "directory",
 				Navigable: true,
-				Href:      utils.ToURLPath(entryRelativePath),
+				Href:      projectURLPath(cfg.BasePath, utils.ToURLPath(entryRelativePath)),
 				Children:  children,
 			}
 			if hasIndex {
@@ -765,7 +774,7 @@ func buildFileTreeDir(absDir, relativeDir string, cfg config.Config) ([]FileTree
 		normalizedPath := utils.NormalizeRelativePath(entryRelativePath)
 		files = append(files, FileTreeNode{
 			Name:      entry.Name(),
-			Href:      utils.ToURLPath(normalizedPath),
+			Href:      projectURLPath(cfg.BasePath, utils.ToURLPath(normalizedPath)),
 			MatchPath: normalizedPath,
 			Kind:      "file",
 			Navigable: true,

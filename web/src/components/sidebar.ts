@@ -12,6 +12,7 @@ import {
     persistFilesCollapsed,
     readSidebarPreferences,
 } from '../preferences';
+import { projectURL } from '../project-url';
 
 // Debounce 工具函数
 function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): (...args: Parameters<T>) => void {
@@ -322,7 +323,7 @@ function createTreeNode(node: FileTreeNode, currentFilePath: string): HTMLLIElem
     }
 
     if (content instanceof HTMLAnchorElement && node.href) {
-        content.href = node.href;
+        content.href = projectURL(node.href);
         content.setAttribute('aria-label', tooltipText);
     }
 

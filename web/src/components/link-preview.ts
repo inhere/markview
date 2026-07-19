@@ -16,6 +16,7 @@ import {
     DEFAULT_APP_CONFIG,
     normalizeIframeHosts,
     normalizePreviewExts,
+    readAppConfig,
 } from '../app-config';
 
 async function enhancePreviewContent(contentRoot: HTMLElement) {
@@ -402,8 +403,9 @@ async function loadInternalContent(url: string): Promise<void> {
             bodyEl.style.padding = bodyPadding;
             if (!isHTMLPreview && !isExternalIframePreview) {
                 const baseURL = new URL('.', targetUrl);
-                rewriteAttributeURLs(bodyEl, 'a[href]', 'href', baseURL);
-                rewriteAttributeURLs(bodyEl, 'img[src]', 'src', baseURL);
+                const basePath = readAppConfig().basePath;
+                rewriteAttributeURLs(bodyEl, 'a[href]', 'href', baseURL, basePath);
+                rewriteAttributeURLs(bodyEl, 'img[src]', 'src', baseURL, basePath);
             }
             bodyEl.onclick = handlePreviewContentClick;
             await enhancePreviewContent(bodyEl);

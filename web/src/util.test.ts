@@ -7,6 +7,7 @@ import {
     getContentScrollTop,
     isAlreadyAbsoluteURL,
     isInlineNavigablePath,
+    rewriteAttributeURLs,
     scrollContentTo,
     scrollToHash,
     toDisplaySlug,
@@ -27,11 +28,37 @@ describe('web util', () => {
         expect(base.toString()).toBe('http://127.0.0.1:6125/');
     });
 
+    test('buildContentBaseURL keeps relative content inside the global project', () => {
+        const base = buildContentBaseURL('docs/guide.md', 'http://127.0.0.1:6125', '/p/aaaaaaaaaaaa');
+        expect(base.toString()).toBe('http://127.0.0.1:6125/p/aaaaaaaaaaaa/docs/');
+    });
+
     test('isAlreadyAbsoluteURL recognizes absolute and root-based paths', () => {
         expect(isAlreadyAbsoluteURL('https://example.com')).toBe(true);
         expect(isAlreadyAbsoluteURL('/example/basics.md')).toBe(true);
         expect(isAlreadyAbsoluteURL('#section')).toBe(true);
         expect(isAlreadyAbsoluteURL('./basics.md')).toBe(false);
+    });
+
+    test('rewriteAttributeURLs scopes root paths and relative assets to the global project', () => {
+        const dom = new JSDOM('<article><a href="/docs/root.md">root</a><img src="../logo.svg"></article>', {
+            url: 'http://127.0.0.1:6125/p/aaaaaaaaaaaa/docs/guide.md',
+        });
+        const previousWindow = globalThis.window;
+        const previousHTMLElement = globalThis.HTMLElement;
+        globalThis.window = dom.window as unknown as Window & typeof globalThis;
+        globalThis.HTMLElement = dom.window.HTMLElement;
+        try {
+            const root = dom.window.document.querySelector('article') as HTMLElement;
+            const base = new URL('http://127.0.0.1:6125/p/aaaaaaaaaaaa/docs/');
+            rewriteAttributeURLs(root, 'a[href]', 'href', base, '/p/aaaaaaaaaaaa');
+            rewriteAttributeURLs(root, 'img[src]', 'src', base, '/p/aaaaaaaaaaaa');
+            expect(root.querySelector('a')?.getAttribute('href')).toBe('/p/aaaaaaaaaaaa/docs/root.md');
+            expect(root.querySelector('img')?.getAttribute('src')).toBe('/p/aaaaaaaaaaaa/logo.svg');
+        } finally {
+            globalThis.window = previousWindow;
+            globalThis.HTMLElement = previousHTMLElement;
+        }
     });
 
     test('isInlineNavigablePath accepts markdown pages and directory entries', () => {

@@ -3,6 +3,8 @@
  * 提供内容区域的搜索功能，在 article.paper 之前显示搜索框和结果面板
  */
 
+import { projectURL } from '../project-url';
+
 export interface SearchMatch {
     line: number;
     snippet: string;
@@ -136,6 +138,17 @@ export function hasSearchTerms(query: string): boolean {
         .length >= 2;
 }
 
+export function searchURL(query: string): string {
+    return projectURL(`/api/search?q=${encodeURIComponent(query)}`);
+}
+
+export function buildSearchResultURL(file: string, line?: number, currentURL = window.location.href): URL {
+    const url = new URL(currentURL);
+    url.pathname = projectURL(`/${file}`);
+    url.hash = line ? `#L${line}` : '';
+    return url;
+}
+
 /** 执行搜索 */
 async function performSearch(query: string, resultsContainer: HTMLElement): void {
     if (!hasSearchTerms(query)) {
@@ -152,7 +165,7 @@ async function performSearch(query: string, resultsContainer: HTMLElement): void
     `;
 
     try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(searchURL(query));
         if (!response.ok) {
             throw new Error(`Search failed: ${response.status}`);
         }
@@ -169,9 +182,7 @@ async function performSearch(query: string, resultsContainer: HTMLElement): void
 }
 
 function navigateToResult(file: string, line?: number): void {
-    const url = new URL(window.location.href);
-    url.pathname = `/${file}`;
-    url.hash = line ? `#L${line}` : '';
+    const url = buildSearchResultURL(file, line);
 
     // 使用虚拟链接触发内联导航（经过 app.ts 的导航处理）
     const anchor = document.createElement('a');

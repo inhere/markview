@@ -46,6 +46,10 @@ func TestGlobalMuxServesRegistryProjectsAndRefreshesRegistry(t *testing.T) {
 	handler.ServeHTTP(page, httptest.NewRequest(http.MethodGet, "/p/"+projectID+"/?q=raw", nil))
 	assert.Eq(t, http.StatusOK, page.Code)
 	assert.Eq(t, "# Global project", page.Body.String())
+	fullPage := httptest.NewRecorder()
+	handler.ServeHTTP(fullPage, httptest.NewRequest(http.MethodGet, "/p/"+projectID+"/", nil))
+	assert.Eq(t, http.StatusOK, fullPage.Code)
+	assert.True(t, strings.Contains(fullPage.Body.String(), `"basePath":"/p/`+projectID+`"`))
 
 	assert.NoErr(t, projects.Save(registryPath, projects.Registry{}))
 	removed := httptest.NewRecorder()
@@ -146,7 +150,7 @@ func globalTestContent() fstest.MapFS {
 	return fstest.MapFS{
 		"web/template-projects.html": {Data: []byte(`{{range .Projects}}{{.Name}} {{.URL}} {{.Available}}{{end}}`)},
 		"web/template-main.html":     {Data: []byte(`{{.Content}}`)},
-		"web/template.html":          {Data: []byte(`{{.MainContent}}`)},
+		"web/template.html":          {Data: []byte(`<script type="application/json">{{.AppConfigJSON}}</script>{{.MainContent}}`)},
 		"web/dist/app.css":           {Data: []byte("body{}")},
 	}
 }

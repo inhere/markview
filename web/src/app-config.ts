@@ -4,16 +4,19 @@ export interface AppConfig {
     previewExts: string[];
     iframeHosts: string[];
     layout: AppLayout;
+    basePath: string;
 }
 
 export const DEFAULT_APP_CONFIG: AppConfig = {
     previewExts: ['.md', '.json', '.jsonl', '.yaml', '.yml', '.toml', '.html'],
     iframeHosts: [],
     layout: 'compact',
+    basePath: '',
 };
 
 const CONFIG_SCRIPT_ID = 'app-config-data';
 const VALID_LAYOUTS = new Set<AppLayout>(['compact', 'toc-middle', 'toc-right']);
+const PROJECT_BASE_PATH = /^\/p\/[0-9a-f]{12}$/;
 
 export function normalizePreviewExts(value: unknown): string[] {
     if (!Array.isArray(value)) {
@@ -101,6 +104,9 @@ export function normalizeAppConfig(value: unknown): AppConfig {
         previewExts: normalizePreviewExts(rawConfig.previewExts),
         iframeHosts: normalizeIframeHosts(rawConfig.iframeHosts),
         layout: normalizeLayout(rawConfig.layout),
+        basePath: typeof rawConfig.basePath === 'string' && PROJECT_BASE_PATH.test(rawConfig.basePath)
+            ? rawConfig.basePath
+            : '',
     };
 }
 

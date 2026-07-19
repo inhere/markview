@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { JSDOM } from 'jsdom';
-import { hasSearchTerms, renderResults, setupContentSearch } from './content-search';
+import { buildSearchResultURL, hasSearchTerms, renderResults, searchURL, setupContentSearch } from './content-search';
 import type { SearchResponse } from './content-search';
 
 describe('content search query validation', () => {
@@ -12,6 +12,26 @@ describe('content search query validation', () => {
     test('keeps keyword and pure exclude queries searchable', () => {
         expect(hasSearchTerms('path:docs keyword')).toBe(true);
         expect(hasSearchTerms('!vendor')).toBe(true);
+    });
+});
+
+describe('content search project URLs', () => {
+    test('scopes API and result URLs to the global project', () => {
+        const dom = new JSDOM('<script id="app-config-data" type="application/json">{"basePath":"/p/aaaaaaaaaaaa"}</script>', {
+            url: 'http://127.0.0.1:6125/p/aaaaaaaaaaaa/README.md',
+        });
+        const previousDocument = globalThis.document;
+        const previousWindow = globalThis.window;
+        globalThis.document = dom.window.document;
+        globalThis.window = dom.window as unknown as Window & typeof globalThis;
+        try {
+            expect(searchURL('hello world')).toBe('/p/aaaaaaaaaaaa/api/search?q=hello%20world');
+            expect(buildSearchResultURL('docs/guide.md', 12).toString())
+                .toBe('http://127.0.0.1:6125/p/aaaaaaaaaaaa/docs/guide.md#L12');
+        } finally {
+            globalThis.document = previousDocument;
+            globalThis.window = previousWindow;
+        }
     });
 });
 

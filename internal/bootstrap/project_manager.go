@@ -175,6 +175,7 @@ func buildProjectRuntime(ctx context.Context, project projects.IndexedProject, c
 	if err := cfg.Init(project.Path, ""); err != nil {
 		return nil, err
 	}
+	cfg.BasePath = "/p/" + project.ID
 	root, err := handlers.NewProjectRoot(project.Path)
 	if err != nil {
 		return nil, err

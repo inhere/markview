@@ -24,12 +24,14 @@ describe('app config', () => {
             previewExts: [' ini ', ' .JSON ', ' json ', '', 123, '.Env'],
             iframeHosts: [' Intranet.local ', 'http://192.168.1.20:8080/app', '*.HYY.preview.test', ' .corp.local ', '', 42, 'intranet.local'],
             layout: 'toc-right',
+            basePath: '/p/aaaaaaaaaaaa',
         })));
 
         expect(config).toEqual({
             previewExts: ['.ini', '.json', '.env'],
             iframeHosts: ['intranet.local', '192.168.1.20:8080', '*.hyy.preview.test', '.corp.local'],
             layout: 'toc-right',
+            basePath: '/p/aaaaaaaaaaaa',
         });
     });
 
@@ -61,6 +63,12 @@ describe('app config', () => {
             previewExts: ['.json'],
             iframeHosts: [],
             layout: 'compact',
+            basePath: '',
         });
+    });
+
+    test('rejects malformed project base paths', () => {
+        expect(normalizeAppConfig({ basePath: '/p/not-an-id' }).basePath).toBe('');
+        expect(normalizeAppConfig({ basePath: '/p/ABCDEF123456' }).basePath).toBe('');
     });
 });

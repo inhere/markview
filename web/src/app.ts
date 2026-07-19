@@ -69,6 +69,7 @@ import {
 import { enhanceCodeBlocks } from './components/code-copy';
 import { enhanceTablesInContent } from './components/table-overflow';
 import { readAppConfig } from './app-config';
+import { projectURL } from './project-url';
 import type { AppConfig, AppLayout } from './app-config';
 import {
     applyLayoutMode,
@@ -416,9 +417,10 @@ function rewriteContentRelativeURLs() {
         return;
     }
 
-    const baseURL = buildContentBaseURL(currentFilePath);
-    rewriteAttributeURLs(content, 'a[href]', 'href', baseURL);
-    rewriteAttributeURLs(content, 'img[src]', 'src', baseURL);
+    const basePath = readAppConfig().basePath;
+    const baseURL = buildContentBaseURL(currentFilePath, window.location.origin, basePath);
+    rewriteAttributeURLs(content, 'a[href]', 'href', baseURL, basePath);
+    rewriteAttributeURLs(content, 'img[src]', 'src', baseURL, basePath);
 }
 
 function setupOnce() {
@@ -452,7 +454,7 @@ function setupOnce() {
         highlightTOC();
     });
 
-    const evtSource = new EventSource('/sse');
+    const evtSource = new EventSource(projectURL('/sse', appConfig.basePath));
     const liveDot = document.getElementById('live-dot');
     const statusText = document.getElementById('status-text');
     setupLiveReloadStatus(evtSource, liveDot, statusText, refreshCurrentPage);

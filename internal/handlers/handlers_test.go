@@ -96,6 +96,24 @@ func TestBuildFileTree(t *testing.T) {
 	}
 }
 
+func TestProjectBasePathScopesPageAndFileTreeLinks(t *testing.T) {
+	root := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(root, "README.md"), []byte("# Home"), 0o644))
+	assert.NoErr(t, os.Mkdir(filepath.Join(root, "docs"), 0o755))
+	assert.NoErr(t, os.WriteFile(filepath.Join(root, "docs", "guide.md"), []byte("# Guide"), 0o644))
+	cfg := config.Config{TargetDir: root, BasePath: "/p/aaaaaaaaaaaa"}
+
+	page, err := buildPageDataForTarget(filepath.Join(root, "README.md"), root)
+	assert.NoErr(t, err)
+	page.CurrentFilePath = projectURLPath(cfg.BasePath, page.CurrentFilePath)
+	assert.Eq(t, "/p/aaaaaaaaaaaa/README.md", page.CurrentFilePath)
+
+	tree, err := buildFileTreeForConfig(root, cfg)
+	assert.NoErr(t, err)
+	assert.Eq(t, "/p/aaaaaaaaaaaa/README.md", tree[1].Href)
+	assert.Eq(t, "/p/aaaaaaaaaaaa/docs/guide.md", tree[0].Children[0].Href)
+}
+
 func TestBuildFileTreeIncludesConfiguredDotDirectory(t *testing.T) {
 	root := t.TempDir()
 	origCfg := config.Cfg

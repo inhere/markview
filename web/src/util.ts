@@ -1,3 +1,5 @@
+import { projectURL } from './project-url';
+
 export function escapeHtml(value: string) {
     return value
         .replaceAll('&', '&amp;')
@@ -136,11 +138,11 @@ export function scrollToHash(hash: string, scrollContainer?: HTMLElement | null)
     }
 }
 
-export function buildContentBaseURL(currentFilePath: string, origin = window.location.origin) {
+export function buildContentBaseURL(currentFilePath: string, origin = window.location.origin, basePath = '') {
     const normalizedPath = currentFilePath.replace(/\\/g, '/');
     const lastSlashIndex = normalizedPath.lastIndexOf('/');
     const directory = lastSlashIndex >= 0 ? normalizedPath.slice(0, lastSlashIndex + 1) : '';
-    return new URL(`/${directory}`, origin);
+    return new URL(projectURL(`/${directory}`, basePath), origin);
 }
 
 export function isAlreadyAbsoluteURL(value: string) {
@@ -152,16 +154,21 @@ export function isAlreadyAbsoluteURL(value: string) {
         || /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmed);
 }
 
-export function rewriteAttributeURLs(root: HTMLElement, selector: string, attribute: 'href' | 'src', baseURL: URL) {
+export function rewriteAttributeURLs(root: HTMLElement, selector: string, attribute: 'href' | 'src', baseURL: URL, basePath = '') {
     root.querySelectorAll(selector).forEach(node => {
         if (!(node instanceof HTMLElement)) {
             return;
         }
 
         const rawValue = node.getAttribute(attribute);
-        if (!rawValue || isAlreadyAbsoluteURL(rawValue)) {
+        if (!rawValue) {
             return;
         }
+		if (rawValue.startsWith('/')) {
+			node.setAttribute(attribute, projectURL(rawValue, basePath));
+			return;
+		}
+		if (isAlreadyAbsoluteURL(rawValue)) return;
 
         try {
             const resolved = new URL(rawValue, baseURL);
