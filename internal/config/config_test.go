@@ -74,6 +74,14 @@ func TestConfigAppConfigCopiesPreviewExtsFromConfig(t *testing.T) {
 	assert.Eq(t, []string{"intranet.local"}, cfg.IframeHosts)
 }
 
+func TestConfigAppConfigCopiesBasePath(t *testing.T) {
+	cfg := Config{BasePath: "/p/aaaaaaaaaaaa"}
+
+	appCfg := cfg.AppConfig()
+
+	assert.Eq(t, "/p/aaaaaaaaaaaa", appCfg.BasePath)
+}
+
 func TestConfigAppConfigCopiesDefaultPreviewExts(t *testing.T) {
 	originalDefaults := append([]string(nil), DefaultPreviewExts...)
 	t.Cleanup(func() {

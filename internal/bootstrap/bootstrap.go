@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -139,12 +138,16 @@ func run(c *cflag.CFlags, content fs.FS) error {
 		go handlers.WatchDirectory(config.Cfg.TargetDir)
 	}
 
-	sseURL := "/sse"
+	projectRoot, err := handlers.NewProjectRoot(config.Cfg.TargetDir)
+	if err != nil {
+		return err
+	}
+	projectServer := handlers.NewProjectServer(config.Cfg, projectRoot, nil, content)
 
 	// SSE 是长连接，server 级别不设置 WriteTimeout；普通 API 通过 TimeoutHandler 限时。
 	mainServer := &http.Server{
 		Addr:        config.Cfg.ListenAddr(),
-		Handler:     newServerMux(content, sseURL),
+		Handler:     newServerMux(content, projectServer),
 		ReadTimeout: 5 * time.Second,
 		IdleTimeout: 120 * time.Second,
 	}
@@ -353,25 +356,11 @@ func openLocalPreview(localUrl string) {
 	}
 }
 
-func newServerMux(content fs.FS, ssePath string) *http.ServeMux {
+func newServerMux(content fs.FS, project http.Handler) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.Handle("/static/", newStaticHandler(content))
-	mux.HandleFunc(ssePath, handlers.HandleSSE)
-
-	apiHandler := http.TimeoutHandler(
-		http.HandlerFunc(handlers.HandleSearch),
-		10*time.Second, "request timeout",
-	)
-	mux.HandleFunc("/api/search", apiHandler.ServeHTTP)
-
-	fileTreeHandler := http.TimeoutHandler(
-		http.HandlerFunc(handlers.HandleFileTreeAPI),
-		10*time.Second, "request timeout",
-	)
-	mux.HandleFunc("/api/file-tree", fileTreeHandler.ServeHTTP)
-
-	mux.HandleFunc("/", handlers.HandleRequest)
+	mux.Handle("/", project)
 	return mux
 }
 
@@ -445,31 +434,11 @@ func resolvePrepareTarget(args []string) (string, string) {
 }
 
 func loadProjectDotenv(targetDir string) (map[string]string, error) {
-	data, err := os.ReadFile(filepath.Join(targetDir, ".env"))
-	if errors.Is(err, fs.ErrNotExist) {
-		return map[string]string{}, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return envutil.SplitText2map(string(data)), nil
+	return config.LoadProjectDotenv(targetDir)
 }
 
 func buildRuntimeConfig(targetDir string, dotenv map[string]string) (config.Config, error) {
-	globalCfg, err := loadGlobalRuntimeConfig()
-	if err != nil {
-		return config.Config{}, err
-	}
-	projectCfg, err := loadProjectRuntimeConfig(targetDir)
-	if err != nil {
-		return config.Config{}, err
-	}
 	registryPort := lookupProjectRegistryPort(targetDir)
-	envCfg, err := runtimeEnvConfig(dotenv)
-	if err != nil {
-		return config.Config{}, err
-	}
-
 	cliPort := (*int)(nil)
 	if cliPortFlagVisited {
 		cliPort = &config.Cfg.PortInt
@@ -479,40 +448,14 @@ func buildRuntimeConfig(targetDir string, dotenv map[string]string) (config.Conf
 		cliPrivate = &config.Cfg.Private
 	}
 
-	merged, err := config.MergeRuntimeConfig(config.MergeInput{
-		Global:       globalCfg,
+	return config.LoadProjectRuntimeConfig(targetDir, config.ProjectLoadOptions{
 		RegistryPort: registryPort,
-		Project:      projectCfg,
-		Env:          envCfg,
 		CLI: config.CLIConfig{
 			Port:    cliPort,
 			Private: cliPrivate,
 		},
+		NoBrowser: config.Cfg.NoBrowser,
 	})
-	if err != nil {
-		return config.Config{}, err
-	}
-	merged.NoBrowser = config.Cfg.NoBrowser
-	return merged, nil
-}
-
-func loadGlobalRuntimeConfig() (config.FileConfig, error) {
-	path, err := config.GlobalConfigPath()
-	if err != nil {
-		return config.FileConfig{}, err
-	}
-	if !fsutil.IsFile(path) {
-		return config.FileConfig{}, nil
-	}
-	return config.LoadFileConfig(path)
-}
-
-func loadProjectRuntimeConfig(targetDir string) (config.FileConfig, error) {
-	path, ok, err := config.FindProjectConfig(targetDir)
-	if err != nil || !ok {
-		return config.FileConfig{}, err
-	}
-	return config.LoadFileConfig(path)
 }
 
 func lookupProjectRegistryPort(targetDir string) *int {
@@ -534,38 +477,7 @@ func lookupProjectRegistryPort(targetDir string) *int {
 }
 
 func runtimeEnvConfig(dotenv map[string]string) (config.EnvConfig, error) {
-	port, err := config.ParseOptionalEnvInt(envValue(config.EnvPort, dotenv))
-	if err != nil {
-		return config.EnvConfig{}, err
-	}
-	watch, err := parseOptionalEnvBool(config.EnvWatch, envValue(config.EnvWatch, dotenv))
-	if err != nil {
-		return config.EnvConfig{}, err
-	}
-
-	envCfg := config.EnvConfig{
-		Port:  port,
-		Watch: watch,
-	}
-	if entry := envValue(config.EnvEntry, dotenv); entry != "" {
-		envCfg.Entry = &entry
-	}
-	if watchDir := envValue(config.EnvWatchDir, dotenv); watchDir != "" {
-		envCfg.WatchDir = &watchDir
-	}
-	if watchSkipDir := envValue(config.EnvWatchSkipDir, dotenv); watchSkipDir != "" {
-		envCfg.WatchSkipDir = &watchSkipDir
-	}
-	if includeDir := envValue(config.EnvIncludeDir, dotenv); includeDir != "" {
-		envCfg.IncludeDir = &includeDir
-	}
-	if previewExts := envValue(config.EnvPreviewExts, dotenv); previewExts != "" {
-		envCfg.PreviewExts = &previewExts
-	}
-	if iframeHosts := envValue(config.EnvIframeHosts, dotenv); iframeHosts != "" {
-		envCfg.IframeHosts = &iframeHosts
-	}
-	return envCfg, nil
+	return config.RuntimeEnvConfig(dotenv)
 }
 
 func envValue(name string, dotenv map[string]string) string {
@@ -584,15 +496,4 @@ func runtimeDebugEnabled(dotenv map[string]string) bool {
 	}
 	value, err := strconv.ParseBool(raw)
 	return err == nil && value
-}
-
-func parseOptionalEnvBool(name string, raw string) (*bool, error) {
-	if raw == "" {
-		return nil, nil
-	}
-	value, err := strconv.ParseBool(raw)
-	if err != nil {
-		return nil, fmt.Errorf("ENV %s %q is not a valid boolean", name, raw)
-	}
-	return &value, nil
 }

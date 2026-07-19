@@ -39,12 +39,14 @@ type Config struct {
 	PreviewExts   []string
 	IframeHosts   []string
 	UILayout      string
+	BasePath      string
 }
 
 type AppConfig struct {
 	PreviewExts []string `json:"previewExts"`
 	IframeHosts []string `json:"iframeHosts"`
 	Layout      string   `json:"layout"`
+	BasePath    string   `json:"basePath"`
 }
 
 type PortSource string
@@ -103,6 +105,7 @@ func (c *Config) AppConfig() AppConfig {
 		PreviewExts: append([]string(nil), previewExts...),
 		IframeHosts: append([]string(nil), c.IframeHosts...),
 		Layout:      layout,
+		BasePath:    c.BasePath,
 	}
 }
 

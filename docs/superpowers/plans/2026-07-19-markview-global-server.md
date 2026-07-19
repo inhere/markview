@@ -356,7 +356,7 @@ git commit -m "feat: constrain project filesystem paths"
 - Produces: `config.AppConfig.BasePath string`，单项目默认空。
 - Consumes: Task 3 的 `ProjectRoot.Resolve`。
 
-- [ ] **Step 1: 写两个 server 不串项目的失败测试**
+- [x] **Step 1: 写两个 server 不串项目的失败测试**
 
 ```go
 func TestProjectServersKeepRootsAndConfigIndependent(t *testing.T) {
@@ -375,7 +375,7 @@ func TestProjectServersKeepRootsAndConfigIndependent(t *testing.T) {
 
 增加单项目协议测试：search/file-tree 10 秒 timeout wrapper 保留、SSE 不经过 TimeoutHandler、静态缓存头不变、HTML no-store、`?q=main` 与 `?q=raw` 行为不变。
 
-- [ ] **Step 2: 确认 RED**
+- [x] **Step 2: 确认 RED**
 
 ```bash
 go test ./internal/handlers -run 'ProjectServer|ProjectServersKeepRoots' -count=1
@@ -383,7 +383,7 @@ go test ./internal/handlers -run 'ProjectServer|ProjectServersKeepRoots' -count=
 
 Expected: FAIL，ProjectServer 尚不存在。
 
-- [ ] **Step 3: 提取可并发的项目 runtime 配置加载**
+- [x] **Step 3: 提取可并发的项目 runtime 配置加载**
 
 把 Task 1 已验证的局部 dotenv 解析和纯 merge 逻辑从 `internal/bootstrap/bootstrap.go` 移动到 `internal/config/project_runtime.go`。GlobalMode 忽略项目 port/private 和 registry port，保留 entry/watch/watch_dir/watch_skip/include/preview_exts/iframe_hosts/layout；函数只返回 Config，不写 `config.Cfg` 或 debug 包级变量。
 
@@ -412,7 +412,7 @@ func LoadProjectRuntimeConfig(targetDir string, options ProjectLoadOptions) (Con
 
 测试两个 goroutine 同时加载不同项目，断言配置值隔离、进程环境不变，并验证 global 模式忽略 project/env port/private。
 
-- [ ] **Step 4: 实现项目级 EventHub 和 mux，不复制 handler**
+- [x] **Step 4: 实现项目级 EventHub 和 mux，不复制 handler**
 
 EventHub 使用一个 mutex、`map[chan string]struct{}` 和 closed bool。`Publish` 持锁执行非阻塞发送，确保不会与 unsubscribe 关闭 channel 竞争；`Close` 只关闭一次：
 
@@ -467,7 +467,7 @@ func (s *ProjectServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 将现有 handler 主流程改成方法或显式接收 `Config`、`ProjectRoot`、`EventHub`；删除读取 `config.Cfg.TargetDir`、包级 SSE clients 和 `IfsReader` 的项目级路径。渲染模板所需的嵌入资源通过 `ProjectServer.content` 读取。
 
-- [ ] **Step 5: 单项目 bootstrap 也构造 ProjectServer**
+- [x] **Step 5: 单项目 bootstrap 也构造 ProjectServer**
 
 `prepare` 返回独立 config 和 root，`run` 创建 EventHub 与 ProjectServer；global 功能尚未接入。`newServerMux` 只挂载 `/static/` 和项目 server：
 
@@ -480,7 +480,7 @@ func newServerMux(content fs.FS, project http.Handler) *http.ServeMux {
 }
 ```
 
-- [ ] **Step 6: 验证全部单项目行为**
+- [x] **Step 6: 验证全部单项目行为**
 
 ```bash
 go test ./internal/config ./internal/handlers ./internal/bootstrap -count=1
@@ -489,7 +489,9 @@ go test ./... -count=1
 
 Expected: PASS；现有单项目 URL、缓存头、SSE timeout 回归测试均不变。
 
-- [ ] **Step 7: 提交 ProjectServer 迁移**
+执行记录：独立 config/root/search/layout/file-tree 测试与现有 SSE timeout 回归均 PASS，`go test ./... -count=1` 全绿；本机 race 限制同 Task 1。
+
+- [x] **Step 7: 提交 ProjectServer 迁移**
 
 ```bash
 git add internal/config internal/handlers internal/bootstrap docs/superpowers/plans/2026-07-19-markview-global-server.md

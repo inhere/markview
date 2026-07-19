@@ -220,12 +220,5 @@ func broadcastJSON(files map[string]string) {
 		return
 	}
 
-	clientsMu.Lock()
-	defer clientsMu.Unlock()
-	for client := range clients {
-		select {
-		case client <- string(data):
-		default:
-		}
-	}
+	defaultEventHub.Publish(string(data))
 }

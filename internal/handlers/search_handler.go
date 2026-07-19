@@ -17,6 +17,10 @@ import (
 
 // HandleSearch 搜索 API handler
 func HandleSearch(w http.ResponseWriter, r *http.Request) {
+	handleSearchForConfig(w, r, config.Cfg)
+}
+
+func handleSearchForConfig(w http.ResponseWriter, r *http.Request, cfg config.Config) {
 	query := r.URL.Query().Get("q")
 	utils.Debugf("Request: %s handle search. query: %s", r.URL.Path, query)
 	if query == "" {
@@ -37,7 +41,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	maxFiles := 15
 	maxMatchesPerFile := 30
 	filesScanned := 0
-	targetDir := config.Cfg.TargetDir
+	targetDir := cfg.TargetDir
 
 	// Walk through targetDir to find .md files
 	err := filepath.WalkDir(targetDir, func(path string, d fs.DirEntry, err error) error {
@@ -49,7 +53,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 		// Skip directories
 		if d.IsDir() {
 			name := d.Name()
-			if shouldSkipDir(name) {
+			if shouldSkipDirForConfig(name, cfg) {
 				utils.Debugf("Search: Skipping dir: %s", path)
 				return filepath.SkipDir
 			}

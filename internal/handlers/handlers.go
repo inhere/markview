@@ -9,17 +9,21 @@ import (
 
 // Skip directories start with dot or in watchSkipDirs
 func shouldSkipDir(name string) bool {
+	return shouldSkipDirForConfig(name, config.Cfg)
+}
+
+func shouldSkipDirForConfig(name string, cfg config.Config) bool {
 	if name == ".git" || name == "node_modules" {
 		return true
 	}
-	if slices.Contains(config.Cfg.IncludeDirs, name) {
+	if slices.Contains(cfg.IncludeDirs, name) {
 		return false
 	}
 	// Skip directories start with dot
 	if name[0] == '.' {
 		return true
 	}
-	return slices.Contains(config.Cfg.WatchSkipDirs, name)
+	return slices.Contains(cfg.WatchSkipDirs, name)
 }
 
 func setPageCacheHeaders(w http.ResponseWriter) {

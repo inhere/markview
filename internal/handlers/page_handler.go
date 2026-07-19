@@ -139,25 +139,31 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderMarkdown(w http.ResponseWriter, filePath string) {
-	mainData, err := buildPageData(filePath)
+	renderMarkdownForProject(w, filePath, config.Cfg, IfsReader)
+}
+
+func renderMarkdownForProject(w http.ResponseWriter, filePath string, cfg config.Config, readContent func(string) ([]byte, error)) {
+	mainData, err := buildPageDataForTarget(filePath, cfg.TargetDir)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	renderFullPage(w, mainData)
+	renderFullPageForProject(w, mainData, cfg, readContent)
 }
 
 func renderFullPage(w http.ResponseWriter, mainData *PageData) {
-	targetDir := config.Cfg.TargetDir
+	renderFullPageForProject(w, mainData, config.Cfg, IfsReader)
+}
 
-	fileTree, err := buildFileTree(targetDir)
+func renderFullPageForProject(w http.ResponseWriter, mainData *PageData, cfg config.Config, readContent func(string) ([]byte, error)) {
+	fileTree, err := buildFileTreeForConfig(cfg.TargetDir, cfg)
 	if err != nil {
 		http.Error(w, "Failed to build file tree", 500)
 		return
 	}
 
-	mainTmplData, err := IfsReader("web/template-main.html")
+	mainTmplData, err := readContent("web/template-main.html")
 	if err != nil {
 		http.Error(w, "Template-main not found", 500)
 		return
@@ -169,7 +175,7 @@ func renderFullPage(w http.ResponseWriter, mainData *PageData) {
 		return
 	}
 
-	tmplData, err := IfsReader("web/template.html")
+	tmplData, err := readContent("web/template.html")
 	if err != nil {
 		http.Error(w, "Template not found", 500)
 		return
@@ -180,8 +186,8 @@ func renderFullPage(w http.ResponseWriter, mainData *PageData) {
 		Title:         mainData.FileName,
 		MainContent:   template.HTML(mainContentBuf.String()),
 		FileTreeJSON:  utils.MustMarshalJSON(fileTree),
-		AppConfigJSON: utils.MustMarshalJSON(config.Cfg.AppConfig()),
-		AppVersion:    config.Cfg.Version,
+		AppConfigJSON: utils.MustMarshalJSON(cfg.AppConfig()),
+		AppVersion:    cfg.Version,
 	}
 
 	setPageCacheHeaders(w)
@@ -190,7 +196,11 @@ func renderFullPage(w http.ResponseWriter, mainData *PageData) {
 }
 
 func renderDirectoryListing(w http.ResponseWriter, r *http.Request, dirPath string) {
-	mainData, rawMarkdown, err := buildDirectoryListingPageData(dirPath)
+	renderDirectoryListingForProject(w, r, dirPath, config.Cfg, IfsReader)
+}
+
+func renderDirectoryListingForProject(w http.ResponseWriter, r *http.Request, dirPath string, cfg config.Config, readContent func(string) ([]byte, error)) {
+	mainData, rawMarkdown, err := buildDirectoryListingPageDataForTarget(dirPath, cfg.TargetDir, cfg)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -198,7 +208,7 @@ func renderDirectoryListing(w http.ResponseWriter, r *http.Request, dirPath stri
 
 	queryParam := r.URL.Query().Get("q")
 	if queryParam == queryTypeMain {
-		renderPageMainContent(w, mainData)
+		renderPageMainContentForProject(w, mainData, readContent)
 		return
 	}
 	if queryParam == queryTypeRaw {
@@ -208,7 +218,7 @@ func renderDirectoryListing(w http.ResponseWriter, r *http.Request, dirPath stri
 		return
 	}
 
-	renderFullPage(w, mainData)
+	renderFullPageForProject(w, mainData, cfg, readContent)
 }
 
 // renderMarkdownContent renders just the markdown content (shared function)
@@ -508,17 +518,25 @@ func renderRawMarkdown(w http.ResponseWriter, filePath string) {
 }
 
 func renderMainContent(w http.ResponseWriter, filePath string) {
-	mainData, err := buildPageData(filePath)
+	renderMainContentForProject(w, filePath, config.Cfg.TargetDir, IfsReader)
+}
+
+func renderMainContentForProject(w http.ResponseWriter, filePath, targetDir string, readContent func(string) ([]byte, error)) {
+	mainData, err := buildPageDataForTarget(filePath, targetDir)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	renderPageMainContent(w, mainData)
+	renderPageMainContentForProject(w, mainData, readContent)
 }
 
 func renderPageMainContent(w http.ResponseWriter, mainData *PageData) {
-	mainTmplData, err := IfsReader("web/template-main.html")
+	renderPageMainContentForProject(w, mainData, IfsReader)
+}
+
+func renderPageMainContentForProject(w http.ResponseWriter, mainData *PageData, readContent func(string) ([]byte, error)) {
+	mainTmplData, err := readContent("web/template-main.html")
 	if err != nil {
 		http.Error(w, "Template-main not found", 500)
 		return
@@ -537,6 +555,10 @@ func renderPageMainContent(w http.ResponseWriter, mainData *PageData) {
 
 // buildPageData 提取公共的页面数据构建逻辑
 func buildPageData(filePath string) (*PageData, error) {
+	return buildPageDataForTarget(filePath, config.Cfg.TargetDir)
+}
+
+func buildPageDataForTarget(filePath, targetDir string) (*PageData, error) {
 	info, err := os.Stat(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to stat file: %v", err)
@@ -554,7 +576,6 @@ func buildPageData(filePath string) (*PageData, error) {
 		createdAt = utils.FormatTimestamp(created)
 	}
 
-	targetDir := config.Cfg.TargetDir
 	currentRelativePath, err := filepath.Rel(targetDir, filePath)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to resolve current file path: %v", err)
@@ -574,12 +595,15 @@ func buildPageData(filePath string) (*PageData, error) {
 }
 
 func buildDirectoryListingPageData(dirPath string) (*PageData, string, error) {
+	return buildDirectoryListingPageDataForTarget(dirPath, config.Cfg.TargetDir, config.Cfg)
+}
+
+func buildDirectoryListingPageDataForTarget(dirPath, targetDir string, cfg config.Config) (*PageData, string, error) {
 	info, err := os.Stat(dirPath)
 	if err != nil {
 		return nil, "", fmt.Errorf("Failed to stat directory: %v", err)
 	}
 
-	targetDir := config.Cfg.TargetDir
 	currentRelativePath, err := filepath.Rel(targetDir, dirPath)
 	if err != nil {
 		return nil, "", fmt.Errorf("Failed to resolve current directory path: %v", err)
@@ -589,7 +613,7 @@ func buildDirectoryListingPageData(dirPath string) (*PageData, string, error) {
 		currentRelativePath = ""
 	}
 
-	rawMarkdown, err := buildDirectoryListingMarkdown(dirPath, currentRelativePath)
+	rawMarkdown, err := buildDirectoryListingMarkdownForConfig(dirPath, currentRelativePath, cfg)
 	if err != nil {
 		return nil, "", err
 	}
@@ -621,7 +645,11 @@ func buildDirectoryListingPageData(dirPath string) (*PageData, string, error) {
 }
 
 func buildDirectoryListingMarkdown(dirPath, relativeDir string) (string, error) {
-	nodes, err := buildFileTreeDir(dirPath, relativeDir)
+	return buildDirectoryListingMarkdownForConfig(dirPath, relativeDir, config.Cfg)
+}
+
+func buildDirectoryListingMarkdownForConfig(dirPath, relativeDir string, cfg config.Config) (string, error) {
+	nodes, err := buildFileTreeDir(dirPath, relativeDir, cfg)
 	if err != nil {
 		return "", fmt.Errorf("Failed to build directory listing: %v", err)
 	}
@@ -671,10 +699,14 @@ type FileTreeNode struct {
 }
 
 func buildFileTree(root string) ([]FileTreeNode, error) {
-	return buildFileTreeDir(root, "")
+	return buildFileTreeForConfig(root, config.Cfg)
 }
 
-func buildFileTreeDir(absDir, relativeDir string) ([]FileTreeNode, error) {
+func buildFileTreeForConfig(root string, cfg config.Config) ([]FileTreeNode, error) {
+	return buildFileTreeDir(root, "", cfg)
+}
+
+func buildFileTreeDir(absDir, relativeDir string, cfg config.Config) ([]FileTreeNode, error) {
 	entries, err := os.ReadDir(absDir)
 	if err != nil {
 		return nil, err
@@ -684,7 +716,7 @@ func buildFileTreeDir(absDir, relativeDir string) ([]FileTreeNode, error) {
 	files := make([]FileTreeNode, 0)
 
 	for _, entry := range entries {
-		if entry.IsDir() && shouldSkipDir(entry.Name()) {
+		if entry.IsDir() && shouldSkipDirForConfig(entry.Name(), cfg) {
 			continue
 		}
 
@@ -695,7 +727,7 @@ func buildFileTreeDir(absDir, relativeDir string) ([]FileTreeNode, error) {
 		entryAbsolutePath := filepath.Join(absDir, entry.Name())
 
 		if entry.IsDir() {
-			children, err := buildFileTreeDir(entryAbsolutePath, entryRelativePath)
+			children, err := buildFileTreeDir(entryAbsolutePath, entryRelativePath, cfg)
 			if err != nil {
 				return nil, err
 			}
@@ -748,9 +780,12 @@ func buildFileTreeDir(absDir, relativeDir string) ([]FileTreeNode, error) {
 
 // HandleFileTreeAPI returns file tree JSON for dynamic refresh
 func HandleFileTreeAPI(w http.ResponseWriter, r *http.Request) {
+	handleFileTreeForConfig(w, r, config.Cfg)
+}
+
+func handleFileTreeForConfig(w http.ResponseWriter, r *http.Request, cfg config.Config) {
 	utils.Debugf("Request: %s handle file tree", r.URL.Path)
-	targetDir := config.Cfg.TargetDir
-	fileTree, err := buildFileTree(targetDir)
+	fileTree, err := buildFileTreeForConfig(cfg.TargetDir, cfg)
 	if err != nil {
 		http.Error(w, "Failed to build file tree", 500)
 		return
