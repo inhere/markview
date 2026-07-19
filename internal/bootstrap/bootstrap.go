@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -444,22 +445,14 @@ func resolvePrepareTarget(args []string) (string, string) {
 }
 
 func loadProjectDotenv(targetDir string) (map[string]string, error) {
-	// Keep project .env values local to this prepare call so one project cannot poison the next.
-	before := environMap()
-	dotenv := envutil.NewDotenv()
-	dotenv.BaseDir = targetDir
-	dotenv.Files = []string{".env"}
-	dotenv.IgnoreNotExist = true
-	if err := dotenv.LoadAndInit(); err != nil {
-		restoreEnv(dotenv.LoadedData(), before)
+	data, err := os.ReadFile(filepath.Join(targetDir, ".env"))
+	if errors.Is(err, fs.ErrNotExist) {
+		return map[string]string{}, nil
+	}
+	if err != nil {
 		return nil, err
 	}
-	loaded := map[string]string{}
-	for key, value := range dotenv.LoadedData() {
-		loaded[key] = value
-	}
-	restoreEnv(loaded, before)
-	return loaded, nil
+	return envutil.SplitText2map(string(data)), nil
 }
 
 func buildRuntimeConfig(targetDir string, dotenv map[string]string) (config.Config, error) {
@@ -591,28 +584,6 @@ func runtimeDebugEnabled(dotenv map[string]string) bool {
 	}
 	value, err := strconv.ParseBool(raw)
 	return err == nil && value
-}
-
-func environMap() map[string]string {
-	values := make(map[string]string)
-	for _, item := range os.Environ() {
-		key, value, ok := strings.Cut(item, "=")
-		if !ok {
-			continue
-		}
-		values[key] = value
-	}
-	return values
-}
-
-func restoreEnv(loaded map[string]string, before map[string]string) {
-	for key := range loaded {
-		if value, ok := before[key]; ok {
-			_ = os.Setenv(key, value)
-			continue
-		}
-		_ = os.Unsetenv(key)
-	}
 }
 
 func parseOptionalEnvBool(name string, raw string) (*bool, error) {

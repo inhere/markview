@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -301,6 +302,49 @@ func TestPrepareLoadsDotenvFromTargetDir(t *testing.T) {
 		assert.Eq(t, config.PortSourceEnv, config.Cfg.PortSource)
 		assert.False(t, config.Cfg.EnableWatch)
 	})
+}
+
+func TestLoadProjectDotenvReturnsFileValuesWithoutChangingEnvironment(t *testing.T) {
+	targetDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(targetDir, ".env"), []byte("MKVIEW_PORT=6222\n"), 0644))
+	t.Setenv(config.EnvPort, "process-value")
+
+	loaded, err := loadProjectDotenv(targetDir)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "6222", loaded[config.EnvPort])
+	assert.Eq(t, "process-value", os.Getenv(config.EnvPort))
+}
+
+func TestLoadProjectDotenvConcurrentDoesNotMutateEnvironment(t *testing.T) {
+	t.Setenv(config.EnvEntry, "process.md")
+	type result struct {
+		value string
+		err   error
+	}
+	results := make(chan result, 2)
+	var wg sync.WaitGroup
+	for _, value := range []string{"a.md", "b.md"} {
+		dir := t.TempDir()
+		assert.NoErr(t, os.WriteFile(filepath.Join(dir, ".env"), []byte("MKVIEW_ENTRY="+value+"\n"), 0644))
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			loaded, err := loadProjectDotenv(dir)
+			results <- result{value: loaded[config.EnvEntry], err: err}
+		}()
+	}
+	wg.Wait()
+	close(results)
+
+	seen := map[string]bool{}
+	for item := range results {
+		assert.NoErr(t, item.err)
+		seen[item.value] = true
+	}
+	assert.True(t, seen["a.md"])
+	assert.True(t, seen["b.md"])
+	assert.Eq(t, "process.md", os.Getenv(config.EnvEntry))
 }
 
 func TestPrepareDotenvDoesNotLeakBetweenProjects(t *testing.T) {

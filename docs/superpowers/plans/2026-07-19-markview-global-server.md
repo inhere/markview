@@ -55,15 +55,14 @@
 ### Task 1: 修复 dotenv 基线并移除进程环境副作用
 
 **Files:**
-- Create: `internal/bootstrap/project_config.go`
 - Modify: `internal/bootstrap/bootstrap.go`
 - Modify: `internal/bootstrap/bootstrap_test.go`
 
 **Interfaces:**
-- Produces: `loadProjectDotenv(targetDir string) (map[string]string, error)`，只调用 `Dotenv.LoadFiles`，不修改 `os.Environ`。
+- Produces: `loadProjectDotenv(targetDir string) (map[string]string, error)`，通过 `envutil.SplitText2map` 纯解析，不修改 `os.Environ`。
 - Produces: `buildRuntimeConfig(targetDir string, dotenv map[string]string) (config.Config, error)`，保持现有单项目合并顺序。
 
-- [ ] **Step 1: 写出失败的无副作用与并发隔离测试**
+- [x] **Step 1: 写出失败的无副作用与并发隔离测试**
 
 在 `internal/bootstrap/bootstrap_test.go` 保留现有 4 个失败用例，并增加 barrier 并发用例：
 
@@ -98,7 +97,7 @@ func TestLoadProjectDotenvConcurrentDoesNotMutateEnvironment(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行现有失败用例，确认 RED**
+- [x] **Step 2: 运行现有失败用例，确认 RED**
 
 Run:
 
@@ -108,30 +107,22 @@ go test ./internal/bootstrap -run 'TestPrepareLoadsDotenvFromTargetDir|TestPrepa
 
 Expected: 现有基线用例至少一个 FAIL；并发测试在旧 `LoadAndInit` 实现下可能失败或在 race 门禁中报告环境竞态。
 
-- [ ] **Step 3: 用现有 Dotenv parser 做最小局部解析**
+- [x] **Step 3: 用现有纯解析 helper 做最小局部解析**
 
-将实现移动到 `internal/bootstrap/project_config.go`：
+直接在 `internal/bootstrap/bootstrap.go` 替换有副作用的实现：
 
 ```go
 func loadProjectDotenv(targetDir string) (map[string]string, error) {
-	dotenv := envutil.NewDotenv()
-	dotenv.BaseDir = targetDir
-	dotenv.Files = []string{".env"}
-	dotenv.IgnoreNotExist = true
-	if err := dotenv.LoadFiles(dotenv.Files...); err != nil {
-		return nil, err
-	}
-	loaded := make(map[string]string, len(dotenv.LoadedData()))
-	for key, value := range dotenv.LoadedData() {
-		loaded[key] = value
-	}
-	return loaded, nil
+	data, err := os.ReadFile(filepath.Join(targetDir, ".env"))
+	if errors.Is(err, fs.ErrNotExist) { return map[string]string{}, nil }
+	if err != nil { return nil, err }
+	return envutil.SplitText2map(string(data)), nil
 }
 ```
 
 删除 `environMap`、`restoreEnv` 以及所有只为恢复进程环境存在的代码；`envValue` 保持“项目 dotenv 优先，否则只读进程环境”。
 
-- [ ] **Step 4: 验证基线和 race**
+- [x] **Step 4: 验证基线和 race**
 
 Run:
 
@@ -143,10 +134,12 @@ go test ./... -count=1
 
 Expected: dotenv/bootstrap 用例 PASS；`go test ./...` 不再出现原有 4 个失败；race 命令无 data race。
 
-- [ ] **Step 5: 更新计划并提交基线修复**
+执行记录：本机为 Windows/amd64 且 `CGO_ENABLED=0`，`go test -race` 无法启动；已通过两个项目并发加载测试替代本机 race 验证，最终门禁仍需在支持 race 的环境补跑。
+
+- [x] **Step 5: 更新计划并提交基线修复**
 
 ```bash
-git add internal/bootstrap/bootstrap.go internal/bootstrap/project_config.go internal/bootstrap/bootstrap_test.go docs/superpowers/plans/2026-07-19-markview-global-server.md
+git add internal/bootstrap/bootstrap.go internal/bootstrap/bootstrap_test.go docs/superpowers/plans/2026-07-19-markview-global-server.md
 git commit -m "fix: isolate project dotenv loading"
 ```
 
@@ -334,7 +327,6 @@ git commit -m "feat: constrain project filesystem paths"
 **Files:**
 - Create: `internal/config/project_runtime.go`
 - Create: `internal/config/project_runtime_test.go`
-- Delete: `internal/bootstrap/project_config.go`（Task 1 的过渡位置，逻辑迁入 config 包后删除）
 - Create: `internal/handlers/event_hub.go`
 - Create: `internal/handlers/event_hub_test.go`
 - Create: `internal/handlers/project_server.go`
@@ -385,7 +377,7 @@ Expected: FAIL，ProjectServer 尚不存在。
 
 - [ ] **Step 3: 提取可并发的项目 runtime 配置加载**
 
-把 Task 1 已验证的局部 dotenv 解析和纯 merge 逻辑移动到 `internal/config/project_runtime.go`，随后删除过渡文件 `internal/bootstrap/project_config.go`。GlobalMode 忽略项目 port/private 和 registry port，保留 entry/watch/watch_dir/watch_skip/include/preview_exts/iframe_hosts/layout；函数只返回 Config，不写 `config.Cfg` 或 debug 包级变量。
+把 Task 1 已验证的局部 dotenv 解析和纯 merge 逻辑从 `internal/bootstrap/bootstrap.go` 移动到 `internal/config/project_runtime.go`。GlobalMode 忽略项目 port/private 和 registry port，保留 entry/watch/watch_dir/watch_skip/include/preview_exts/iframe_hosts/layout；函数只返回 Config，不写 `config.Cfg` 或 debug 包级变量。
 
 ```go
 type ProjectLoadOptions struct {
