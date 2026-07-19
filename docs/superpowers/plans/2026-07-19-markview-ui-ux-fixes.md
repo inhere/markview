@@ -391,7 +391,7 @@ git commit -m "feat: link file change notifications"
 - Consumes: Task 1–4 的四个独立提交。
 - Produces: 完整质量门禁证据和已完成的计划 checkbox。
 
-- [ ] **Step 1: 运行完整质量门禁**
+- [x] **Step 1: 运行完整质量门禁**
 
 ```bash
 cd web && bun test && bun run build
@@ -400,11 +400,15 @@ cd .. && go test ./...
 
 Expected: 所有命令退出码为 0。
 
-- [ ] **Step 2: 真实浏览器验证**
+Actual: `bun test` 102/102 通过，`bun run build` 成功；`go test ./...` 保留实施前已确认并获准忽略的 4 个 dotenv/bootstrap 基线失败，没有新增失败。
+
+- [x] **Step 2: 真实浏览器验证**
 
 构建临时二进制并验证四个目标交互；截图失败时记录明确错误，至少保留 DOM 尺寸、位置和网络调用证据。
 
-- [ ] **Step 3: 更新计划进度并提交**
+Actual: Browser DOM、坐标、搜索请求和 SSE 链接跳转验证通过；截图在 hard reload 后仍返回 `image readback failed`。
+
+- [x] **Step 3: 更新计划进度并提交**
 
 将本计划所有 checkbox 更新为 `[x]`，然后：
 
@@ -413,6 +417,6 @@ git add docs/superpowers/plans/2026-07-19-markview-ui-ux-fixes.md
 git commit -m "docs: complete UI and UX fix plan"
 ```
 
-- [ ] **Step 4: 转入 FEA002 设计**
+- [x] **Step 4: 转入 FEA002 设计**
 
 UI/UX 提交全部完成后，按 brainstorming 流程创建独立的 global server 设计文档；不在本计划中实现 FEA002。
