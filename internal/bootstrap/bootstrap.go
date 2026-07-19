@@ -36,6 +36,7 @@ type options struct {
 
 var appOptions options
 var showVersion bool
+var globalMode bool
 var openBrowser = sysutil.OpenBrowser
 var cliPortFlagVisited bool
 var cliPrivateFlagVisited bool
@@ -91,6 +92,9 @@ func newCommand(options options) *cflag.CFlags {
 	cmd.BoolVar(&config.Cfg.NoBrowser, "no-browser", false,
 		"Do not open the local preview URL in browser after server starts",
 	)
+	cmd.BoolVar(&globalMode, "global", false,
+		"Serve all saved projects from one local server",
+	)
 	cmd.StringVar(&projectsAction, "projects", "",
 		"Manage saved projects: list, show, remove, prune;;ps",
 	)
@@ -114,6 +118,12 @@ func newCommand(options options) *cflag.CFlags {
 func run(c *cflag.CFlags, content fs.FS) error {
 	markCliFlagVisits(c)
 	args := c.RemainArgs()
+	if globalMode {
+		if err := validateGlobalMode(args); err != nil {
+			return err
+		}
+		return runGlobal(content)
+	}
 	if projectsAction != "" {
 		return runProjectsAction(projectsAction, args, os.Stdout)
 	}

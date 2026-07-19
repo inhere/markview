@@ -568,7 +568,7 @@ git commit -m "refactor: isolate project events and watcher"
 - Produces: `newGlobalMux(manager *ProjectManager, content fs.FS) http.Handler`。
 - Consumes: Tasks 2–5 的 ProjectIndex、ProjectRoot、ProjectServer、Watcher 和 EventHub。
 
-- [ ] **Step 1: 写 runtime slot 并发、失败重试和 Close 竞态测试**
+- [x] **Step 1: 写 runtime slot 并发、失败重试和 Close 竞态测试**
 
 使用可阻塞 factory seam：100 个 goroutine 请求同一项目只调用一次 factory；A/B 两个项目能同时进入 factory；首次返回错误后第二次重新调用；初始化阻塞时调用 Close，释放 factory 后 runtime 被立即关闭且不发布。
 
@@ -593,13 +593,13 @@ func TestProjectManagerInitializesProjectOnce(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 写 global CLI 和真实路由测试**
+- [x] **Step 2: 写 global CLI 和真实路由测试**
 
 覆盖：`--global` 与 `--project`/positional/项目内容 flags 互斥；无 private flag 和配置 private=false 均使用 `127.0.0.1`；显式 `--private=false` 才使用公开地址；port 为 CLI > MKVIEW_PORT > global config > 6100。
 
 HTTP 用例覆盖 `/`、`/static/...`、`/p/{id}` 308、`/p/{id}/`、非法/未知/已删除 ID、registry 刷新、缺失目录卡片、API JSON 项目解析错误。
 
-- [ ] **Step 3: 确认 RED**
+- [x] **Step 3: 确认 RED**
 
 ```bash
 go test ./internal/bootstrap -run 'ProjectManager|Global' -count=1
@@ -607,7 +607,7 @@ go test ./internal/bootstrap -run 'ProjectManager|Global' -count=1
 
 Expected: FAIL，manager、global flag 和路由尚不存在。
 
-- [ ] **Step 4: 实现 runtime slot 和关闭交接**
+- [x] **Step 4: 实现 runtime slot 和关闭交接**
 
 ```go
 type runtimeSlot struct {
@@ -649,11 +649,11 @@ func buildProjectRuntime(ctx context.Context, project projects.IndexedProject, c
 }
 ```
 
-- [ ] **Step 5: 实现 global URL 契约和动态 registry**
+- [x] **Step 5: 实现 global URL 契约和动态 registry**
 
 global handler 每个 `/` 和 `/p/...` 请求调用 `projects.Load` 与 `BuildIndex`。检查 `EscapedPath()` 中大小写不敏感的 `%2f`、`%5c`、`%00`；从已解码 `URL.Path` 取 ID 和 subpath，clone request/URL，设置新 Path 并清空 RawPath 后交给 ProjectServer。被 registry 删除的 ID 在 runtime 缓存存在时仍返回 404。
 
-- [ ] **Step 6: 实现最小服务端项目主页**
+- [x] **Step 6: 实现最小服务端项目主页**
 
 `web/template-projects.html` 只渲染名称、简化路径、global URL、added、状态和进入链接；无效目录禁用入口并显示 prune/remove 提示。不加载阅读器 JS/CSS bundle，不探测旧端口。同步把新模板加入 `main.go` 的 `//go:embed` 列表。
 
@@ -663,7 +663,7 @@ type projectsPageData struct {
 }
 ```
 
-- [ ] **Step 7: 验证 global manager、router、shutdown 和 race**
+- [x] **Step 7: 验证 global manager、router、shutdown 和 race**
 
 ```bash
 go test ./internal/bootstrap ./internal/projects ./internal/handlers -count=1
@@ -673,7 +673,9 @@ go test ./... -count=1
 
 Expected: PASS；初始化/Close 无泄漏和 race，registry 更新在下一请求生效。
 
-- [ ] **Step 8: 提交 global server 主链路**
+执行记录：同项目单次初始化、不同项目并发、失败重试、Close/in-flight、registry 删除、encoded separator、canonical query、默认 loopback 和显式公开均 PASS；Go/Bun/build 全绿，本机 race 限制同 Task 1。
+
+- [x] **Step 8: 提交 global server 主链路**
 
 ```bash
 git add internal/bootstrap main.go web/template-projects.html docs/superpowers/plans/2026-07-19-markview-global-server.md
