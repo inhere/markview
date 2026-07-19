@@ -251,14 +251,18 @@ git commit -m "feat: index global projects safely"
 
 **Files:**
 - Create: `internal/handlers/project_root.go`
+- Create: `internal/handlers/project_root_realpath_windows.go`
+- Create: `internal/handlers/project_root_realpath_other.go`
 - Create: `internal/handlers/project_root_test.go`
+- Modify: `go.mod`
+- Modify: `go.sum`
 
 **Interfaces:**
 - Produces: `NewProjectRoot(path string) (ProjectRoot, error)`。
 - Produces: `(ProjectRoot).Resolve(urlPath string) (string, error)`。
 - Produces: `ErrPathOutsideProject`。
 
-- [ ] **Step 1: 写项目内、根外 symlink/junction 和 traversal 测试**
+- [x] **Step 1: 写项目内、根外 symlink/junction 和 traversal 测试**
 
 使用 `t.Run()` 覆盖 `/docs/a.md`、`/../secret.md`、`/%2e%2e/secret.md` 字面量、`/..foo/a.md`、反斜杠、NUL、相似前缀目录和不存在文件。Windows junction 用 `cmd /c mklink /J` 仅在具备权限时运行，否则 `t.Skip`；Unix 使用 `os.Symlink`。
 
@@ -275,7 +279,7 @@ func TestProjectRootResolveRejectsTraversal(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 确认 RED**
+- [x] **Step 2: 确认 RED**
 
 ```bash
 go test ./internal/handlers -run ProjectRoot -count=1
@@ -283,7 +287,7 @@ go test ./internal/handlers -run ProjectRoot -count=1
 
 Expected: FAIL，类型和方法尚不存在。
 
-- [ ] **Step 3: 实现 ProjectRoot**
+- [x] **Step 3: 实现 ProjectRoot**
 
 ```go
 var ErrPathOutsideProject = errors.New("path outside project")
@@ -304,7 +308,9 @@ func NewProjectRoot(path string) (ProjectRoot, error) {
 
 `Resolve` 接收已经由 `net/http` 解码一次的 `/...` 路径，不调用 `PathUnescape`；先拒绝 NUL、反斜杠和 `.`/`..` segment，再 Join、EvalSymlinks，并使用 `filepath.Rel` 的 segment 语义判界。目标不存在时验证最近存在父目录仍在 root 内，再返回包装 `fs.ErrNotExist` 的错误；所有消费者只使用 Resolve 返回的 real path。
 
-- [ ] **Step 4: 验证安全测试和 race**
+Windows 的 `filepath.EvalSymlinks` 不解析 junction，因此 `project_root_realpath_windows.go` 使用现有 `golang.org/x/sys/windows.GetFinalPathNameByHandle`；其他平台继续使用标准库 `EvalSymlinks`。
+
+- [x] **Step 4: 验证安全测试和 race**
 
 ```bash
 go test ./internal/handlers -run ProjectRoot -count=1
@@ -313,10 +319,12 @@ go test -race ./internal/handlers -run ProjectRoot -count=1
 
 Expected: PASS，无 data race。
 
-- [ ] **Step 5: 提交路径安全边界**
+执行记录：Windows symlink 与 junction 用例均 PASS，Linux/amd64 build-tag 实现交叉编译成功；本机 `CGO_ENABLED=0` 无法启动 race，最终门禁仍需在支持 race 的环境补跑。
+
+- [x] **Step 5: 提交路径安全边界**
 
 ```bash
-git add internal/handlers/project_root.go internal/handlers/project_root_test.go docs/superpowers/plans/2026-07-19-markview-global-server.md
+git add internal/handlers/project_root.go internal/handlers/project_root_realpath_windows.go internal/handlers/project_root_realpath_other.go internal/handlers/project_root_test.go go.mod go.sum docs/superpowers/plans/2026-07-19-markview-global-server.md
 git commit -m "feat: constrain project filesystem paths"
 ```
 
