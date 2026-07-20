@@ -58,7 +58,9 @@ func TestProjectRootResolveDoesNotDecodeAgain(t *testing.T) {
 	resolved, err := root.Resolve("/%2e%2e/safe.md")
 
 	assert.NoErr(t, err)
-	assert.Eq(t, file, resolved)
+	want, err := filepath.EvalSymlinks(file)
+	assert.NoErr(t, err)
+	assert.Eq(t, want, resolved)
 }
 
 func TestProjectRootResolveAllowsDotDotPrefixName(t *testing.T) {
@@ -72,7 +74,9 @@ func TestProjectRootResolveAllowsDotDotPrefixName(t *testing.T) {
 	resolved, err := root.Resolve("/..foo/safe.md")
 
 	assert.NoErr(t, err)
-	assert.Eq(t, file, resolved)
+	want, err := filepath.EvalSymlinks(file)
+	assert.NoErr(t, err)
+	assert.Eq(t, want, resolved)
 }
 
 func TestProjectRootResolveMissingFileKeepsNotExist(t *testing.T) {
@@ -103,7 +107,9 @@ func TestProjectRootResolveSymlinkBoundary(t *testing.T) {
 
 	resolved, err := root.Resolve("/inside-link/safe.md")
 	assert.NoErr(t, err)
-	assert.Eq(t, filepath.Join(inside, "safe.md"), resolved)
+	want, err := filepath.EvalSymlinks(filepath.Join(inside, "safe.md"))
+	assert.NoErr(t, err)
+	assert.Eq(t, want, resolved)
 
 	_, err = root.Resolve("/outside-link/secret.md")
 	assert.True(t, errors.Is(err, ErrPathOutsideProject))
