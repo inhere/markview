@@ -62,7 +62,8 @@ describe('layout CSS modes', () => {
         expect(templateHtml).toContain('aria-label="Project navigation"');
         expect(templateHtml.indexOf('class="global-topbar"')).toBeGreaterThan(templateHtml.indexOf('class="content-wrapper"'));
         expect(layoutCssText).not.toMatch(/body\.global-mode\s*\{[^}]*grid-template-rows:/s);
-        expect(layoutCssText).toMatch(/body\.global-mode\s+\.content-wrapper\s*\{[^}]*flex-direction:\s*column;/s);
+        expect(layoutCssText).toMatch(/body\.global-mode\s+\.content-wrapper\s*\{[^}]*padding-top:\s*0;[^}]*flex-direction:\s*column;/s);
+        expect(layoutCssText).toMatch(/body\.global-mode\s+\.content-inner\s*\{[^}]*align-self:\s*center;/s);
         expect(layoutCssText).toMatch(/\.global-topbar\s*\{[^}]*width:\s*100%;[^}]*border-bottom:\s*1px solid var\(--border-light\);/s);
         expect(layoutCssText).not.toMatch(/\.global-topbar\s*\{[^}]*(?:position:\s*(?:fixed|sticky)|inset:)/s);
         expectRule(/html\[data-layout="toc-middle"\]\s+body:not\(\.toc-floating-open\)\s+\.toc-pane\s*\{[^}]*bottom:\s*16px;/s);

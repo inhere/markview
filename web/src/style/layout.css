@@ -19,9 +19,14 @@ body {
 }
 
 body.global-mode .content-wrapper {
+    padding-top: 0;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
+}
+
+body.global-mode .content-inner {
+    align-self: center;
 }
 
 .global-topbar {
