@@ -125,7 +125,11 @@ func (c *Config) Init(targetDir, entryFile string) (err error) {
 		return fmt.Errorf("target %q is not a directory", c.TargetDir)
 	}
 
-	clog.Debugf("(%s) Config: Debug=%v, Watch=%v", c.Version, EnableDebug, c.EnableWatch)
+	logLabel := c.Version
+	if c.ProjectName != "" {
+		logLabel = c.ProjectName
+	}
+	clog.Debugf("(%s) Config: Debug=%v, Watch=%v", logLabel, EnableDebug, c.EnableWatch)
 
 	if c.PortInt > 0 {
 		c.portStr = fmt.Sprintf("%d", c.PortInt)

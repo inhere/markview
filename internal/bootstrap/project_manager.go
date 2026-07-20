@@ -173,14 +173,14 @@ func buildProjectRuntime(ctx context.Context, project projects.IndexedProject, c
 	if err != nil {
 		return nil, err
 	}
-	if err := cfg.Init(project.Path, ""); err != nil {
-		return nil, err
-	}
-	cfg.BasePath = "/p/" + project.ID
 	cfg.ProjectName = project.Record.Name
 	if cfg.ProjectName == "" {
 		cfg.ProjectName = filepath.Base(project.Path)
 	}
+	if err := cfg.Init(project.Path, ""); err != nil {
+		return nil, err
+	}
+	cfg.BasePath = "/p/" + project.ID
 	cfg.ProjectPath = simplifyProjectPath(project.Path)
 	root, err := handlers.NewProjectRoot(project.Path)
 	if err != nil {

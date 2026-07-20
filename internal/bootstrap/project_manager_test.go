@@ -1,8 +1,10 @@
 package bootstrap
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -10,9 +12,24 @@ import (
 	"time"
 
 	"github.com/gookit/goutil/x/assert"
+	"github.com/gookit/goutil/x/clog"
 	"github.com/inhere/markview/internal/handlers"
 	"github.com/inhere/markview/internal/projects"
 )
+
+func TestBuildProjectRuntimeLogsProjectName(t *testing.T) {
+	t.Setenv("MKVIEW_WATCH", "false")
+	var out bytes.Buffer
+	clog.SetOutput(&out)
+	t.Cleanup(func() { clog.SetOutput(os.Stdout) })
+
+	runtime, err := buildProjectRuntime(context.Background(), projects.IndexedProject{
+		ID: "aaaaaaaaaaaa", Path: t.TempDir(), Record: projects.ProjectRecord{Name: "docs"},
+	}, fstest.MapFS{})
+	assert.Require(t, assert.NoErr(t, err))
+	t.Cleanup(func() { _ = runtime.Close() })
+	assert.StrContains(t, out.String(), "(docs) Config: Debug=false, Watch=false")
+}
 
 func TestProjectManagerInitializesProjectOnce(t *testing.T) {
 	manager := NewProjectManager(fstest.MapFS{})
