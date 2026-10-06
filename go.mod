@@ -1,6 +1,6 @@
 module github.com/inhere/markview
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/fsnotify/fsnotify v1.10.1
@@ -10,7 +10,7 @@ require (
 	github.com/yuin/goldmark v1.8.6
 	github.com/yuin/goldmark-emoji v1.0.6
 	github.com/yuin/goldmark-meta v1.1.0
-	golang.org/x/sys v0.47.0
+	golang.org/x/sys v0.48.0
 )
 
 require (
