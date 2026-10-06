@@ -3,17 +3,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"io/fs"
-	"os"
-	"path/filepath"
-	"slices"
 	"sort"
-	"strings"
-	"sync"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/gookit/goutil/x/clog"
 	"github.com/inhere/markview/internal/config"
 	"github.com/inhere/markview/internal/utils"
@@ -31,33 +23,21 @@ type ReloadMessage struct {
 }
 
 type Watcher struct {
-	root      ProjectRoot
-	config    config.Config
-	events    *EventHub
-	native    *fsnotify.Watcher
-	debounce  time.Duration
-	done      chan struct{}
-	closeOnce sync.Once
+	native   nativeWatcher
+	events   *EventHub
+	debounce time.Duration
 }
 
 func NewWatcher(root ProjectRoot, cfg config.Config, events *EventHub) (*Watcher, error) {
-	native, err := fsnotify.NewWatcher()
+	native, err := newNativeWatcher(root, cfg)
 	if err != nil {
 		return nil, err
 	}
-	watcher := &Watcher{
-		root:     root,
-		config:   cfg,
-		events:   events,
+	return &Watcher{
 		native:   native,
+		events:   events,
 		debounce: 1500 * time.Millisecond,
-		done:     make(chan struct{}),
-	}
-	if err := watcher.addInitialDirectories(); err != nil {
-		native.Close()
-		return nil, err
-	}
-	return watcher, nil
+	}, nil
 }
 
 func (watcher *Watcher) Run(ctx context.Context) error {
@@ -73,22 +53,16 @@ func (watcher *Watcher) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-watcher.done:
-			return nil
-		case err, ok := <-watcher.native.Errors:
+		case err, ok := <-watcher.native.Errors():
 			if !ok {
 				return nil
 			}
 			return err
-		case event, ok := <-watcher.native.Events:
+		case change, ok := <-watcher.native.Events():
 			if !ok {
 				return nil
 			}
-			path, eventType, notify := watcher.handleEvent(event)
-			if !notify {
-				continue
-			}
-			pending[path] = eventType
+			pending[change.Rel] = change.Op
 			if timer == nil {
 				timer = time.NewTimer(watcher.debounce)
 			} else {
@@ -110,97 +84,7 @@ func (watcher *Watcher) Run(ctx context.Context) error {
 }
 
 func (watcher *Watcher) Close() error {
-	var err error
-	watcher.closeOnce.Do(func() {
-		close(watcher.done)
-		err = watcher.native.Close()
-	})
-	return err
-}
-
-func (watcher *Watcher) addInitialDirectories() error {
-	return filepath.WalkDir(watcher.root.DisplayPath, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if !entry.IsDir() {
-			return nil
-		}
-		rel, err := filepath.Rel(watcher.root.DisplayPath, path)
-		if err != nil {
-			return err
-		}
-		if rel == "." {
-			return watcher.native.Add(watcher.root.RealPath)
-		}
-		if watcher.skipDirectory(rel, entry.Name()) {
-			return filepath.SkipDir
-		}
-		resolved, err := watcher.root.Resolve("/" + filepath.ToSlash(rel))
-		if errors.Is(err, ErrPathOutsideProject) {
-			return filepath.SkipDir
-		}
-		if err != nil {
-			return err
-		}
-		return watcher.native.Add(resolved)
-	})
-}
-
-func (watcher *Watcher) skipDirectory(relativePath, name string) bool {
-	if shouldSkipDirForConfig(name, watcher.config) {
-		return true
-	}
-	if len(watcher.config.WatchDirs) == 0 {
-		return false
-	}
-	first := strings.Split(filepath.ToSlash(relativePath), "/")[0]
-	return !slices.Contains(watcher.config.WatchDirs, first)
-}
-
-func (watcher *Watcher) handleEvent(event fsnotify.Event) (string, string, bool) {
-	if event.Has(fsnotify.Create) {
-		info, err := os.Stat(event.Name)
-		if err != nil {
-			return "", "", false
-		}
-		if info.IsDir() {
-			resolved, err := watcher.resolveEventPath(event.Name)
-			rel, relErr := filepath.Rel(watcher.root.RealPath, event.Name)
-			if err == nil && relErr == nil && !watcher.skipDirectory(rel, info.Name()) {
-				_ = watcher.native.Add(resolved)
-			}
-			return "", "", false
-		}
-		return watcher.relativeMarkdownPath(event.Name, EventTypeCreate)
-	}
-	if event.Has(fsnotify.Write) {
-		return watcher.relativeMarkdownPath(event.Name, EventTypeUpdate)
-	}
-	return "", "", false
-}
-
-func (watcher *Watcher) relativeMarkdownPath(path, eventType string) (string, string, bool) {
-	if !strings.EqualFold(filepath.Ext(path), ".md") {
-		return "", "", false
-	}
-	resolved, err := watcher.resolveEventPath(path)
-	if err != nil {
-		return "", "", false
-	}
-	rel, err := filepath.Rel(watcher.root.RealPath, resolved)
-	if err != nil || rel == "." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		return "", "", false
-	}
-	return filepath.ToSlash(rel), eventType, true
-}
-
-func (watcher *Watcher) resolveEventPath(path string) (string, error) {
-	rel, err := filepath.Rel(watcher.root.RealPath, path)
-	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		return "", ErrPathOutsideProject
-	}
-	return watcher.root.Resolve("/" + filepath.ToSlash(rel))
+	return watcher.native.Close()
 }
 
 func (watcher *Watcher) publish(files map[string]string) {
