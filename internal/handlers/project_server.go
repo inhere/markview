@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"io/fs"
 	"net/http"
 	"os"
@@ -53,8 +54,10 @@ func (server *ProjectServer) handlePage(w http.ResponseWriter, r *http.Request) 
 	}
 	filePath, err := server.Root.Resolve(urlPath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		// Resolve 用 fmt.Errorf 包装了 fs.ErrNotExist，必须用 errors.Is 判断缺失，否则会误判为越界访问。
+		if errors.Is(err, fs.ErrNotExist) {
 			if originalPath == "/" {
+				// 默认入口文件缺失时退回目录文件列表，而不是直接报错。
 				renderDirectoryListingForProject(w, r, server.Root.RealPath, server.Config, server.readContent)
 				return
 			}

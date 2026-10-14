@@ -136,6 +136,53 @@ func TestProjectServerRootEntryDirectoryUsesItsIndex(t *testing.T) {
 	assert.Eq(t, "# Docs index", recorder.Body.String())
 }
 
+func TestProjectServerRendersRootDirectoryListingWhenEntryFileMissing(t *testing.T) {
+	dir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(dir, "guide.md"), []byte("# Guide"), 0644))
+	assert.NoErr(t, os.Mkdir(filepath.Join(dir, "docs"), 0755))
+	assert.NoErr(t, os.WriteFile(filepath.Join(dir, "docs", "index.md"), []byte("# Docs"), 0644))
+	root, err := NewProjectRoot(dir)
+	assert.NoErr(t, err)
+	cfg := config.Config{
+		TargetDir:     dir,
+		EntryFile:     "README.md",
+		WatchSkipDirs: append([]string(nil), config.DefaultSkipDirs...),
+	}
+	content := fstest.MapFS{
+		"web/template-main.html": {Data: []byte(`{{.Content}}`)},
+		"web/template.html":      {Data: []byte(`{{.AppConfigJSON}}{{.MainContent}}`)},
+	}
+	server := NewProjectServer(cfg, root, NewEventHub(), content)
+
+	for _, target := range []string{"/", "/?q=main"} {
+		t.Run(target, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			server.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, target, nil))
+
+			assert.Eq(t, http.StatusOK, recorder.Code)
+			assert.Eq(t, "no-store", recorder.Header().Get("Cache-Control"))
+			assert.StrContains(t, recorder.Body.String(), `href="/guide.md"`)
+			assert.StrNotContains(t, recorder.Body.String(), "Access Denied")
+		})
+	}
+
+	rawRecorder := httptest.NewRecorder()
+	server.ServeHTTP(rawRecorder, httptest.NewRequest(http.MethodGet, "/?q=raw", nil))
+
+	assert.Eq(t, http.StatusOK, rawRecorder.Code)
+	assert.StrContains(t, rawRecorder.Body.String(), `- [guide.md](/guide.md)`)
+}
+
+func TestProjectServerReturnsNotFoundForMissingFilePath(t *testing.T) {
+	server := newRawTestProjectServer(t, "# Project A")
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/missing.md", nil))
+
+	assert.Eq(t, http.StatusNotFound, recorder.Code)
+	assert.StrNotContains(t, recorder.Body.String(), "Access Denied")
+}
+
 func newRawTestProjectServer(t *testing.T, body string) *ProjectServer {
 	t.Helper()
 	dir := t.TempDir()
