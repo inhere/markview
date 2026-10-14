@@ -82,16 +82,21 @@ var IfsReader func(path string) ([]byte, error)
 func HandleRequest(w http.ResponseWriter, r *http.Request) {
 	urlPath := r.URL.Path
 	targetDir := config.Cfg.TargetDir
-	var filePath, cleanPath string
-
+	var cleanPath string
 	if urlPath == "/" {
 		cleanPath = config.Cfg.EntryFile
-		filePath = filepath.Join(targetDir, cleanPath)
 	} else {
 		// Remove leading slash
 		cleanPath = strings.TrimPrefix(urlPath, "/")
-		filePath = filepath.Join(targetDir, cleanPath)
 	}
+
+	// Security check: URL 路径必须是项目内的相对路径（拒绝绝对路径与 ".." 路径段）。
+	relPath := filepath.FromSlash(cleanPath)
+	if !filepath.IsLocal(relPath) {
+		http.Error(w, "Access Denied", 403)
+		return
+	}
+	filePath := filepath.Join(targetDir, relPath)
 
 	// Security check
 	rel, err := filepath.Rel(targetDir, filePath)
