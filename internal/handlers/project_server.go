@@ -24,6 +24,9 @@ func NewProjectServer(cfg config.Config, root ProjectRoot, events *EventHub, con
 	if events == nil {
 		events = defaultEventHub
 	}
+	// 项目根统一用真实路径：Resolve 与文件树都基于它，若 TargetDir 仍是软链接/junction/8.3 短路径，
+	// filepath.Rel 会算出 "../xxx" 之类的错误相对路径（目录列表链接、当前文件路径）。
+	cfg.TargetDir = root.RealPath
 	server := &ProjectServer{Config: cfg, Root: root, Events: events, content: content}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/sse", events.HandleSSE)
