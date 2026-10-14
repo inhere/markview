@@ -295,7 +295,7 @@ func TestPrepareLoadsDotenvFromTargetDir(t *testing.T) {
 	config.Cfg = config.Config{}
 
 	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
-		err := prepare([]string{targetDir}, testContentFS())
+		err := prepare([]string{targetDir})
 
 		assert.NoErr(t, err)
 		assert.Eq(t, 6222, config.Cfg.PortInt)
@@ -360,12 +360,12 @@ func TestPrepareDotenvDoesNotLeakBetweenProjects(t *testing.T) {
 
 	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
 		config.Cfg = config.Config{}
-		err := prepare([]string{projectA}, testContentFS())
+		err := prepare([]string{projectA})
 		assert.NoErr(t, err)
 		assert.Eq(t, 6222, config.Cfg.PortInt)
 
 		config.Cfg = config.Config{}
-		err = prepare([]string{projectB}, testContentFS())
+		err = prepare([]string{projectB})
 		assert.NoErr(t, err)
 		assert.NotEq(t, 6222, config.Cfg.PortInt)
 	})
@@ -382,7 +382,7 @@ func TestPrepareProjectConfigPortSkipsProjectRegistryMode(t *testing.T) {
 	config.Cfg = config.Config{}
 
 	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
-		err := prepare([]string{targetDir}, testContentFS())
+		err := prepare([]string{targetDir})
 
 		assert.NoErr(t, err)
 		assert.Eq(t, 6223, config.Cfg.PortInt)
@@ -403,7 +403,7 @@ func TestPrepareIsolationClearsStaleCliPortFlag(t *testing.T) {
 	cliPortFlagVisited = true
 
 	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
-		err := prepare([]string{targetDir}, testContentFS())
+		err := prepare([]string{targetDir})
 
 		assert.NoErr(t, err)
 		assert.Eq(t, 6223, config.Cfg.PortInt)
@@ -425,7 +425,7 @@ func TestPrepareProjectConfigPrivateCanBeOverriddenByExplicitCliFalse(t *testing
 		assert.NoErr(t, cmd.Parse([]string{"--private=false", targetDir}))
 		markPortFlagVisited(cmd)
 
-		err := prepare(cmd.RemainArgs(), testContentFS())
+		err := prepare(cmd.RemainArgs())
 
 		assert.NoErr(t, err)
 		assert.False(t, config.Cfg.Private)
@@ -445,7 +445,7 @@ func TestPrepareNoBrowserCliFlagSurvivesConfigMerge(t *testing.T) {
 		assert.NoErr(t, cmd.Parse([]string{"--no-browser", targetDir}))
 		markPortFlagVisited(cmd)
 
-		err := prepare(cmd.RemainArgs(), testContentFS())
+		err := prepare(cmd.RemainArgs())
 
 		assert.NoErr(t, err)
 		assert.True(t, config.Cfg.NoBrowser)
@@ -466,7 +466,7 @@ func TestPrepareCliPortOverridesProjectConfigPort(t *testing.T) {
 		assert.NoErr(t, cmd.Parse([]string{"--port", "6333", targetDir}))
 		markPortFlagVisited(cmd)
 
-		err := prepare(cmd.RemainArgs(), testContentFS())
+		err := prepare(cmd.RemainArgs())
 
 		assert.NoErr(t, err)
 		assert.Eq(t, 6333, config.Cfg.PortInt)
@@ -487,7 +487,7 @@ func TestPrepareRejectsNegativeCliPort(t *testing.T) {
 		assert.NoErr(t, cmd.Parse([]string{"--port", "-1", targetDir}))
 		markPortFlagVisited(cmd)
 
-		err := prepare(cmd.RemainArgs(), testContentFS())
+		err := prepare(cmd.RemainArgs())
 
 		assert.Err(t, err)
 		assert.StrContains(t, err.Error(), "must be greater than 0")
@@ -510,7 +510,7 @@ func TestPrepareDoesNotReusePreviousCliPortSource(t *testing.T) {
 		cmd.Func = nil
 		assert.NoErr(t, cmd.Parse([]string{"--port", "6333", projectA}))
 		markPortFlagVisited(cmd)
-		assert.NoErr(t, prepare(cmd.RemainArgs(), testContentFS()))
+		assert.NoErr(t, prepare(cmd.RemainArgs()))
 		assert.Eq(t, config.PortSourceCLI, config.Cfg.PortSource)
 
 		cmd = newCommand(testOptions())
@@ -518,7 +518,7 @@ func TestPrepareDoesNotReusePreviousCliPortSource(t *testing.T) {
 		assert.NoErr(t, cmd.Parse([]string{projectB}))
 		markPortFlagVisited(cmd)
 
-		err := prepare(cmd.RemainArgs(), testContentFS())
+		err := prepare(cmd.RemainArgs())
 
 		assert.NoErr(t, err)
 		assert.Eq(t, 6225, config.Cfg.PortInt)
@@ -536,7 +536,7 @@ func TestPrepareUsesRegistryPortWhenNoHigherPrecedencePortExists(t *testing.T) {
 	withIsolatedPrepareFiles(t, registryForTest(t, targetDir, "markview", 6224), func(_ string) {
 		config.Cfg = config.Config{}
 
-		err := prepare([]string{targetDir}, testContentFS())
+		err := prepare([]string{targetDir})
 
 		assert.NoErr(t, err)
 		assert.Eq(t, 6224, config.Cfg.PortInt)
@@ -564,7 +564,7 @@ func TestPrepareDotenvDebugEnablesDebugWithoutLeakingEnv(t *testing.T) {
 	config.EnableDebug = false
 
 	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
-		err := prepare([]string{targetDir}, testContentFS())
+		err := prepare([]string{targetDir})
 
 		assert.NoErr(t, err)
 		assert.True(t, utils.EnableDebug)
@@ -586,7 +586,7 @@ func TestPrepareEnvEntryAppliesWithoutPositionalEntry(t *testing.T) {
 	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
 		config.Cfg = config.Config{}
 
-		err := prepare([]string{targetDir}, testContentFS())
+		err := prepare([]string{targetDir})
 
 		assert.NoErr(t, err)
 		assert.Eq(t, "guide.md", config.Cfg.EntryFile)
@@ -606,7 +606,7 @@ func TestPreparePositionalEntryOverridesDotenvEntry(t *testing.T) {
 	withIsolatedPrepareFiles(t, projects.Registry{}, func(_ string) {
 		config.Cfg = config.Config{}
 
-		err := prepare([]string{targetDir, "guide.md"}, testContentFS())
+		err := prepare([]string{targetDir, "guide.md"})
 
 		assert.NoErr(t, err)
 		assert.Eq(t, "guide.md", config.Cfg.EntryFile)

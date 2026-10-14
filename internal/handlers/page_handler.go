@@ -75,81 +75,6 @@ type PageData struct {
 	ProjectPath         string
 }
 
-// IfsReader 从 embed.FS 读取文件内容
-var IfsReader func(path string) ([]byte, error)
-
-// HandleRequest .md 文件会渲染为 HTML 页面，其他文件会直接返回
-func HandleRequest(w http.ResponseWriter, r *http.Request) {
-	urlPath := r.URL.Path
-	targetDir := config.Cfg.TargetDir
-	var cleanPath string
-	if urlPath == "/" {
-		cleanPath = config.Cfg.EntryFile
-	} else {
-		// Remove leading slash
-		cleanPath = strings.TrimPrefix(urlPath, "/")
-	}
-
-	// Security check: URL 路径必须是项目内的相对路径（拒绝绝对路径与 ".." 路径段）。
-	relPath := filepath.FromSlash(cleanPath)
-	if !filepath.IsLocal(relPath) {
-		http.Error(w, "Access Denied", 403)
-		return
-	}
-	filePath := filepath.Join(targetDir, relPath)
-
-	// Security check
-	rel, err := filepath.Rel(targetDir, filePath)
-	if err != nil || strings.HasPrefix(rel, "..") {
-		http.Error(w, "Access Denied", 403)
-		return
-	}
-
-	info, err := os.Stat(filePath)
-	if os.IsNotExist(err) {
-		if urlPath == "/" {
-			renderDirectoryListing(w, r, targetDir)
-			return
-		}
-		http.Error(w, "File Not Found: "+cleanPath, 404)
-		return
-	}
-
-	if info.IsDir() {
-		// Serve index.md if exists in directory
-		indexPath := filepath.Join(filePath, "index.md")
-		if _, err := os.Stat(indexPath); err == nil {
-			filePath = indexPath
-		} else {
-			renderDirectoryListing(w, r, filePath)
-			return
-		}
-	}
-
-	utils.Debugf("Request: %s query: %s, filePath: %s", urlPath, r.URL.Query(), filePath)
-
-	// Render markdown file
-	if strings.HasSuffix(strings.ToLower(filePath), ".md") {
-		queryParam := r.URL.Query().Get("q")
-		switch queryParam {
-		case queryTypeMain: // 只渲染 markdown 内容，不带其他部分
-			renderMainContent(w, filePath)
-		case queryTypeRaw: // 直接返回原始 markdown 内容
-			renderRawMarkdown(w, filePath)
-		default: // 返回完整 html 页面
-			renderMarkdown(w, filePath)
-		}
-		return
-	}
-
-	// Serve static file
-	http.ServeFile(w, r, filePath)
-}
-
-func renderMarkdown(w http.ResponseWriter, filePath string) {
-	renderMarkdownForProject(w, filePath, config.Cfg, IfsReader)
-}
-
 func renderMarkdownForProject(w http.ResponseWriter, filePath string, cfg config.Config, readContent func(string) ([]byte, error)) {
 	mainData, err := buildPageDataForTarget(filePath, cfg.TargetDir)
 	if err != nil {
@@ -159,10 +84,6 @@ func renderMarkdownForProject(w http.ResponseWriter, filePath string, cfg config
 	mainData.CurrentFilePath = projectURLPath(cfg.BasePath, mainData.CurrentFilePath)
 
 	renderFullPageForProject(w, mainData, cfg, readContent)
-}
-
-func renderFullPage(w http.ResponseWriter, mainData *PageData) {
-	renderFullPageForProject(w, mainData, config.Cfg, IfsReader)
 }
 
 func renderFullPageForProject(w http.ResponseWriter, mainData *PageData, cfg config.Config, readContent func(string) ([]byte, error)) {
@@ -205,10 +126,6 @@ func renderFullPageForProject(w http.ResponseWriter, mainData *PageData, cfg con
 	setPageCacheHeaders(w)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	t.Execute(w, data)
-}
-
-func renderDirectoryListing(w http.ResponseWriter, r *http.Request, dirPath string) {
-	renderDirectoryListingForProject(w, r, dirPath, config.Cfg, IfsReader)
 }
 
 func renderDirectoryListingForProject(w http.ResponseWriter, r *http.Request, dirPath string, cfg config.Config, readContent func(string) ([]byte, error)) {
@@ -537,10 +454,6 @@ func renderRawMarkdown(w http.ResponseWriter, filePath string) {
 	w.Write(mdData)
 }
 
-func renderMainContent(w http.ResponseWriter, filePath string) {
-	renderMainContentForProject(w, filePath, config.Cfg.TargetDir, IfsReader)
-}
-
 func renderMainContentForProject(w http.ResponseWriter, filePath, targetDir string, readContent func(string) ([]byte, error)) {
 	mainData, err := buildPageDataForTarget(filePath, targetDir)
 	if err != nil {
@@ -549,10 +462,6 @@ func renderMainContentForProject(w http.ResponseWriter, filePath, targetDir stri
 	}
 
 	renderPageMainContentForProject(w, mainData, readContent)
-}
-
-func renderPageMainContent(w http.ResponseWriter, mainData *PageData) {
-	renderPageMainContentForProject(w, mainData, IfsReader)
 }
 
 func renderPageMainContentForProject(w http.ResponseWriter, mainData *PageData, readContent func(string) ([]byte, error)) {
@@ -571,11 +480,6 @@ func renderPageMainContentForProject(w http.ResponseWriter, mainData *PageData, 
 	setPageCacheHeaders(w)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write(mainContentBuf.Bytes())
-}
-
-// buildPageData 提取公共的页面数据构建逻辑
-func buildPageData(filePath string) (*PageData, error) {
-	return buildPageDataForTarget(filePath, config.Cfg.TargetDir)
 }
 
 func buildPageDataForTarget(filePath, targetDir string) (*PageData, error) {
@@ -612,10 +516,6 @@ func buildPageDataForTarget(filePath, targetDir string) (*PageData, error) {
 		CurrentFilePathJSON: utils.MustMarshalJSON(utils.NormalizeRelativePath(currentRelativePath)),
 		CurrentFilePath:     utils.ToURLPath(currentRelativePath),
 	}, nil
-}
-
-func buildDirectoryListingPageData(dirPath string) (*PageData, string, error) {
-	return buildDirectoryListingPageDataForTarget(dirPath, config.Cfg.TargetDir, config.Cfg)
 }
 
 func buildDirectoryListingPageDataForTarget(dirPath, targetDir string, cfg config.Config) (*PageData, string, error) {
@@ -662,10 +562,6 @@ func buildDirectoryListingPageDataForTarget(dirPath, targetDir string, cfg confi
 		CurrentFilePathJSON: utils.MustMarshalJSON(currentRelativePath),
 		CurrentFilePath:     utils.ToURLPath(currentRelativePath),
 	}, rawMarkdown, nil
-}
-
-func buildDirectoryListingMarkdown(dirPath, relativeDir string) (string, error) {
-	return buildDirectoryListingMarkdownForConfig(dirPath, relativeDir, config.Cfg)
 }
 
 func buildDirectoryListingMarkdownForConfig(dirPath, relativeDir string, cfg config.Config) (string, error) {
@@ -716,10 +612,6 @@ type FileTreeNode struct {
 	Kind      string         `json:"kind"`
 	Navigable bool           `json:"navigable"`
 	Children  []FileTreeNode `json:"children,omitempty"`
-}
-
-func buildFileTree(root string) ([]FileTreeNode, error) {
-	return buildFileTreeForConfig(root, config.Cfg)
 }
 
 func buildFileTreeForConfig(root string, cfg config.Config) ([]FileTreeNode, error) {
@@ -796,11 +688,6 @@ func buildFileTreeDir(absDir, relativeDir string, cfg config.Config) ([]FileTree
 	sortFileTreeNodes(files)
 
 	return append(directories, files...), nil
-}
-
-// HandleFileTreeAPI returns file tree JSON for dynamic refresh
-func HandleFileTreeAPI(w http.ResponseWriter, r *http.Request) {
-	handleFileTreeForConfig(w, r, config.Cfg)
 }
 
 func handleFileTreeForConfig(w http.ResponseWriter, r *http.Request, cfg config.Config) {

@@ -15,11 +15,6 @@ import (
 	"github.com/inhere/markview/internal/utils"
 )
 
-// HandleSearch 搜索 API handler
-func HandleSearch(w http.ResponseWriter, r *http.Request) {
-	handleSearchForConfig(w, r, config.Cfg)
-}
-
 func handleSearchForConfig(w http.ResponseWriter, r *http.Request, cfg config.Config) {
 	query := r.URL.Query().Get("q")
 	utils.Debugf("Request: %s handle search. query: %s", r.URL.Path, query)

@@ -7,11 +7,6 @@ import (
 	"github.com/inhere/markview/internal/config"
 )
 
-// Skip directories start with dot or in watchSkipDirs
-func shouldSkipDir(name string) bool {
-	return shouldSkipDirForConfig(name, config.Cfg)
-}
-
 func shouldSkipDirForConfig(name string, cfg config.Config) bool {
 	if name == ".git" || name == "node_modules" {
 		return true

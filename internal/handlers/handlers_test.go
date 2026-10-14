@@ -21,9 +21,8 @@ import (
 
 func TestBuildFileTree(t *testing.T) {
 	root := t.TempDir()
-	origCfg := config.Cfg
-	t.Cleanup(func() { config.Cfg = origCfg })
-	config.Cfg = config.Config{
+	cfg := config.Config{
+		TargetDir:     root,
 		WatchSkipDirs: append([]string(nil), config.DefaultSkipDirs...),
 	}
 
@@ -49,9 +48,9 @@ func TestBuildFileTree(t *testing.T) {
 		}
 	}
 
-	tree, err := buildFileTree(root)
+	tree, err := buildFileTreeForConfig(root, cfg)
 	if err != nil {
-		t.Fatalf("buildFileTree returned error: %v", err)
+		t.Fatalf("buildFileTreeForConfig returned error: %v", err)
 	}
 
 	if len(tree) != 4 {
@@ -118,9 +117,8 @@ func TestProjectBasePathScopesPageAndFileTreeLinks(t *testing.T) {
 
 func TestBuildFileTreeIncludesConfiguredDotDirectory(t *testing.T) {
 	root := t.TempDir()
-	origCfg := config.Cfg
-	t.Cleanup(func() { config.Cfg = origCfg })
-	config.Cfg = config.Config{
+	cfg := config.Config{
+		TargetDir:     root,
 		WatchSkipDirs: append([]string(nil), config.DefaultSkipDirs...),
 		IncludeDirs:   []string{".docs"},
 	}
@@ -137,7 +135,7 @@ func TestBuildFileTreeIncludesConfiguredDotDirectory(t *testing.T) {
 		assert.NoErr(t, os.WriteFile(fullPath, []byte("# test"), 0o644))
 	}
 
-	tree, err := buildFileTree(root)
+	tree, err := buildFileTreeForConfig(root, cfg)
 
 	assert.NoErr(t, err)
 	assert.Eq(t, 1, len(tree))
@@ -145,130 +143,6 @@ func TestBuildFileTreeIncludesConfiguredDotDirectory(t *testing.T) {
 	assert.Eq(t, "directory", tree[0].Kind)
 	assert.Eq(t, 1, len(tree[0].Children))
 	assert.Eq(t, "guide.md", tree[0].Children[0].Name)
-}
-
-func TestHandleRequestRendersDirectoryListingWithoutEntryFile(t *testing.T) {
-	origTargetDir := config.Cfg.TargetDir
-	origEntryFile := config.Cfg.EntryFile
-	origIfsReader := IfsReader
-	defer func() {
-		config.Cfg.TargetDir = origTargetDir
-		config.Cfg.EntryFile = origEntryFile
-		IfsReader = origIfsReader
-	}()
-
-	IfsReader = func(path string) ([]byte, error) {
-		if path == "web/template-main.html" {
-			return []byte(`{{.Content}}<script id="current-file-path-data" type="application/json">{{ .CurrentFilePathJSON }}</script>`), nil
-		}
-		return nil, os.ErrNotExist
-	}
-
-	root := t.TempDir()
-	files := []string{
-		"README.md",
-		"plain/child.md",
-		"plain/notes.txt",
-		"plain/deep/topic.md",
-		"plain/assets/logo.png",
-	}
-	for _, relativePath := range files {
-		fullPath := filepath.Join(root, filepath.FromSlash(relativePath))
-		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
-			t.Fatalf("mkdir %s: %v", relativePath, err)
-		}
-		if err := os.WriteFile(fullPath, []byte("# test"), 0o644); err != nil {
-			t.Fatalf("write %s: %v", relativePath, err)
-		}
-	}
-
-	config.Cfg.TargetDir = root
-	config.Cfg.EntryFile = "README.md"
-
-	req := httptest.NewRequest(http.MethodGet, "/plain?q=main", nil)
-	rec := httptest.NewRecorder()
-
-	HandleRequest(rec, req)
-
-	assert.Eq(t, http.StatusOK, rec.Code)
-	body := rec.Body.String()
-	assert.StrContains(t, body, "<h1>📇 plain</h1>")
-	assert.StrContains(t, body, `href="/plain/deep"`)
-	assert.StrContains(t, body, `href="/plain/child.md"`)
-	assert.StrNotContains(t, body, "notes.txt")
-	assert.StrNotContains(t, body, "logo.png")
-	assert.StrContains(t, body, `plain<`)
-}
-
-func TestHandleRequestRendersRootDirectoryListingWhenEntryFileMissing(t *testing.T) {
-	origCfg := config.Cfg
-	origIfsReader := IfsReader
-	t.Cleanup(func() {
-		config.Cfg = origCfg
-		IfsReader = origIfsReader
-	})
-
-	IfsReader = func(path string) ([]byte, error) {
-		if path == "web/template-main.html" {
-			return []byte(`{{.Content}}`), nil
-		}
-		if path == "web/template.html" {
-			return []byte(`<html>{{.MainContent}}</html>`), nil
-		}
-		return nil, os.ErrNotExist
-	}
-
-	root := t.TempDir()
-	assert.NoErr(t, os.WriteFile(filepath.Join(root, "guide.md"), []byte("# Guide"), 0o644))
-	config.Cfg = config.Config{
-		TargetDir:     root,
-		EntryFile:     "README.md",
-		WatchSkipDirs: append([]string(nil), config.DefaultSkipDirs...),
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-
-	HandleRequest(rec, req)
-
-	assert.Eq(t, http.StatusOK, rec.Code)
-	assert.StrContains(t, rec.Body.String(), `href="/guide.md"`)
-}
-
-func TestHandleRequestSetsNoStoreForMarkdownPages(t *testing.T) {
-	IfsReader = func(path string) ([]byte, error) {
-		if path == "web/template-main.html" {
-			return []byte(`{{.Content}}`), nil
-		}
-		if path == "web/template.html" {
-			return []byte(`<html>{{.MainContent}}</html>`), nil
-		}
-		return nil, os.ErrNotExist
-	}
-
-	root := t.TempDir()
-	config.Cfg.TargetDir = root
-	config.Cfg.EntryFile = "README.md"
-
-	readmePath := filepath.Join(root, "README.md")
-	if err := os.WriteFile(readmePath, []byte("# Hello"), 0o644); err != nil {
-		t.Fatalf("write README.md: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-
-	HandleRequest(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", rec.Code)
-	}
-	if got := rec.Header().Get("Cache-Control"); got != "no-store" {
-		t.Fatalf("expected Cache-Control no-store, got %q", got)
-	}
-	if contentType := rec.Header().Get("Content-Type"); !strings.Contains(contentType, "text/html") {
-		t.Fatalf("expected html content-type, got %q", contentType)
-	}
 }
 
 func TestRenderMarkdownSourceParsesMarkdownInsideCustomSectionTags(t *testing.T) {
@@ -423,36 +297,25 @@ func TestConfigAppConfigUsesDefaultsAndConfiguredValues(t *testing.T) {
 }
 
 func TestRenderFullPageInjectsAppConfigJSON(t *testing.T) {
-	origCfg := config.Cfg
-	origReader := IfsReader
-	t.Cleanup(func() {
-		config.Cfg = origCfg
-		IfsReader = origReader
-	})
-
-	config.Cfg = config.Config{
-		TargetDir:   t.TempDir(),
+	root := t.TempDir()
+	cfg := config.Config{
+		TargetDir:   root,
 		PreviewExts: []string{".md", ".json", ".ini"},
 		IframeHosts: []string{"intranet.local"},
 		UILayout:    config.UILayoutTOCRight,
 	}
-	assert.NoErr(t, os.WriteFile(filepath.Join(config.Cfg.TargetDir, "README.md"), []byte("# Test"), 0o644))
-	IfsReader = func(path string) ([]byte, error) {
-		switch path {
-		case "web/template-main.html":
-			return []byte(`<article id="content">{{ .Content }}</article><script id="current-file-path-data" type="application/json">{{ .CurrentFilePathJSON }}</script>`), nil
-		case "web/template.html":
-			return []byte(`<html><body>{{ .MainContent }}<script id="app-config-data" type="application/json">{{ .AppConfigJSON }}</script></body></html>`), nil
-		default:
-			return nil, os.ErrNotExist
-		}
+	assert.NoErr(t, os.WriteFile(filepath.Join(root, "README.md"), []byte("# Test"), 0o644))
+	content := fstest.MapFS{
+		"web/template-main.html": {Data: []byte(`<article id="content">{{ .Content }}</article><script id="current-file-path-data" type="application/json">{{ .CurrentFilePathJSON }}</script>`)},
+		"web/template.html":      {Data: []byte(`<html><body>{{ .MainContent }}<script id="app-config-data" type="application/json">{{ .AppConfigJSON }}</script></body></html>`)},
 	}
+	readContent := func(path string) ([]byte, error) { return fs.ReadFile(content, path) }
 
-	pageData, err := buildPageData(filepath.Join(config.Cfg.TargetDir, "README.md"))
+	pageData, err := buildPageDataForTarget(filepath.Join(root, "README.md"), root)
 	assert.NoErr(t, err)
 	rec := httptest.NewRecorder()
 
-	renderFullPage(rec, pageData)
+	renderFullPageForProject(rec, pageData, cfg, readContent)
 
 	body := rec.Body.String()
 	assert.StrContains(t, body, `id="app-config-data"`)
@@ -488,20 +351,14 @@ func TestGlobalTopbarOnlyRendersForGlobalFullPages(t *testing.T) {
 }
 
 func TestRenderFullPageUsesSplitPaneLayoutSkeleton(t *testing.T) {
-	origCfg := config.Cfg
-	origReader := IfsReader
-	t.Cleanup(func() {
-		config.Cfg = origCfg
-		IfsReader = origReader
-	})
-
-	config.Cfg = config.Config{
-		TargetDir: t.TempDir(),
+	root := t.TempDir()
+	cfg := config.Config{
+		TargetDir: root,
 		UILayout:  config.UILayoutCompact,
 		Version:   "0.5.1-1-gb54056c",
 	}
-	assert.NoErr(t, os.WriteFile(filepath.Join(config.Cfg.TargetDir, "README.md"), []byte("# Test"), 0o644))
-	IfsReader = func(path string) ([]byte, error) {
+	assert.NoErr(t, os.WriteFile(filepath.Join(root, "README.md"), []byte("# Test"), 0o644))
+	readContent := func(path string) ([]byte, error) {
 		switch path {
 		case "web/template-main.html":
 			return []byte(`<article id="content">{{ .Content }}</article><script id="current-file-path-data" type="application/json">{{ .CurrentFilePathJSON }}</script>`), nil
@@ -512,11 +369,11 @@ func TestRenderFullPageUsesSplitPaneLayoutSkeleton(t *testing.T) {
 		}
 	}
 
-	pageData, err := buildPageData(filepath.Join(config.Cfg.TargetDir, "README.md"))
+	pageData, err := buildPageDataForTarget(filepath.Join(root, "README.md"), root)
 	assert.NoErr(t, err)
 	rec := httptest.NewRecorder()
 
-	renderFullPage(rec, pageData)
+	renderFullPageForProject(rec, pageData, cfg, readContent)
 
 	body := rec.Body.String()
 	assert.StrContains(t, body, `class="app-shell"`)
@@ -925,14 +782,12 @@ func TestHandleSearch_PathFilter(t *testing.T) {
 		assert.NoErr(t, os.WriteFile(path, []byte(content), 0o644))
 	}
 
-	origTargetDir := config.Cfg.TargetDir
-	config.Cfg.TargetDir = root
-	defer func() { config.Cfg.TargetDir = origTargetDir }()
+	cfg := config.Config{TargetDir: root}
 
 	req := httptest.NewRequest(http.MethodGet, "/search?q=path:docs/api+shared", nil)
 	rec := httptest.NewRecorder()
 
-	HandleSearch(rec, req)
+	handleSearchForConfig(rec, req, cfg)
 
 	assert.Eq(t, http.StatusOK, rec.Code)
 	var resp SearchResponse
@@ -975,15 +830,13 @@ This is draft content.
 	}
 
 	// 配置使用临时目录
-	origTargetDir := config.Cfg.TargetDir
-	config.Cfg.TargetDir = root
-	defer func() { config.Cfg.TargetDir = origTargetDir }()
+	cfg := config.Config{TargetDir: root}
 
 	// 发起纯 exclude 查询：!draft（查找所有不含 draft 的文件）
 	req := httptest.NewRequest(http.MethodGet, "/search?q=!draft", nil)
 	rec := httptest.NewRecorder()
 
-	HandleSearch(rec, req)
+	handleSearchForConfig(rec, req, cfg)
 
 	// 验证响应
 	if rec.Code != http.StatusOK {

@@ -138,7 +138,7 @@ func run(c *cflag.CFlags, content fs.FS) error {
 		}
 	}
 
-	if err := prepare(args, content); err != nil {
+	if err := prepare(args); err != nil {
 		return err
 	}
 
@@ -400,7 +400,7 @@ func newStaticHandler(content fs.FS) http.Handler {
 	})
 }
 
-func prepare(args []string, content fs.FS) error {
+func prepare(args []string) error {
 	targetDir, entryFile := resolvePrepareTarget(args)
 	dotenv, err := loadProjectDotenv(targetDir)
 	if err != nil {
@@ -420,9 +420,6 @@ func prepare(args []string, content fs.FS) error {
 		return err
 	}
 
-	handlers.IfsReader = func(path string) ([]byte, error) {
-		return fs.ReadFile(content, path)
-	}
 	return nil
 }
 

@@ -62,6 +62,7 @@ func TestProjectServerRendersFullAndMainHTML(t *testing.T) {
 			assert.Eq(t, http.StatusOK, recorder.Code)
 			assert.True(t, strings.Contains(recorder.Body.String(), "Project A"))
 			assert.Eq(t, "no-store", recorder.Header().Get("Cache-Control"))
+			assert.StrContains(t, recorder.Header().Get("Content-Type"), "text/html")
 		})
 	}
 }
