@@ -13,7 +13,7 @@ import (
 	"github.com/gookit/goutil/x/clog"
 )
 
-var  EnableDebug bool
+var EnableDebug bool
 
 func Debugf(format string, args ...any) {
 	if !EnableDebug {
