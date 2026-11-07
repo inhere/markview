@@ -20,7 +20,9 @@ export function enhanceImagesInContent(contentRoot: HTMLElement) {
         if (img.closest('.image-container')) continue;
         
         const container = document.createElement('div');
-        container.className = 'image-container';
+        container.className = isSVGImage(img)
+            ? 'image-container svg-image-container'
+            : 'image-container';
         
         const actions = document.createElement('div');
         actions.className = 'image-actions';
@@ -43,6 +45,17 @@ export function enhanceImagesInContent(contentRoot: HTMLElement) {
         img.parentNode?.insertBefore(container, img);
         container.appendChild(img);
         container.appendChild(actions);
+    }
+}
+
+function isSVGImage(img: HTMLImageElement): boolean {
+    try {
+        return new URL(img.getAttribute('src') || img.src, document.baseURI)
+            .pathname
+            .toLowerCase()
+            .endsWith('.svg');
+    } catch {
+        return false;
     }
 }
 

@@ -38,6 +38,7 @@ describe('image enhancement', () => {
             expect(image?.alt).toBe('Architecture diagram');
             expect(image?.title).toBe('Architecture');
             expect(content.querySelector('.image-fullscreen-btn')).not.toBeNull();
+            expect(content.querySelector('.svg-image-container')).not.toBeNull();
             expect(content.querySelector('a[href$="architecture.svg"]')).toBeNull();
             expect(content.querySelector('a[href$="guide.md"]')).not.toBeNull();
         });

@@ -8,6 +8,15 @@
 .image-container img {
     margin: 0;
 }
+.image-container.svg-image-container {
+    display: block;
+    width: 100%;
+}
+.image-container.svg-image-container img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
 .image-actions {
     position: absolute;
     top: 8px;
