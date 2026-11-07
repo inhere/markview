@@ -1,6 +1,7 @@
 // web/src/components/link-preview.ts
 
 import { ensureHighlightLanguages, safeHighlightElement } from '../highlight';
+import { enhanceImagesInContent } from './image-modal';
 import { enhanceMermaidContent } from './mermaid';
 import { enhanceCodeBlocks } from './code-copy';
 import {
@@ -37,6 +38,7 @@ async function enhancePreviewContent(contentRoot: HTMLElement) {
 
     enhanceCodeBlocks(contentRoot);
     await enhanceMermaidContent(contentRoot);
+    enhanceImagesInContent(contentRoot);
 }
 
 // 静态资源扩展名

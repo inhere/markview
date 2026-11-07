@@ -12,10 +12,11 @@ const minZoom = 0.3;
 const maxZoom = 3.0;
 
 export function enhanceImagesInContent(contentRoot: HTMLElement) {
+    convertSVGLinksToImages(contentRoot);
+
     const images = contentRoot.querySelectorAll('img');
     
     for (const img of images) {
-        if (!(img instanceof HTMLImageElement)) continue;
         if (img.closest('.image-container')) continue;
         
         const container = document.createElement('div');
@@ -42,6 +43,36 @@ export function enhanceImagesInContent(contentRoot: HTMLElement) {
         img.parentNode?.insertBefore(container, img);
         container.appendChild(img);
         container.appendChild(actions);
+    }
+}
+
+function convertSVGLinksToImages(contentRoot: HTMLElement) {
+    const links = contentRoot.querySelectorAll<HTMLAnchorElement>('a[href]');
+
+    for (const link of links) {
+        if (link.hasAttribute('download') || link.querySelector('img')) {
+            continue;
+        }
+
+        let url: URL;
+        try {
+            url = new URL(link.href, document.baseURI);
+        } catch {
+            continue;
+        }
+
+        if (!url.pathname.toLowerCase().endsWith('.svg')) {
+            continue;
+        }
+
+        const image = document.createElement('img');
+        image.src = url.toString();
+        image.alt = link.textContent?.trim() || link.getAttribute('title') || '';
+        const title = link.getAttribute('title');
+        if (title) {
+            image.title = title;
+        }
+        link.replaceWith(image);
     }
 }
 
