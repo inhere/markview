@@ -68,7 +68,13 @@ markview "path/to/docs"
 
 # 预览指定目录，并设置默认入口文件（默认入口 `README.md`）
 markview "path/to/docs" "intro.md"
+
+# 预览单个 Markdown 或 HTML 入口文件
+markview "path/to/docs/intro.md"
+markview "path/to/docs/preview.html"
 ```
+
+传入单个 `.md`、`.html` 或 `.htm` 文件时，MarkView 会将文件所在目录作为服务根目录，并将该文件作为默认入口。Markdown 使用 MarkView 阅读器渲染；HTML 从 `/` 直接提供，页面中的相对资源会继续相对于入口文件所在目录解析。
 
 未指定端口时，MarkView 会自动选择并记住项目端口；可用时优先使用 `6100`。
 

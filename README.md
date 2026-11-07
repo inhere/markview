@@ -68,7 +68,13 @@ markview "path/to/docs"
 
 # Preview a specific directory and set the default entry file (default entry is `README.md`)
 markview "path/to/docs" "intro.md"
+
+# Preview a single Markdown or HTML entry file
+markview "path/to/docs/intro.md"
+markview "path/to/docs/preview.html"
 ```
+
+A single `.md`, `.html`, or `.htm` file argument uses its parent directory as the serving root and opens that file as the default entry. Markdown files use the MarkView reader; HTML files are served directly from `/`, so their relative assets resolve beside the entry file.
 
 When no port is specified, MarkView automatically chooses and remembers a project port, preferring `6100` when available.
 

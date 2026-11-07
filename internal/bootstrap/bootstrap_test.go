@@ -37,6 +37,32 @@ func TestStaticHandlerSetsRevalidateCacheHeaders(t *testing.T) {
 	}
 }
 
+func TestResolvePrepareTargetAcceptsMarkdownAndHTMLFiles(t *testing.T) {
+	dir := t.TempDir()
+	markdownPath := filepath.Join(dir, "docs", "guide.md")
+	htmlPath := filepath.Join(dir, "site", "index.HTML")
+	assert.NoErr(t, os.MkdirAll(filepath.Dir(markdownPath), 0755))
+	assert.NoErr(t, os.MkdirAll(filepath.Dir(htmlPath), 0755))
+	assert.NoErr(t, os.WriteFile(markdownPath, []byte("# Guide"), 0644))
+	assert.NoErr(t, os.WriteFile(htmlPath, []byte("<!doctype html>"), 0644))
+
+	for _, tc := range []struct {
+		name string
+		path string
+		file string
+	}{
+		{name: "markdown", path: markdownPath, file: "guide.md"},
+		{name: "html", path: htmlPath, file: "index.HTML"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			targetDir, entryFile := resolvePrepareTarget([]string{tc.path})
+
+			assert.Eq(t, filepath.Dir(tc.path), targetDir)
+			assert.Eq(t, tc.file, entryFile)
+		})
+	}
+}
+
 func TestBeforeServerRunOpensBrowserByDefault(t *testing.T) {
 	origNoBrowser := config.Cfg.NoBrowser
 	origOpenBrowser := openBrowser

@@ -432,8 +432,9 @@ func resolvePrepareTarget(args []string) (string, string) {
 		firstArg := args[0]
 		absPath, err := filepath.Abs(firstArg)
 		if err == nil {
-			if strings.HasSuffix(firstArg, ".md") && fsutil.IsFile(firstArg) {
-				entryFile = firstArg
+			if isDirectEntryFile(absPath) && fsutil.IsFile(absPath) {
+				targetDir = filepath.Dir(absPath)
+				entryFile = filepath.Base(absPath)
 			} else {
 				targetDir = absPath
 			}
@@ -447,6 +448,15 @@ func resolvePrepareTarget(args []string) (string, string) {
 	}
 
 	return targetDir, entryFile
+}
+
+func isDirectEntryFile(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".md", ".html", ".htm":
+		return true
+	default:
+		return false
+	}
 }
 
 func loadProjectDotenv(targetDir string) (map[string]string, error) {
